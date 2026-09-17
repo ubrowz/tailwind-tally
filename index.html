@@ -1390,7 +1390,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="leafletMapDiv"></div>
       </div>
       <div class="route-stats" id="routeStats"></div>
-      <div class="wind-sensitivity" id="routeWindSensitivity"></div>
     </div>
     <div class="card chart-card">
       <div class="card-head">
@@ -2483,8 +2482,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       '<div class="best-wind-line">Best wind, as ridden: <b>' + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "°)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy " +
       "&mdash; equivalently, <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "°)</b> is the best wind if riding in reverse.</div>" +
       buildAsymSymHTML(result);
-
-    document.getElementById("routeWindSensitivity").innerHTML = buildAsymSymHTML(result);
 
     renderLastHalf(result);
     buildCompassTable(result);
