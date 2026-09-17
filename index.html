@@ -517,13 +517,12 @@
   table.sweep-table th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
 
   /* ---------- Last-50% comparison ---------- */
-  .half-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  @media (max-width: 720px) { .half-grid { grid-template-columns: 1fr; } }
   .half-card {
     background: var(--panel-raised);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 15px 16px;
+    max-width: 360px;
   }
   .half-card .half-title {
     font-size: 11px;
@@ -2082,43 +2081,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   }
 
+  // Forward's and reverse's effort multiplier for the last 50% are always
+  // nearly equal for a genuine round trip: whatever tailwind push you get
+  // on one half of a closed loop is mirrored by headwind drag on the
+  // other, in either riding direction (same reasoning as the plain-
+  // distance version of this split, extended to a metric that's linear
+  // in cosphi). So only forward is shown - but the equivalence is a
+  // consequence of the route actually closing, not a given, so it's
+  // checked live rather than assumed: a route that doesn't return to its
+  // start (see the closure gap under Self-checks) would show a real gap
+  // here, and that gets surfaced instead of hidden.
   function renderLastHalf(result) {
     var lh = result.lastHalf, ef = result.effort;
     var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
     document.getElementById("halfCaption").innerHTML =
-      "Split at the route's distance midpoint (" + lh.splitKm.toFixed(1) + " km in) — for reverse, that's the route's first half by distance, ridden backward, not its second half. " +
+      "Split at the route's distance midpoint (" + lh.splitKm.toFixed(1) + " km in). " +
       "At <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> cruising speed into a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h)</b> wind: " +
       "aerodynamic drag scales with relative-airspeed <i>squared</i>, not with the wind component directly, so this is shown as a multiple of the effort a completely calm day at the same speed would take.";
 
     var fwdEffort = ef.lastHalf.forward, revEffort = ef.lastHalf.reverse;
-    var maxScale = Math.max(2.0, fwdEffort.powerMultiplier * 1.1, revEffort.powerMultiplier * 1.1);
+    var mult = fwdEffort.powerMultiplier;
+    var good = mult < 1;
+    var maxScale = Math.max(2.0, mult * 1.1);
     var refPct = Math.min(100, 100 / maxScale);
+    var fillPct = Math.min(100, 100 * mult / maxScale);
 
-    var wrap = document.getElementById("halfGrid");
-    wrap.innerHTML = "";
-    [["Forward", fwdEffort], ["Reverse", revEffort]].forEach(function (pair) {
-      var label = pair[0], eff = pair[1];
-      var mult = eff.powerMultiplier;
-      var good = mult < 1;
-      var fillPct = Math.min(100, 100 * mult / maxScale);
-      var card = document.createElement("div");
-      card.className = "half-card";
-      card.innerHTML =
-        '<div class="half-title">' + label + ' — last 50%</div>' +
+    document.getElementById("halfGrid").innerHTML =
+      '<div class="half-card">' +
+        '<div class="half-title">Last 50%, either direction</div>' +
         '<div class="half-multiplier ' + (good ? "good" : "bad") + '">' + mult.toFixed(2) + '&times; <span class="unit">calm-day aero effort</span></div>' +
         '<div class="half-bar"><div class="half-bar-fill ' + (good ? "good" : "bad") + '" style="width:' + fillPct.toFixed(1) + '%"></div><div class="half-bar-ref" style="left:' + refPct.toFixed(1) + '%"></div></div>' +
-        '<div class="half-net">Effective wind-in-your-face speed: <b>' + eff.avgRelSpeedKmh.toFixed(1) + ' km/h</b> (vs. ' + ef.cruiseSpeedKmh.toFixed(0) + ' km/h on a calm day).</div>';
-      wrap.appendChild(card);
-    });
+        '<div class="half-net">Effective wind-in-your-face speed: <b>' + fwdEffort.avgRelSpeedKmh.toFixed(1) + ' km/h</b> (vs. ' + ef.cruiseSpeedKmh.toFixed(0) + ' km/h on a calm day).</div>' +
+      '</div>';
 
+    var gap = Math.abs(fwdEffort.powerMultiplier - revEffort.powerMultiplier);
     var verdict;
-    if (Math.abs(fwdEffort.powerMultiplier - revEffort.powerMultiplier) < 0.03) {
-      verdict = "Both directions take about the same aerodynamic effort in the closing half.";
+    if (gap < 0.03) {
+      verdict = "Forward and reverse come out the same here (within " + gap.toFixed(3) + "&times;) &mdash; expected for a route that returns to its start.";
     } else {
-      var easier = fwdEffort.powerMultiplier <= revEffort.powerMultiplier ? "forward" : "reverse";
-      var harder = easier === "forward" ? "reverse" : "forward";
-      var ratio = Math.min(fwdEffort.powerMultiplier, revEffort.powerMultiplier) / Math.max(fwdEffort.powerMultiplier, revEffort.powerMultiplier);
-      verdict = "Riding it <b>" + easier + "</b> gives the easier finish: about " + (ratio * 100).toFixed(0) + "% of the aerodynamic effort of riding it " + harder + " in the last 50%.";
+      verdict = "Forward (" + fwdEffort.powerMultiplier.toFixed(2) + "&times;) and reverse (" + revEffort.powerMultiplier.toFixed(2) +
+        "&times;) actually differ here &mdash; a bigger gap than a closed loop should give, which usually means this route doesn't fully return to its start (see the closure gap under Self-checks below).";
     }
     document.getElementById("halfVerdict").innerHTML = verdict;
   }
