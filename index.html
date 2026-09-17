@@ -515,9 +515,6 @@
   table.sweep-table th, table.sweep-table td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
   table.sweep-table th:first-child, table.sweep-table td:first-child { text-align: left; }
   table.sweep-table th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
-  table.sweep-table tr.current-row td { background: var(--accent-wash); color: var(--ink); font-weight: 600; }
-  table.sweep-table tr.current-row td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
-  table.sweep-table td.best-cell { box-shadow: inset 0 0 0 1.5px var(--status-good); color: var(--status-good); font-weight: 700; border-radius: 4px; }
 
   /* ---------- Last-50% comparison ---------- */
   .half-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -1412,27 +1409,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card">
-    <h2>Last 50% of the round trip</h2>
+    <h2>Effort in the last 50% of the round trip</h2>
     <p class="chart-caption" id="halfCaption"></p>
     <div class="half-grid" id="halfGrid"></div>
     <p class="half-verdict" id="halfVerdict"></p>
   </div>
 
-  <div class="card">
-    <h2>Outcome by compass direction</h2>
-    <p class="chart-caption">All 16 compass directions, recomputed for the current file, resample spacing, neutral band, wind speed and cruising speed. The ringed cell in each outcome column is that column's best value (lowest for the effort columns); the tinted row is the wind direction selected above.</p>
-    <div class="sweep-table-wrap">
-      <table class="sweep-table" id="compassTable">
-        <thead>
-          <tr>
-            <th>From</th><th>Bearing</th><th>Forward easy</th><th>Reverse easy</th><th>Diff.</th>
-            <th>Last 50% effort &mdash; fwd</th><th>Last 50% effort &mdash; rev</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
 
   <div class="card">
     <h2>Self-checks</h2>
@@ -2100,58 +2082,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   }
 
-  // Forward/reverse easy% plus last-50% wind-effort multiplier, for one
-  // wind direction - reuses the already-resampled lengths/headings rather
-  // than re-running the (much more expensive) 360-degree sweep for every
-  // row of the compass table.
-  function statsForDirection(lengths, headings, neutralDeg, windFromDeg, splitIdx, vMs, wMs) {
-    var windVec = windFromToTowardVector(windFromDeg);
-    var cosphiFwd = headings.map(function (h) { return h[0] * windVec[0] + h[1] * windVec[1]; });
-    var cosphiRev = cosphiFwd.map(function (c) { return -c; });
-    var fwd = directionStats(lengths, cosphiFwd, neutralDeg);
-    var rev = directionStats(lengths, cosphiRev, neutralDeg);
-    var lastFwdEffort = windEffortStats(lengths, cosphiFwd, vMs, wMs, splitIdx, lengths.length);
-    var lastRevEffort = windEffortStats(lengths, cosphiRev, vMs, wMs, 0, splitIdx);
-    return {
-      fwdPct: fwd.easyPct, revPct: rev.easyPct,
-      lastFwdMultiplier: lastFwdEffort.powerMultiplier, lastRevMultiplier: lastRevEffort.powerMultiplier
-    };
-  }
-
-  function buildCompassTable(result) {
-    var headings = segmentLengthsAndHeadings(result.xy).headings;
-    var splitIdx = splitIndexByDistance(result.lengths).idx;
-    var vMs = result.effort.cruiseSpeedKmh / 3.6, wMs = result.effort.windSpeedKmh / 3.6;
-    var rows = COMPASS_16.map(function (pair) {
-      var s = statsForDirection(result.lengths, headings, result.neutralDeg, pair[1], splitIdx, vMs, wMs);
-      return { code: pair[0], deg: pair[1], fwdPct: s.fwdPct, revPct: s.revPct, lastFwdMultiplier: s.lastFwdMultiplier, lastRevMultiplier: s.lastRevMultiplier };
-    });
-    // Higher easy% is better; LOWER effort multiplier is better (less
-    // aerodynamic work than a calm day, rather than more).
-    var bestFwdPct = Math.max.apply(null, rows.map(function (r) { return r.fwdPct; }));
-    var bestRevPct = Math.max.apply(null, rows.map(function (r) { return r.revPct; }));
-    var bestLastFwd = Math.min.apply(null, rows.map(function (r) { return r.lastFwdMultiplier; }));
-    var bestLastRev = Math.min.apply(null, rows.map(function (r) { return r.lastRevMultiplier; }));
-
-    function cell(isBest, text) { return "<td" + (isBest ? ' class="best-cell"' : "") + ">" + text + "</td>"; }
-
-    var tbody = document.querySelector("#compassTable tbody");
-    tbody.innerHTML = "";
-    rows.forEach(function (row) {
-      var diff = row.fwdPct - row.revPct;
-      var tr = document.createElement("tr");
-      if (Math.abs(row.deg - result.windFromDeg) < 0.01) tr.className = "current-row";
-      tr.innerHTML =
-        "<td>" + row.code + "</td><td>" + row.deg + "&deg;</td>" +
-        cell(row.fwdPct === bestFwdPct, row.fwdPct.toFixed(1) + "%") +
-        cell(row.revPct === bestRevPct, row.revPct.toFixed(1) + "%") +
-        "<td>" + (diff >= 0 ? "+" : "") + diff.toFixed(1) + " pp</td>" +
-        cell(row.lastFwdMultiplier === bestLastFwd, row.lastFwdMultiplier.toFixed(2) + "&times;") +
-        cell(row.lastRevMultiplier === bestLastRev, row.lastRevMultiplier.toFixed(2) + "&times;");
-      tbody.appendChild(tr);
-    });
-  }
-
   function renderLastHalf(result) {
     var lh = result.lastHalf, ef = result.effort;
     var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
@@ -2484,7 +2414,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       buildAsymSymHTML(result);
 
     renderLastHalf(result);
-    buildCompassTable(result);
 
     var diagGrid = document.getElementById("diagGrid");
     diagGrid.innerHTML =
