@@ -1,0 +1,2755 @@
+<title>Tailwind Tally</title>
+<style>
+  :root {
+    color-scheme: light dark;
+
+    --font-display: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    --ink: #0b0b0b;
+    --ink-secondary: #52514e;
+    --ink-muted: #898781;
+    --paper: #f9f9f7;
+    --panel: #fcfcfb;
+    --panel-raised: #ffffff;
+    --border: rgba(11, 11, 11, 0.10);
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --accent-wash: rgba(42, 120, 214, 0.10);
+    --series-reverse: #eb6834;
+    --series-reverse-wash: rgba(235, 104, 52, 0.10);
+
+    --status-good: #0ca30c;
+    --status-good-wash: rgba(12, 163, 12, 0.12);
+    --status-good-strong: #075e07;
+    --status-critical: #d03b3b;
+    --status-critical-wash: rgba(208, 59, 59, 0.10);
+    --status-critical-strong: #7a1f1f;
+    --status-neutral: #898781;
+    --status-neutral-wash: rgba(137, 135, 129, 0.14);
+
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --shadow-card: 0 1px 2px rgba(11, 11, 11, 0.04), 0 1px 1px rgba(11, 11, 11, 0.03);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ffffff;
+      --ink-secondary: #c3c2b7;
+      --ink-muted: #898781;
+      --paper: #0d0d0d;
+      --panel: #1a1a19;
+      --panel-raised: #201f1d;
+      --border: rgba(255, 255, 255, 0.11);
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --accent: #3987e5;
+      --accent-wash: rgba(57, 135, 229, 0.14);
+      --series-reverse: #d95926;
+      --series-reverse-wash: rgba(217, 89, 38, 0.14);
+      --status-good-wash: rgba(12, 163, 12, 0.16);
+      --status-critical-wash: rgba(208, 59, 59, 0.16);
+      --status-neutral-wash: rgba(137, 135, 129, 0.18);
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+    --paper: #0d0d0d;
+    --panel: #1a1a19;
+    --panel-raised: #201f1d;
+    --border: rgba(255, 255, 255, 0.11);
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --accent: #3987e5;
+    --accent-wash: rgba(57, 135, 229, 0.14);
+    --series-reverse: #d95926;
+    --series-reverse-wash: rgba(217, 89, 38, 0.14);
+    --status-good-wash: rgba(12, 163, 12, 0.16);
+    --status-critical-wash: rgba(208, 59, 59, 0.16);
+    --status-neutral-wash: rgba(137, 135, 129, 0.18);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); }
+  body {
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.45;
+  }
+  h1, h2, h3 { font-family: var(--font-body); text-wrap: balance; margin: 0; }
+  .mono { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+  a { color: var(--accent); }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* ---------- Header ---------- */
+  .masthead { display: flex; align-items: center; gap: 16px; }
+  .masthead svg { flex: none; }
+  .masthead-text h1 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .masthead-text p {
+    margin: 4px 0 0;
+    color: var(--ink-secondary);
+    font-size: 14.5px;
+    max-width: 56ch;
+  }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 20px;
+  }
+  .card > h2 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted);
+    margin-bottom: 14px;
+  }
+  .controls-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 720px) {
+    .controls-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- File loader ---------- */
+  .dropzone {
+    border: 1.5px dashed var(--axis);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    background: transparent;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--accent-wash); }
+  .dropzone:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dropzone svg { flex: none; color: var(--ink-muted); }
+  .dropzone-text strong { display: block; font-size: 14.5px; }
+  .dropzone-text span { display: block; font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+  input[type="file"] { display: none; }
+
+  .file-status {
+    margin-top: 12px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-secondary);
+  }
+  .file-status .name { color: var(--ink); font-weight: 600; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 8px;
+    border-radius: 100px;
+  }
+  .badge.example { background: var(--status-neutral-wash); color: var(--ink-secondary); }
+  .badge.loaded { background: var(--status-good-wash); color: var(--status-good); }
+  .badge.blocked { background: var(--status-critical-wash); color: var(--status-critical); }
+
+  .map-wrap { position: relative; }
+  #leafletMapDiv {
+    height: 440px;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--grid);
+  }
+  #leafletMapDiv .leaflet-control-attribution { font-size: 11px; }
+  .map-key-placeholder {
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    color: var(--ink-muted);
+    font-size: 13px;
+    background: var(--grid);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  /* Scoped to :not([hidden]) rather than an unconditional display:flex -
+     an unconditional author display would win the cascade over the
+     browser's own (non-!important, outside the artifact viewer) default
+     [hidden]{display:none}, leaving this stuck visible. */
+  .map-key-placeholder:not([hidden]) { display: flex; }
+
+  .route-stats { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .route-stats-block { margin-bottom: 16px; }
+  .route-stats-block:last-child { margin-bottom: 0; }
+  .route-stats-heading {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin: 0 0 8px;
+  }
+  .route-stats-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--grid); margin-bottom: 10px; }
+  .route-stats-bar-seg { height: 100%; }
+  .route-stats-bar-seg.veryeasy { background-color: var(--status-good-strong); }
+  .route-stats-bar-seg.easy { background-color: var(--status-good); }
+  .route-stats-bar-seg.neutral { background-color: var(--status-neutral); }
+  .route-stats-bar-seg.hard { background-color: var(--status-critical); }
+  .route-stats-bar-seg.veryhard { background-color: var(--status-critical-strong); }
+  .route-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; }
+  .route-stats-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--ink-secondary);
+    font-family: var(--font-display);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .route-stats-swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  .route-stats-swatch.veryeasy { background-color: var(--status-good-strong); }
+  .route-stats-swatch.easy { background-color: var(--status-good); }
+  .route-stats-swatch.hard { background-color: var(--status-critical); }
+  .route-stats-swatch.veryhard { background-color: var(--status-critical-strong); }
+  .route-stats-swatch.neutral { background-color: var(--status-neutral); }
+  .error-text {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--status-critical);
+    display: none;
+  }
+  .error-text.show { display: block; }
+
+  /* ---------- Wind control ---------- */
+  .wind-control { display: flex; gap: 18px; align-items: center; }
+  .compass-dial {
+    position: relative;
+    width: 158px;
+    height: 158px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel-raised);
+    flex: none;
+  }
+  .compass-dial::before {
+    content: "";
+    position: absolute;
+    inset: 22px;
+    border-radius: 50%;
+    border: 1px dashed var(--grid);
+  }
+  .compass-tick {
+    position: absolute;
+    top: 50%; left: 50%;
+    font-family: var(--font-display);
+    font-size: 9.5px;
+    color: var(--ink-muted);
+    transform: rotate(var(--ang)) translate(0, -74px) rotate(calc(-1 * var(--ang)));
+    pointer-events: none;
+  }
+  .compass-point {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 24px; height: 24px;
+    margin: -12px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--ink-secondary);
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transform: rotate(var(--ang)) translate(0, -58px) rotate(calc(-1 * var(--ang)));
+    transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+  }
+  .compass-point:hover { background: var(--accent-wash); color: var(--accent); }
+  .compass-point:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .compass-point.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+    transform: rotate(var(--ang)) translate(0, -58px) rotate(calc(-1 * var(--ang))) scale(1.08);
+  }
+  .compass-arrow {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 2px; height: 46px;
+    margin-left: -1px; margin-top: -46px;
+    transform-origin: 50% 100%;
+    background: linear-gradient(to top, var(--accent), transparent);
+    transition: transform 0.18s ease;
+    pointer-events: none;
+  }
+  .compass-arrow::after {
+    content: "";
+    position: absolute;
+    top: -1px; left: 50%;
+    width: 0; height: 0;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 6px solid var(--accent);
+  }
+  .compass-readout {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .compass-readout .deg { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+  .compass-readout .code { font-size: 11px; color: var(--ink-muted); letter-spacing: 0.04em; }
+
+  .wind-fields { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; }
+  .field label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+    margin-bottom: 5px;
+  }
+  .field input[type="text"], .field input[type="number"] {
+    width: 100%;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 9px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field-hint { font-size: 11.5px; color: var(--ink-muted); margin-top: 4px; }
+
+  details.advanced { margin-top: 4px; }
+  details.advanced summary {
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--ink-secondary);
+    font-weight: 600;
+  }
+  .two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two-col-grid select {
+    width: 100%;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 9px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .advanced-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+    max-width: 220px;
+  }
+
+  /* ---------- Stat tiles ---------- */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  @media (max-width: 720px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-tile { background: var(--panel); padding: 16px 18px; }
+  .stat-tile .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }
+  .stat-tile .value {
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .stat-tile .sub { font-size: 12px; color: var(--ink-secondary); margin-top: 3px; }
+  .stat-tile .sub .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
+
+  .verdict-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+  }
+  .verdict-banner svg { flex: none; }
+  .verdict-banner.fwd { background: var(--accent-wash); color: var(--ink); }
+  .verdict-banner.rev { background: var(--series-reverse-wash); color: var(--ink); }
+  .verdict-banner.tie { background: var(--status-neutral-wash); color: var(--ink); }
+
+  .method-note { font-size: 12.5px; color: var(--ink-muted); margin: 2px 2px 0; max-width: 72ch; }
+
+  /* ---------- Charts ---------- */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 820px) { .chart-grid { grid-template-columns: 1fr; } }
+  /* Direct-child selector only: a bare "svg" descendant selector here also
+     matches Leaflet's tiny internal attribution-flag SVG (buried deep
+     inside #leafletMapDiv), blowing a 12x8 icon up to fill the card. */
+  .chart-card > svg { width: 100%; height: auto; display: block; }
+  .chart-card h2 { margin-bottom: 4px; }
+  .chart-caption { font-size: 12.5px; color: var(--ink-secondary); margin: 0 0 12px; }
+
+  .legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-secondary); }
+  .legend-line { width: 16px; height: 2px; border-radius: 2px; flex: none; }
+
+  .stroke-easy { stroke: var(--status-good); }
+  .stroke-hard { stroke: var(--status-critical); }
+  .stroke-neutral { stroke: var(--status-neutral); }
+  .fill-easy { fill: var(--status-good); }
+  .fill-hard { fill: var(--status-critical); }
+  .fill-neutral { fill: var(--status-neutral); }
+  .stroke-forward { stroke: var(--accent); }
+  .stroke-reverse { stroke: var(--series-reverse); }
+  .fill-forward { fill: var(--accent); }
+  .fill-reverse { fill: var(--series-reverse); }
+  .chart-ink { fill: var(--ink-secondary); }
+  .chart-muted { fill: var(--ink-muted); }
+  .chart-grid-line { stroke: var(--grid); }
+  .chart-axis-line { stroke: var(--axis); }
+
+  .sweep-callout { font-size: 12.5px; color: var(--ink-secondary); margin-top: 10px; line-height: 1.5; }
+  .sweep-callout b { color: var(--ink); }
+
+  details.table-toggle { margin-top: 10px; }
+  details.table-toggle summary { cursor: pointer; font-size: 12.5px; color: var(--accent); font-weight: 600; }
+  .sweep-table-wrap { overflow-x: auto; margin-top: 10px; }
+  table.sweep-table { width: 100%; border-collapse: collapse; font-family: var(--font-display); font-size: 12px; }
+  table.sweep-table th, table.sweep-table td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.sweep-table th:first-child, table.sweep-table td:first-child { text-align: left; }
+  table.sweep-table th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  table.sweep-table tr.current-row td { background: var(--accent-wash); color: var(--ink); font-weight: 600; }
+  table.sweep-table tr.current-row td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+  table.sweep-table td.best-cell { box-shadow: inset 0 0 0 1.5px var(--status-good); color: var(--status-good); font-weight: 700; border-radius: 4px; }
+
+  /* ---------- Last-50% comparison ---------- */
+  .half-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .half-grid { grid-template-columns: 1fr; } }
+  .half-card {
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 15px 16px;
+  }
+  .half-card .half-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin-bottom: 11px;
+  }
+  .half-multiplier { font-family: var(--font-display); font-size: 21px; font-weight: 700; margin-bottom: 9px; }
+  .half-multiplier.good { color: var(--status-good); }
+  .half-multiplier.bad { color: var(--status-critical); }
+  .half-multiplier .unit { font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--ink-secondary); margin-left: 6px; }
+  .half-bar { position: relative; height: 9px; border-radius: 5px; overflow: hidden; background: var(--grid); margin-bottom: 10px; }
+  .half-bar-fill { position: absolute; inset: 0 auto 0 0; height: 100%; border-radius: 5px; }
+  .half-bar-fill.good { background: var(--status-good); }
+  .half-bar-fill.bad { background: var(--status-critical); }
+  .half-bar-ref { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink-muted); }
+  .half-net { font-size: 12.5px; color: var(--ink-secondary); }
+  .half-net b { color: var(--ink); font-family: var(--font-display); }
+  .half-verdict { font-size: 13px; color: var(--ink-secondary); margin-top: 14px; }
+  .half-verdict b { color: var(--ink); }
+
+  /* ---------- Diagnostics ---------- */
+  .diag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 720px) { .diag-grid { grid-template-columns: 1fr; } }
+  .diag-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .diag-chip {
+    flex: none;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 100px;
+    margin-top: 1px;
+  }
+  .diag-chip.ok { background: var(--status-good-wash); color: var(--status-good); }
+  .diag-chip.warn { background: var(--status-critical-wash); color: var(--status-critical); }
+  .diag-item .diag-text { font-size: 12.5px; color: var(--ink-secondary); }
+  .diag-item .diag-text b { color: var(--ink); font-family: var(--font-display); font-weight: 600; }
+
+  /* ---------- Report console ---------- */
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .card-head h2 { margin-bottom: 0; }
+  .copy-btn {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-secondary);
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  pre.report {
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--ink-secondary);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  pre.report .hl { color: var(--ink); font-weight: 600; }
+
+  footer {
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-align: center;
+    padding-top: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .compass-arrow, .compass-point, .dropzone { transition: none; }
+  }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Leaflet 1.9.4 CSS, inlined (external stylesheets other than Google Fonts are not permitted) */
+/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+	}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+
+</style>
+
+<div class="page">
+
+  <div class="masthead">
+    <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+      <circle cx="23" cy="23" r="21" fill="none" stroke="var(--axis)" stroke-width="1.2"/>
+      <line x1="23" y1="4" x2="23" y2="12" stroke="var(--ink-muted)" stroke-width="1.4"/>
+      <line x1="23" y1="34" x2="23" y2="42" stroke="var(--ink-muted)" stroke-width="1.4"/>
+      <line x1="4" y1="23" x2="12" y2="23" stroke="var(--ink-muted)" stroke-width="1.4"/>
+      <line x1="34" y1="23" x2="42" y2="23" stroke="var(--ink-muted)" stroke-width="1.4"/>
+      <path d="M23 8 L27 23 L23 20 L19 23 Z" fill="var(--accent)"/>
+    </svg>
+    <div class="masthead-text">
+      <h1>Tailwind Tally</h1>
+      <p>Upload a ride's GPX track and a wind direction to see how many kilometres are tailwind ("easy") versus headwind ("hard") &mdash; ridden as recorded, and in reverse.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Load a route</h2>
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a GPX file">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 3v12M12 3l-4 4M12 3l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <div class="dropzone-text">
+        <strong>Drop a .gpx file here, or click to browse</strong>
+        <span>Parsed entirely in your browser &mdash; the file is never uploaded anywhere.</span>
+      </div>
+      <input type="file" id="fileInput" accept=".gpx,application/gpx+xml,text/xml,application/xml">
+    </div>
+    <div class="file-status">
+      <span><span class="name" id="fileName">Sample loop</span> &middot; <span id="filePoints">&mdash;</span></span>
+      <span class="badge example" id="fileBadge">Example route</span>
+    </div>
+    <p class="error-text" id="fileError"></p>
+  </div>
+
+  <div class="card">
+    <h2>Wind</h2>
+    <div class="wind-control">
+      <div class="compass-dial" id="compassDial">
+        <div class="compass-arrow" id="compassArrow"></div>
+        <div class="compass-readout">
+          <span class="deg mono" id="readoutDeg">225&deg;</span>
+          <span class="code" id="readoutCode">SW</span>
+        </div>
+      </div>
+      <div class="wind-fields">
+        <div class="field">
+          <label for="windInput">Wind from</label>
+          <input type="text" id="windInput" value="SW" autocomplete="off" spellcheck="false">
+          <p class="field-hint">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</p>
+        </div>
+        <div class="two-col-grid">
+          <div class="field">
+            <label for="windSpeedInput">Wind speed (Beaufort)</label>
+            <select id="windSpeedInput"></select>
+          </div>
+          <div class="field">
+            <label for="cruiseSpeedInput">Cruising speed (km/h)</label>
+            <input type="number" id="cruiseSpeedInput" value="25" min="1" max="60" step="1">
+          </div>
+        </div>
+        <p class="field-hint">Wind speed and cruising speed feed the last-50% wind-effort estimate below.</p>
+        <div class="field">
+          <label for="neutralInput">Neutral band (&deg;)</label>
+          <input type="number" id="neutralInput" value="0" min="0" max="45" step="1">
+          <p class="field-hint">Total width of the neutral band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Neutral segments count as neither easy nor hard.</p>
+        </div>
+        <div class="field">
+          <label for="veryInput">Very easy / very hard band (&deg;)</label>
+          <input type="number" id="veryInput" value="40" min="0" max="90" step="1">
+          <p class="field-hint">Total width of the "very" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) — e.g. 40&deg; means the closest 20&deg; to either counts as very easy/very hard. Used by the Route map and its calculations below, not the rest of the page.</p>
+        </div>
+        <div class="field">
+          <label for="tileProxyInput">Tile proxy URL</label>
+          <input type="text" id="tileProxyInput" placeholder="https://your-service.onrender.com" autocomplete="off" spellcheck="false">
+          <p class="field-hint">The tile-proxy backend's URL (github.com/ubrowz/tailwind-tally) &mdash; it holds the MapTiler key server-side so this page never needs one. Kept only in your browser's local storage. Feeds the Route map below. On Render's free tier the first request after a while can take 30&ndash;60s while the service wakes up &mdash; that's expected.</p>
+        </div>
+        <details class="advanced">
+          <summary>Advanced</summary>
+          <div class="advanced-grid">
+            <div class="field">
+              <label for="resampleInput">Resample spacing (m)</label>
+              <input type="number" id="resampleInput" value="25" min="0" step="5">
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-row" id="statRow"></div>
+  <div class="verdict-banner" id="verdictBanner"></div>
+  <p class="method-note">Easy/hard here is a plain distance count: every metre where the wind has any tailwind component at all counts as easy, and any headwind component counts as hard &mdash; regardless of how strong that push or drag actually is.</p>
+
+  <div class="chart-grid">
+    <div class="card chart-card">
+      <div class="card-head">
+        <h2>Route</h2>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="badge example" id="mapStatusBadge">No API key</span>
+          <button class="copy-btn" id="saveRouteBtn">Save image</button>
+        </div>
+      </div>
+      <p class="chart-caption" id="planCaption"></p>
+      <div class="map-wrap">
+        <div id="leafletMapDiv"></div>
+        <div id="mapKeyPlaceholder" class="map-key-placeholder">Enter your tile proxy URL (in the Wind card above) to load the live map.</div>
+      </div>
+      <div class="route-stats" id="routeStats"></div>
+    </div>
+    <div class="card chart-card">
+      <div class="card-head">
+        <h2>Wind-direction sweep</h2>
+        <button class="copy-btn" id="saveSweepBtn">Save image</button>
+      </div>
+      <p class="chart-caption">Easy-fraction if the wind came from every direction, 0&ndash;359&deg;.</p>
+      <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, forward and reverse"></svg>
+      <div class="legend-row">
+        <div class="legend-item"><span class="legend-line stroke-forward" style="background:var(--accent)"></span>Forward</div>
+        <div class="legend-item"><span class="legend-line stroke-reverse" style="background:var(--series-reverse)"></span>Reverse</div>
+      </div>
+      <p class="sweep-callout" id="sweepCallout"></p>
+      <details class="table-toggle">
+        <summary>View sweep as a table</summary>
+        <div class="sweep-table-wrap">
+          <table class="sweep-table" id="sweepTable">
+            <thead><tr><th>From</th><th>Bearing</th><th>Forward easy</th><th>Reverse easy</th><th>Diff.</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Last 50% of the round trip</h2>
+    <p class="chart-caption" id="halfCaption"></p>
+    <div class="half-grid" id="halfGrid"></div>
+    <p class="half-verdict" id="halfVerdict"></p>
+  </div>
+
+  <div class="card">
+    <h2>Outcome by compass direction</h2>
+    <p class="chart-caption">All 16 compass directions, recomputed for the current file, resample spacing, neutral band, wind speed and cruising speed. The ringed cell in each outcome column is that column's best value (lowest for the effort columns); the tinted row is the wind direction selected above.</p>
+    <div class="sweep-table-wrap">
+      <table class="sweep-table" id="compassTable">
+        <thead>
+          <tr>
+            <th>From</th><th>Bearing</th><th>Forward easy</th><th>Reverse easy</th><th>Diff.</th>
+            <th>Last 50% effort &mdash; fwd</th><th>Last 50% effort &mdash; rev</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Self-checks</h2>
+    <div class="diag-grid" id="diagGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Full report</h2>
+      <button class="copy-btn" id="copyBtn">Copy</button>
+    </div>
+    <pre class="report" id="reportText"></pre>
+  </div>
+
+  <footer>
+    Geometry: equirectangular projection about the route centroid, resampled to fixed arc-length spacing before heading is measured. Elevation, gradient and speed are out of scope.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Wind convention: wind_from_deg is degrees clockwise from north, the
+  // direction the wind blows FROM. Returns a unit (east, north) vector
+  // pointing in the direction the wind blows TOWARD.
+  //   270 (from the west)  -> blows toward east  -> (1, 0)
+  //   0   (from the north) -> blows toward south -> (0, -1)
+  // ---------------------------------------------------------------------
+  function windFromToTowardVector(windFromDeg) {
+    var towardDeg = (windFromDeg + 180) % 360;
+    var mathAngle = (90 - towardDeg) * Math.PI / 180;
+    return [Math.cos(mathAngle), Math.sin(mathAngle)];
+  }
+
+  var COMPASS_16 = [
+    ["N", 0], ["NNE", 22.5], ["NE", 45], ["ENE", 67.5],
+    ["E", 90], ["ESE", 112.5], ["SE", 135], ["SSE", 157.5],
+    ["S", 180], ["SSW", 202.5], ["SW", 225], ["WSW", 247.5],
+    ["W", 270], ["WNW", 292.5], ["NW", 315], ["NNW", 337.5]
+  ];
+  var COMPASS_MAP = {};
+  COMPASS_16.forEach(function (p) { COMPASS_MAP[p[0]] = p[1]; });
+
+  function parseWindFrom(text) {
+    var t = String(text).trim();
+    if (t === "") throw new Error("Enter a wind direction.");
+    if (/^-?\d+(\.\d+)?$/.test(t)) {
+      var n = parseFloat(t);
+      return ((n % 360) + 360) % 360;
+    }
+    var key = t.toUpperCase();
+    if (COMPASS_MAP.hasOwnProperty(key)) return COMPASS_MAP[key];
+    throw new Error("'" + text + "' isn't a compass code (N, NE, NNE, ...) or a number of degrees.");
+  }
+
+  function degreesToCompass16(deg) {
+    var idx = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16;
+    return COMPASS_16[idx][0];
+  }
+
+  // ---------------------------------------------------------------------
+  // GPX parsing
+  // ---------------------------------------------------------------------
+  function parseGpxPoints(xmlText) {
+    var doc = new DOMParser().parseFromString(xmlText, "application/xml");
+    if (doc.querySelector("parsererror")) {
+      throw new Error("That file doesn't look like valid GPX/XML.");
+    }
+    var points = [];
+    doc.querySelectorAll("trk").forEach(function (trk) {
+      trk.querySelectorAll("trkseg").forEach(function (seg) {
+        seg.querySelectorAll("trkpt").forEach(function (p) {
+          points.push([parseFloat(p.getAttribute("lat")), parseFloat(p.getAttribute("lon"))]);
+        });
+      });
+    });
+    doc.querySelectorAll("rte").forEach(function (rte) {
+      rte.querySelectorAll("rtept").forEach(function (p) {
+        points.push([parseFloat(p.getAttribute("lat")), parseFloat(p.getAttribute("lon"))]);
+      });
+    });
+    points = points.filter(function (p) { return isFinite(p[0]) && isFinite(p[1]); });
+    if (points.length < 2) {
+      throw new Error("This GPX file has " + points.length + " usable point(s); need at least 2 to form a route.");
+    }
+    return points;
+  }
+
+  // ---------------------------------------------------------------------
+  // Geometry: equirectangular ENU projection about the centroid
+  // ---------------------------------------------------------------------
+  var EARTH_RADIUS_M = 6371000;
+
+  function projectToEnu(points) {
+    var n = points.length;
+    var lat0 = 0, lon0 = 0;
+    for (var i = 0; i < n; i++) { lat0 += points[i][0]; lon0 += points[i][1]; }
+    lat0 = (lat0 / n) * Math.PI / 180;
+    lon0 = (lon0 / n) * Math.PI / 180;
+    var cosLat0 = Math.cos(lat0);
+    var xy = points.map(function (p) {
+      var east = ((p[1] * Math.PI / 180) - lon0) * cosLat0 * EARTH_RADIUS_M;
+      var north = ((p[0] * Math.PI / 180) - lat0) * EARTH_RADIUS_M;
+      return [east, north];
+    });
+    return { xy: xy, lat0: lat0, lon0: lon0, cosLat0: cosLat0 };
+  }
+
+  // Inverse of projectToEnu's equirectangular projection, for putting
+  // resampled ENU points back onto a real lat/lon basemap.
+  function enuToLatLon(xy, lat0, lon0, cosLat0) {
+    return xy.map(function (p) {
+      var lat = (lat0 + p[1] / EARTH_RADIUS_M) * 180 / Math.PI;
+      var lon = (lon0 + p[0] / (cosLat0 * EARTH_RADIUS_M)) * 180 / Math.PI;
+      return [lat, lon];
+    });
+  }
+
+  function resamplePolyline(xy, spacingM) {
+    if (spacingM <= 0) return xy.map(function (p) { return p.slice(); });
+    var n = xy.length;
+    var cum = new Array(n); cum[0] = 0;
+    for (var i = 1; i < n; i++) {
+      cum[i] = cum[i - 1] + Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]);
+    }
+    var total = cum[n - 1];
+    if (total <= 0) return xy.map(function (p) { return p.slice(); });
+    var segments = Math.max(1, Math.round(total / spacingM));
+    var out = [];
+    var idx = 0;
+    for (var k = 0; k <= segments; k++) {
+      var target = total * k / segments;
+      while (idx < n - 2 && cum[idx + 1] < target) idx++;
+      var segLen = cum[idx + 1] - cum[idx];
+      var t = segLen > 0 ? (target - cum[idx]) / segLen : 0;
+      out.push([
+        xy[idx][0] + t * (xy[idx + 1][0] - xy[idx][0]),
+        xy[idx][1] + t * (xy[idx + 1][1] - xy[idx][1])
+      ]);
+    }
+    return out;
+  }
+
+  function segmentLengthsAndHeadings(xy) {
+    var lengths = [], headings = [];
+    for (var i = 0; i < xy.length - 1; i++) {
+      var dx = xy[i + 1][0] - xy[i][0], dy = xy[i + 1][1] - xy[i][1];
+      var len = Math.hypot(dx, dy);
+      lengths.push(len);
+      headings.push(len > 0 ? [dx / len, dy / len] : [0, 0]);
+    }
+    return { lengths: lengths, headings: headings };
+  }
+
+  // Exact cosphi == 0 is always neutral (regardless of neutralDeg), so the
+  // easy/hard split stays symmetric under heading reversal (cosphi -> -cosphi).
+  // neutralDeg is the TOTAL width of the neutral band, centered on
+  // perpendicular (90 deg) - i.e. neutralDeg/2 on either side of crosswind.
+  function classifySegments(cosphi, neutralDeg) {
+    return cosphi.map(function (c) {
+      var angle = Math.acos(Math.max(-1, Math.min(1, c))) * 180 / Math.PI;
+      if (c === 0 || Math.abs(angle - 90) < neutralDeg / 2) return "neutral";
+      return c > 0 ? "easy" : "hard";
+    });
+  }
+
+  function directionStats(lengths, cosphi, neutralDeg) {
+    var cats = classifySegments(cosphi, neutralDeg);
+    var easy = 0, hard = 0, neutral = 0, total = 0;
+    for (var i = 0; i < lengths.length; i++) {
+      total += lengths[i];
+      if (cats[i] === "easy") easy += lengths[i];
+      else if (cats[i] === "hard") hard += lengths[i];
+      else neutral += lengths[i];
+    }
+    return { easy: easy, hard: hard, neutral: neutral, easyPct: total > 0 ? 100 * easy / total : 0, categories: cats };
+  }
+
+  function balanceCheck(lengths, headings, windVec, xy) {
+    var s = 0;
+    for (var i = 0; i < lengths.length; i++) {
+      s += lengths[i] * (headings[i][0] * windVec[0] + headings[i][1] * windVec[1]);
+    }
+    var last = xy[xy.length - 1], first = xy[0];
+    var closureVec = [last[0] - first[0], last[1] - first[1]];
+    var closureGap = Math.hypot(closureVec[0], closureVec[1]);
+    var expected = windVec[0] * closureVec[0] + windVec[1] * closureVec[1];
+    var tolerance = Math.max(closureGap, 1e-6) * 1.01;
+    return { sum: s, expected: expected, closureGap: closureGap, tolerance: tolerance, ok: Math.abs(s) <= tolerance };
+  }
+
+  function sweepWindDirections(lengths, headings, neutralDeg) {
+    var total = 0;
+    for (var i = 0; i < lengths.length; i++) total += lengths[i];
+    var easyFwd = new Array(360), easyRev = new Array(360), asym = new Array(360);
+    for (var d = 0; d < 360; d++) {
+      var w = windFromToTowardVector(d);
+      var eF = 0, eR = 0;
+      for (var j = 0; j < lengths.length; j++) {
+        var c = headings[j][0] * w[0] + headings[j][1] * w[1];
+        if (c === 0) continue;
+        var angle = Math.acos(Math.max(-1, Math.min(1, c))) * 180 / Math.PI;
+        if (Math.abs(angle - 90) < neutralDeg / 2) continue;
+        if (c > 0) eF += lengths[j]; else eR += lengths[j];
+      }
+      easyFwd[d] = total > 0 ? eF / total : 0;
+      easyRev[d] = total > 0 ? eR / total : 0;
+      asym[d] = Math.abs(easyFwd[d] - easyRev[d]);
+    }
+    var maxI = 0, minI = 0;
+    for (var k = 1; k < 360; k++) {
+      if (asym[k] > asym[maxI]) maxI = k;
+      if (asym[k] < asym[minI]) minI = k;
+    }
+    return { easyFwd: easyFwd, easyRev: easyRev, asym: asym, maxI: maxI, minI: minI };
+  }
+
+  // Index (in file order) where cumulative distance first reaches half the
+  // total length. Segments [0, idx) are the route's first half by distance,
+  // [idx, n) its second half.
+  function splitIndexByDistance(lengths) {
+    var total = 0;
+    for (var i = 0; i < lengths.length; i++) total += lengths[i];
+    var half = total / 2;
+    var running = 0;
+    for (var j = 0; j < lengths.length; j++) {
+      running += lengths[j];
+      if (running >= half) return { idx: j + 1, half: half, total: total };
+    }
+    return { idx: lengths.length, half: half, total: total };
+  }
+
+  // Plain distance classification (easy/hard/neutral km) over segments
+  // [start, end) - the same method as the main forward/reverse split,
+  // just restricted to a sub-range.
+  function rangeStats(lengths, cosphi, neutralDeg, start, end) {
+    var easy = 0, hard = 0, neutral = 0, dist = 0;
+    for (var i = start; i < end; i++) {
+      dist += lengths[i];
+      var c = cosphi[i];
+      var angle = Math.acos(Math.max(-1, Math.min(1, c))) * 180 / Math.PI;
+      if (c === 0 || Math.abs(angle - 90) < neutralDeg / 2) { neutral += lengths[i]; continue; }
+      if (c > 0) easy += lengths[i]; else hard += lengths[i];
+    }
+    return { easy: easy, hard: hard, neutral: neutral, dist: dist };
+  }
+
+  // The last 50% of a ROUND TRIP ridden in reverse is physically the
+  // route's first half by distance (in file order), traversed with every
+  // heading flipped - not its second half. A reverse ride starts at the
+  // file's last point and works back to the first, so its closing stretch
+  // covers the same ground as the outbound ride's opening stretch.
+  function lastHalfStats(lengths, cosphiFwd, cosphiRev, neutralDeg, split) {
+    return {
+      splitKm: split.half / 1000,
+      forward: rangeStats(lengths, cosphiFwd, neutralDeg, split.idx, lengths.length),
+      reverse: rangeStats(lengths, cosphiRev, neutralDeg, 0, split.idx)
+    };
+  }
+
+  // Five-way classification (Route map + its calculations only - every
+  // other metric on the page stays on the plain easy/hard/neutral split).
+  // "very" is a total band width centered on dead-on tailwind (angle=0)
+  // and dead-on headwind (angle=180), same total-width-centered-on-a-
+  // direction convention as the neutral band. Neutral is checked first,
+  // so if the bands are set wide enough to overlap, neutral wins.
+  function classifyFiveWay(cosphi, neutralDeg, veryDeg) {
+    return cosphi.map(function (c) {
+      var angle = Math.acos(Math.max(-1, Math.min(1, c))) * 180 / Math.PI;
+      if (c === 0 || Math.abs(angle - 90) < neutralDeg / 2) return "neutral";
+      if (angle < veryDeg / 2) return "veryeasy";
+      if (angle > 180 - veryDeg / 2) return "veryhard";
+      return c > 0 ? "easy" : "hard";
+    });
+  }
+
+  function rangeStatsFiveWay(lengths, cosphi, neutralDeg, veryDeg, start, end) {
+    var out = { veryeasy: 0, easy: 0, neutral: 0, hard: 0, veryhard: 0, dist: 0 };
+    for (var i = start; i < end; i++) {
+      out.dist += lengths[i];
+      var c = cosphi[i];
+      var angle = Math.acos(Math.max(-1, Math.min(1, c))) * 180 / Math.PI;
+      var cat;
+      if (c === 0 || Math.abs(angle - 90) < neutralDeg / 2) cat = "neutral";
+      else if (angle < veryDeg / 2) cat = "veryeasy";
+      else if (angle > 180 - veryDeg / 2) cat = "veryhard";
+      else cat = c > 0 ? "easy" : "hard";
+      out[cat] += lengths[i];
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------------
+  // Wind-effort model: aerodynamic drag scales with the SQUARE of relative
+  // airspeed, not linearly with the tailwind/headwind component - so a
+  // headwind costs more speed than an equal tailwind gives back, and even
+  // a pure crosswind adds some drag (it still lengthens the relative-wind
+  // vector). Relative airspeed comes from the law of cosines on the
+  // rider's ground-velocity vector and the wind's velocity vector:
+  //   relSpeed^2 = v^2 + w^2 - 2*v*w*cosphi
+  // (cosphi = tailwind component, so cosphi=1 gives |v-w|, cosphi=-1
+  // gives v+w, cosphi=0 gives sqrt(v^2+w^2) - all as expected physically).
+  // Reported as a power MULTIPLIER relative to a calm day at the same
+  // cruising speed (relSpeed=v), since that ratio needs no drag
+  // coefficient or air density to be meaningful - only their relative
+  // sizes matter, and those constants cancel out of the ratio.
+  // Assumes a constant chosen cruising speed regardless of wind; ignores
+  // rolling resistance, gradient and everything else that isn't wind.
+  // ---------------------------------------------------------------------
+  var BEAUFORT_KMH = [0, 3, 8.5, 15.5, 24, 33.5, 44, 55.5, 68, 81.5, 95.5, 110, 120];
+  var BEAUFORT_LABELS = [
+    "Calm", "Light air", "Light breeze", "Gentle breeze", "Moderate breeze", "Fresh breeze",
+    "Strong breeze", "Near gale", "Gale", "Strong gale", "Storm", "Violent storm", "Hurricane force"
+  ];
+  function beaufortToKmh(n) { return BEAUFORT_KMH[Math.max(0, Math.min(12, Math.round(n)))]; }
+
+  function windEffortStats(lengths, cosphi, vMs, wMs, start, end) {
+    var sumWeighted = 0, dist = 0;
+    for (var i = start; i < end; i++) {
+      var rel2 = vMs * vMs + wMs * wMs - 2 * vMs * wMs * cosphi[i];
+      sumWeighted += Math.max(0, rel2) * lengths[i];
+      dist += lengths[i];
+    }
+    var avgRel2 = dist > 0 ? sumWeighted / dist : vMs * vMs;
+    var avgRelSpeedMs = Math.sqrt(Math.max(0, avgRel2));
+    return {
+      avgRelSpeedMs: avgRelSpeedMs,
+      avgRelSpeedKmh: avgRelSpeedMs * 3.6,
+      powerMultiplier: vMs > 0 ? avgRel2 / (vMs * vMs) : 1,
+      dist: dist
+    };
+  }
+
+  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh) {
+    var proj = projectToEnu(points);
+    var xy = resamplePolyline(proj.xy, resampleM);
+    var latLon = enuToLatLon(xy, proj.lat0, proj.lon0, proj.cosLat0);
+    var lh = segmentLengthsAndHeadings(xy);
+    var lengths = lh.lengths, headings = lh.headings;
+    var totalLength = 0;
+    for (var i = 0; i < lengths.length; i++) totalLength += lengths[i];
+    var last = xy[xy.length - 1], first = xy[0];
+    var closureGap = Math.hypot(last[0] - first[0], last[1] - first[1]);
+    var windVec = windFromToTowardVector(windFromDeg);
+    var cosphiFwd = headings.map(function (h) { return h[0] * windVec[0] + h[1] * windVec[1]; });
+    var fwd = directionStats(lengths, cosphiFwd, neutralDeg);
+    var cosphiRev = cosphiFwd.map(function (c) { return -c; });
+    var rev = directionStats(lengths, cosphiRev, neutralDeg);
+    var identityGap = Math.abs(rev.easy - (totalLength - fwd.easy));
+    var identityOk = identityGap <= fwd.neutral + 1e-6;
+    var balance = balanceCheck(lengths, headings, windVec, xy);
+    var sweep = sweepWindDirections(lengths, headings, neutralDeg);
+    var split = splitIndexByDistance(lengths);
+    var lastHalf = lastHalfStats(lengths, cosphiFwd, cosphiRev, neutralDeg, split);
+
+    var windSpeedKmh = beaufortToKmh(windSpeedBeaufort);
+    var vMs = cruiseSpeedKmh / 3.6, wMs = windSpeedKmh / 3.6;
+    var effort = {
+      windSpeedBeaufort: windSpeedBeaufort, windSpeedKmh: windSpeedKmh, cruiseSpeedKmh: cruiseSpeedKmh,
+      full: {
+        forward: windEffortStats(lengths, cosphiFwd, vMs, wMs, 0, lengths.length),
+        reverse: windEffortStats(lengths, cosphiRev, vMs, wMs, 0, lengths.length)
+      },
+      lastHalf: {
+        forward: windEffortStats(lengths, cosphiFwd, vMs, wMs, split.idx, lengths.length),
+        reverse: windEffortStats(lengths, cosphiRev, vMs, wMs, 0, split.idx)
+      }
+    };
+
+    // Five-way (very easy/easy/neutral/hard/very hard) breakdown for the
+    // Route map and its calculations only.
+    var fiveWay = {
+      categories: classifyFiveWay(cosphiFwd, neutralDeg, veryDeg),
+      full: rangeStatsFiveWay(lengths, cosphiFwd, neutralDeg, veryDeg, 0, lengths.length),
+      lastHalfForward: rangeStatsFiveWay(lengths, cosphiFwd, neutralDeg, veryDeg, split.idx, lengths.length),
+      lastHalfReverse: rangeStatsFiveWay(lengths, cosphiRev, neutralDeg, veryDeg, 0, split.idx)
+    };
+
+    return {
+      rawCount: points.length, xy: xy, latLon: latLon, lengths: lengths, segCount: lengths.length,
+      totalLength: totalLength, closureGap: closureGap,
+      windFromDeg: windFromDeg, resampleM: resampleM, neutralDeg: neutralDeg, veryDeg: veryDeg,
+      fwd: fwd, rev: rev, identityGap: identityGap, identityOk: identityOk,
+      balance: balance, sweep: sweep, lastHalf: lastHalf, effort: effort, fiveWay: fiveWay
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // Example route: a deterministic synthetic loop, so the page shows a
+  // real, computed result before anyone uploads a file.
+  // ---------------------------------------------------------------------
+  function buildExampleRoute() {
+    var lat0 = 51.30, lon0 = 5.62;
+    var lat0r = lat0 * Math.PI / 180;
+    var points = [];
+    var n = 90;
+    for (var i = 0; i <= n; i++) {
+      var ang = 2 * Math.PI * i / n;
+      var r = 3200 * (1 + 0.32 * Math.sin(3 * ang) + 0.14 * Math.cos(5 * ang + 0.6));
+      var east = r * Math.cos(ang), north = r * Math.sin(ang);
+      var lat = lat0 + (north / EARTH_RADIUS_M) * (180 / Math.PI);
+      var lon = lon0 + (east / (EARTH_RADIUS_M * Math.cos(lat0r))) * (180 / Math.PI);
+      points.push([lat, lon]);
+    }
+    return points;
+  }
+
+  // ---------------------------------------------------------------------
+  // Rendering helpers
+  // ---------------------------------------------------------------------
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    var e = document.createElementNS(SVG_NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function fmt(x, d) { return x.toFixed(d === undefined ? 2 : d); }
+
+  function niceScaleLength(targetMeters) {
+    var candidates = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000, 25000, 50000, 100000];
+    var best = candidates[0];
+    candidates.forEach(function (c) { if (Math.abs(c - targetMeters) < Math.abs(best - targetMeters)) best = c; });
+    return best;
+  }
+
+
+  function renderPolarSweep(result) {
+    var svg = document.getElementById("polarSvg");
+    svg.innerHTML = "";
+    var W = 480, H = 480, cx = W / 2, cy = H / 2, pad = 54;
+    var Rmax = Math.min(W, H) / 2 - pad;
+
+    var maxVal = 0;
+    for (var i = 0; i < 360; i++) { maxVal = Math.max(maxVal, result.sweep.easyFwd[i], result.sweep.easyRev[i]); }
+    var scaleMax = Math.max(0.3, Math.ceil((maxVal * 1.15) * 10) / 10);
+
+    function toXY(deg, frac) {
+      var rad = deg * Math.PI / 180;
+      var r = (frac / scaleMax) * Rmax;
+      return [cx + r * Math.sin(rad), cy - r * Math.cos(rad)];
+    }
+
+    // radial grid
+    [0.25, 0.5, 0.75, 1].forEach(function (f) {
+      svg.appendChild(el("circle", { cx: cx, cy: cy, r: fmt(f * Rmax), fill: "none", class: "chart-grid-line", "stroke-width": 1 }));
+      var lbl = toXY(45, f * scaleMax);
+      var t = el("text", { x: fmt(lbl[0] + 4), y: fmt(lbl[1]), class: "chart-muted", "font-size": "9.5", "font-family": "var(--font-display)" });
+      t.textContent = Math.round(f * scaleMax * 100) + "%";
+      svg.appendChild(t);
+    });
+    // spokes + cardinal labels
+    [[0, "N"], [90, "E"], [180, "S"], [270, "W"]].forEach(function (pair) {
+      var far = toXY(pair[0], scaleMax);
+      svg.appendChild(el("line", { x1: cx, y1: cy, x2: fmt(far[0]), y2: fmt(far[1]), class: "chart-grid-line", "stroke-width": 1 }));
+      var lp = toXY(pair[0], scaleMax * 1.11);
+      var t = el("text", { x: fmt(lp[0]), y: fmt(lp[1] + 3), "text-anchor": "middle", class: "chart-ink", "font-size": "12", "font-weight": "600", "font-family": "var(--font-display)" });
+      t.textContent = pair[1];
+      svg.appendChild(t);
+    });
+
+    // current selection guide
+    var sel = toXY(result.windFromDeg, scaleMax);
+    svg.appendChild(el("line", { x1: cx, y1: cy, x2: fmt(sel[0]), y2: fmt(sel[1]), stroke: "var(--ink-muted)", "stroke-width": 1, "stroke-dasharray": "2 3" }));
+
+    function pathFor(arr) {
+      var d = "";
+      for (var deg = 0; deg <= 360; deg++) {
+        var p = toXY(deg % 360, arr[deg % 360]);
+        d += (deg === 0 ? "M " : "L ") + fmt(p[0]) + " " + fmt(p[1]) + " ";
+      }
+      return d;
+    }
+    svg.appendChild(el("path", { d: pathFor(result.sweep.easyRev), fill: "none", "stroke-width": 2, class: "stroke-reverse" }));
+    svg.appendChild(el("path", { d: pathFor(result.sweep.easyFwd), fill: "none", "stroke-width": 2, class: "stroke-forward" }));
+  }
+
+  // ---------------------------------------------------------------------
+  // Basemap (Leaflet, tiles via our own tile-proxy backend). Free/keyless
+  // tile CDNs (tried tile.openstreetmap.org, then CARTO's
+  // basemaps.cartocdn.com) both blocked this: they can't distinguish a
+  // legitimate embed from abuse without either a Referer/Origin they
+  // recognize or an API key, and a page opened via file:// sends neither.
+  // A personal MapTiler key fixed that, but a static page can never keep
+  // a client-side key private (anyone can read it from the page source) -
+  // so the real key now lives server-side in a small proxy
+  // (github.com/ubrowz/tailwind-tally, deployed on Render) that this page
+  // calls by URL instead. Only ever initialized once a proxy URL is set;
+  // subsequent renders just update the tile URL (if it changed), the
+  // route layer, and the view. Still requires a live network fetch, which
+  // the claude.ai artifact viewer's sandbox blocks regardless - degrading
+  // to no map there - but works fully when this page is opened directly.
+  // ---------------------------------------------------------------------
+  var leafletMap = null, leafletRouteLayer = null, leafletTileLayer = null, lastResult = null;
+
+  function prefersDarkTheme() {
+    var stamp = document.documentElement.getAttribute("data-theme");
+    if (stamp === "dark") return true;
+    if (stamp === "light") return false;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+
+  // A plain <img src> tile can't tell a real map image apart from a
+  // "successful" HTTP error response that still happens to be a
+  // well-formed PNG (MapTiler returns branded placeholder images - not
+  // broken-image responses - for e.g. a rate-limited or rejected tile
+  // request), so the browser fires the image's load event either way and
+  // Leaflet's own tileerror never sees the failure. Loading tiles via
+  // fetch() instead lets us check the real HTTP status and retry
+  // transient failures (both MapTiler's and our own proxy's CORS are
+  // open, so this is readable cross-origin) rather than leaving a wrong
+  // tile in place.
+  var ProxyTileLayer = L.TileLayer.extend({
+    createTile: function (coords, done) {
+      var tile = document.createElement("img");
+      tile.alt = "";
+      var url = this.getTileUrl(coords);
+      var attemptsLeft = 3;
+      function attempt() {
+        fetch(url, { cache: "no-store" }).then(function (resp) {
+          if (!resp.ok) throw new Error("HTTP " + resp.status);
+          return resp.blob();
+        }).then(function (blob) {
+          var objUrl = URL.createObjectURL(blob);
+          tile.onload = function () { URL.revokeObjectURL(objUrl); done(null, tile); };
+          tile.onerror = function () { URL.revokeObjectURL(objUrl); fail(new Error("decode failed")); };
+          tile.src = objUrl;
+        }).catch(fail);
+      }
+      function fail(err) {
+        attemptsLeft--;
+        if (attemptsLeft > 0) setTimeout(attempt, 500);
+        else done(err, tile);
+      }
+      attempt();
+      return tile;
+    }
+  });
+
+  function renderMap(result) {
+    var badge = document.getElementById("mapStatusBadge");
+    var placeholder = document.getElementById("mapKeyPlaceholder");
+    if (typeof L === "undefined") {
+      if (badge) { badge.textContent = "Map library blocked"; badge.className = "badge blocked"; }
+      return;
+    }
+
+    var proxyBase = (state.tileProxyBase || "").trim().replace(/\/+$/, "");
+    if (!proxyBase) {
+      if (badge) { badge.textContent = "No proxy URL"; badge.className = "badge example"; }
+      if (placeholder) placeholder.hidden = false;
+      return;
+    }
+    if (placeholder) placeholder.hidden = true;
+
+    var style = prefersDarkTheme() ? "dataviz-dark" : "dataviz";
+    var url = proxyBase + "/tiles/" + style + "/{z}/{x}/{y}.png";
+
+    if (!leafletMap) {
+      leafletMap = L.map("leafletMapDiv", { attributionControl: true, scrollWheelZoom: true });
+      leafletTileLayer = new ProxyTileLayer(url, {
+        maxZoom: 20,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors ' +
+          '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener">MapTiler</a>'
+      }).addTo(leafletMap);
+      leafletTileLayer.on("load", function () {
+        if (badge) { badge.textContent = "Live tiles"; badge.className = "badge loaded"; }
+      });
+      leafletTileLayer.on("tileerror", function () {
+        if (badge) { badge.textContent = "Tile error - check proxy URL"; badge.className = "badge blocked"; }
+      });
+      L.control.scale({ metric: true, imperial: false }).addTo(leafletMap);
+      leafletRouteLayer = L.layerGroup().addTo(leafletMap);
+      window.addEventListener("resize", function () { leafletMap.invalidateSize(); });
+    } else if (leafletTileLayer._proxiedUrl !== url) {
+      leafletTileLayer.setUrl(url);
+    }
+    leafletTileLayer._proxiedUrl = url;
+
+    leafletRouteLayer.clearLayers();
+    var latLon = result.latLon, cats = result.fiveWay.categories;
+    var colorFor = {
+      veryeasy: "var(--status-good-strong)", easy: "var(--status-good)", neutral: "var(--status-neutral)",
+      hard: "var(--status-critical)", veryhard: "var(--status-critical-strong)"
+    };
+    var i = 0;
+    while (i < cats.length) {
+      var cat = cats[i], j = i;
+      var pts = [latLon[i]];
+      while (j < cats.length && cats[j] === cat) { pts.push(latLon[j + 1]); j++; }
+      L.polyline(pts, { color: colorFor[cat], weight: 4, opacity: 0.9, interactive: false }).addTo(leafletRouteLayer);
+      i = j;
+    }
+    L.circleMarker(latLon[0], { radius: 6, color: "var(--panel)", weight: 2, fillColor: "var(--accent)", fillOpacity: 1, interactive: false }).addTo(leafletRouteLayer);
+    leafletMap.invalidateSize();
+    leafletMap.fitBounds(L.latLngBounds(latLon), { padding: [20, 20] });
+  }
+
+  // Plain-language easy/hard/neutral distance breakdown below the map -
+  // same classification method (and same underlying numbers) as the
+  // stat tiles and the compass table: result.fwd for the full route,
+  // result.lastHalf.forward/reverse for the closing half in each
+  // direction.
+  function renderRouteStats(result) {
+    var wrap = document.getElementById("routeStats");
+    wrap.innerHTML = "";
+    var CATS = [["veryeasy", "Very easy"], ["easy", "Easy"], ["neutral", "Neutral"], ["hard", "Hard"], ["veryhard", "Very hard"]];
+
+    function block(title, stats) {
+      var container = document.createElement("div");
+      container.className = "route-stats-block";
+
+      var h = document.createElement("div");
+      h.className = "route-stats-heading";
+      h.textContent = title;
+      container.appendChild(h);
+
+      var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard;
+      var bar = document.createElement("div");
+      bar.className = "route-stats-bar";
+      CATS.forEach(function (item) {
+        var meters = stats[item[0]];
+        if (meters <= 0) return;
+        var seg = document.createElement("div");
+        seg.className = "route-stats-bar-seg " + item[0];
+        seg.style.flex = (total > 0 ? meters / total : 0).toFixed(4);
+        bar.appendChild(seg);
+      });
+      container.appendChild(bar);
+
+      var grid = document.createElement("div");
+      grid.className = "route-stats-grid";
+      CATS.forEach(function (item) {
+        var el = document.createElement("div");
+        el.className = "route-stats-item";
+        el.innerHTML = '<span class="route-stats-swatch ' + item[0] + '"></span>' + item[1] + " " + (stats[item[0]] / 1000).toFixed(2) + " km";
+        grid.appendChild(el);
+      });
+      container.appendChild(grid);
+
+      return container;
+    }
+
+    wrap.appendChild(block("Full route (as ridden)", result.fiveWay.full));
+    wrap.appendChild(block("Last 50% of the route (as ridden)", result.fiveWay.lastHalfForward));
+    wrap.appendChild(block("Last 50% of the route (if ridden reverse)", result.fiveWay.lastHalfReverse));
+  }
+
+  function buildSweepTable(result) {
+    var tbody = document.querySelector("#sweepTable tbody");
+    tbody.innerHTML = "";
+    for (var deg = 0; deg < 360; deg += 15) {
+      var tr = document.createElement("tr");
+      var f = result.sweep.easyFwd[deg] * 100, r = result.sweep.easyRev[deg] * 100;
+      tr.innerHTML = "<td>" + deg + "&deg;</td><td>" + degreesToCompass16(deg) + "</td><td>" + f.toFixed(1) + "%</td><td>" + r.toFixed(1) + "%</td><td>" + Math.abs(f - r).toFixed(1) + " pp</td>";
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Forward/reverse easy% plus last-50% wind-effort multiplier, for one
+  // wind direction - reuses the already-resampled lengths/headings rather
+  // than re-running the (much more expensive) 360-degree sweep for every
+  // row of the compass table.
+  function statsForDirection(lengths, headings, neutralDeg, windFromDeg, splitIdx, vMs, wMs) {
+    var windVec = windFromToTowardVector(windFromDeg);
+    var cosphiFwd = headings.map(function (h) { return h[0] * windVec[0] + h[1] * windVec[1]; });
+    var cosphiRev = cosphiFwd.map(function (c) { return -c; });
+    var fwd = directionStats(lengths, cosphiFwd, neutralDeg);
+    var rev = directionStats(lengths, cosphiRev, neutralDeg);
+    var lastFwdEffort = windEffortStats(lengths, cosphiFwd, vMs, wMs, splitIdx, lengths.length);
+    var lastRevEffort = windEffortStats(lengths, cosphiRev, vMs, wMs, 0, splitIdx);
+    return {
+      fwdPct: fwd.easyPct, revPct: rev.easyPct,
+      lastFwdMultiplier: lastFwdEffort.powerMultiplier, lastRevMultiplier: lastRevEffort.powerMultiplier
+    };
+  }
+
+  function buildCompassTable(result) {
+    var headings = segmentLengthsAndHeadings(result.xy).headings;
+    var splitIdx = splitIndexByDistance(result.lengths).idx;
+    var vMs = result.effort.cruiseSpeedKmh / 3.6, wMs = result.effort.windSpeedKmh / 3.6;
+    var rows = COMPASS_16.map(function (pair) {
+      var s = statsForDirection(result.lengths, headings, result.neutralDeg, pair[1], splitIdx, vMs, wMs);
+      return { code: pair[0], deg: pair[1], fwdPct: s.fwdPct, revPct: s.revPct, lastFwdMultiplier: s.lastFwdMultiplier, lastRevMultiplier: s.lastRevMultiplier };
+    });
+    // Higher easy% is better; LOWER effort multiplier is better (less
+    // aerodynamic work than a calm day, rather than more).
+    var bestFwdPct = Math.max.apply(null, rows.map(function (r) { return r.fwdPct; }));
+    var bestRevPct = Math.max.apply(null, rows.map(function (r) { return r.revPct; }));
+    var bestLastFwd = Math.min.apply(null, rows.map(function (r) { return r.lastFwdMultiplier; }));
+    var bestLastRev = Math.min.apply(null, rows.map(function (r) { return r.lastRevMultiplier; }));
+
+    function cell(isBest, text) { return "<td" + (isBest ? ' class="best-cell"' : "") + ">" + text + "</td>"; }
+
+    var tbody = document.querySelector("#compassTable tbody");
+    tbody.innerHTML = "";
+    rows.forEach(function (row) {
+      var diff = row.fwdPct - row.revPct;
+      var tr = document.createElement("tr");
+      if (Math.abs(row.deg - result.windFromDeg) < 0.01) tr.className = "current-row";
+      tr.innerHTML =
+        "<td>" + row.code + "</td><td>" + row.deg + "&deg;</td>" +
+        cell(row.fwdPct === bestFwdPct, row.fwdPct.toFixed(1) + "%") +
+        cell(row.revPct === bestRevPct, row.revPct.toFixed(1) + "%") +
+        "<td>" + (diff >= 0 ? "+" : "") + diff.toFixed(1) + " pp</td>" +
+        cell(row.lastFwdMultiplier === bestLastFwd, row.lastFwdMultiplier.toFixed(2) + "&times;") +
+        cell(row.lastRevMultiplier === bestLastRev, row.lastRevMultiplier.toFixed(2) + "&times;");
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderLastHalf(result) {
+    var lh = result.lastHalf, ef = result.effort;
+    var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
+    document.getElementById("halfCaption").innerHTML =
+      "Split at the route's distance midpoint (" + lh.splitKm.toFixed(1) + " km in) — for reverse, that's the route's first half by distance, ridden backward, not its second half. " +
+      "At <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> cruising speed into a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h)</b> wind: " +
+      "aerodynamic drag scales with relative-airspeed <i>squared</i>, not with the wind component directly, so this is shown as a multiple of the effort a completely calm day at the same speed would take.";
+
+    var fwdEffort = ef.lastHalf.forward, revEffort = ef.lastHalf.reverse;
+    var maxScale = Math.max(2.0, fwdEffort.powerMultiplier * 1.1, revEffort.powerMultiplier * 1.1);
+    var refPct = Math.min(100, 100 / maxScale);
+
+    var wrap = document.getElementById("halfGrid");
+    wrap.innerHTML = "";
+    [["Forward", fwdEffort], ["Reverse", revEffort]].forEach(function (pair) {
+      var label = pair[0], eff = pair[1];
+      var mult = eff.powerMultiplier;
+      var good = mult < 1;
+      var fillPct = Math.min(100, 100 * mult / maxScale);
+      var card = document.createElement("div");
+      card.className = "half-card";
+      card.innerHTML =
+        '<div class="half-title">' + label + ' — last 50%</div>' +
+        '<div class="half-multiplier ' + (good ? "good" : "bad") + '">' + mult.toFixed(2) + '&times; <span class="unit">calm-day aero effort</span></div>' +
+        '<div class="half-bar"><div class="half-bar-fill ' + (good ? "good" : "bad") + '" style="width:' + fillPct.toFixed(1) + '%"></div><div class="half-bar-ref" style="left:' + refPct.toFixed(1) + '%"></div></div>' +
+        '<div class="half-net">Effective wind-in-your-face speed: <b>' + eff.avgRelSpeedKmh.toFixed(1) + ' km/h</b> (vs. ' + ef.cruiseSpeedKmh.toFixed(0) + ' km/h on a calm day).</div>';
+      wrap.appendChild(card);
+    });
+
+    var verdict;
+    if (Math.abs(fwdEffort.powerMultiplier - revEffort.powerMultiplier) < 0.03) {
+      verdict = "Both directions take about the same aerodynamic effort in the closing half.";
+    } else {
+      var easier = fwdEffort.powerMultiplier <= revEffort.powerMultiplier ? "forward" : "reverse";
+      var harder = easier === "forward" ? "reverse" : "forward";
+      var ratio = Math.min(fwdEffort.powerMultiplier, revEffort.powerMultiplier) / Math.max(fwdEffort.powerMultiplier, revEffort.powerMultiplier);
+      verdict = "Riding it <b>" + easier + "</b> gives the easier finish: about " + (ratio * 100).toFixed(0) + "% of the aerodynamic effort of riding it " + harder + " in the last 50%.";
+    }
+    document.getElementById("halfVerdict").innerHTML = verdict;
+  }
+
+  // ---------------------------------------------------------------------
+  // Text report (mirrors the CLI's report)
+  // ---------------------------------------------------------------------
+  function buildReportText(result, fileLabel) {
+    var lines = [];
+    var totalKm = result.totalLength / 1000;
+    lines.push("=== GPX wind report ===");
+    lines.push("Source: " + fileLabel);
+    lines.push("Wind from: " + result.windFromDeg.toFixed(1) + " deg (" + degreesToCompass16(result.windFromDeg) + ")");
+    lines.push("Raw points: " + result.rawCount + "  ->  resampled to " + (result.segCount + 1) + " points / " + result.segCount + " segments (spacing " + result.resampleM + " m)");
+    lines.push("Total route length: " + totalKm.toFixed(2) + " km");
+    lines.push("Closure gap (last point to first): " + result.closureGap.toFixed(1) + " m (" + (100 * result.closureGap / result.totalLength).toFixed(2) + "% of total length)");
+    lines.push("");
+    function dirBlock(label, s) {
+      lines.push(label + ": easy " + (s.easy / 1000).toFixed(2) + " km, hard " + (s.hard / 1000).toFixed(2) + " km, neutral " + (s.neutral / 1000).toFixed(2) + " km (easy = " + s.easyPct.toFixed(1) + "% of total)");
+    }
+    dirBlock("Forward", result.fwd);
+    dirBlock("Reverse", result.rev);
+    var diffKm = Math.abs(result.fwd.easy - result.rev.easy) / 1000;
+    var diffPp = Math.abs(result.fwd.easyPct - result.rev.easyPct);
+    lines.push("Forward vs reverse difference: " + diffKm.toFixed(2) + " km easy (" + diffPp.toFixed(1) + " percentage points)");
+    lines.push("");
+    lines.push("Identity check L_easy(reverse) == L_total - L_easy(forward): gap " + result.identityGap.toFixed(2) + " m -> " + (result.identityOk ? "OK" : "WARN"));
+    lines.push("Balance check Sum(L_i * cosphi_i) = " + result.balance.sum.toFixed(2) + " m (tolerance " + result.balance.tolerance.toFixed(2) + " m, tied to closure gap) -> " + (result.balance.ok ? "OK" : "WARN"));
+    lines.push("");
+    var verdict;
+    if (result.fwd.easyPct > result.rev.easyPct + 1) verdict = "This route is easier ridden in the direction given in the GPX file.";
+    else if (result.rev.easyPct > result.fwd.easyPct + 1) verdict = "This route is easier ridden in reverse.";
+    else verdict = "This route is roughly symmetric for this wind direction: neither direction has a clear advantage.";
+    lines.push("Verdict: " + verdict);
+    lines.push("");
+    lines.push("=== Wind-direction sweep (0-359 deg) ===");
+    lines.push("Most asymmetric wind: " + result.sweep.maxI + " deg (|forward - reverse| = " + (100 * result.sweep.asym[result.sweep.maxI]).toFixed(1) + " percentage points)");
+    lines.push("Most symmetric wind: " + result.sweep.minI + " deg (|forward - reverse| = " + (100 * result.sweep.asym[result.sweep.minI]).toFixed(1) + " percentage points)");
+    lines.push("");
+    var ef = result.effort;
+    var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
+    lines.push("=== Last 50% of the round trip (split at " + result.lastHalf.splitKm.toFixed(1) + " km) ===");
+    lines.push("Wind speed: Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h). Cruising speed: " + ef.cruiseSpeedKmh.toFixed(0) + " km/h.");
+    lines.push("Effort here is relative-airspeed-based (drag ~ airspeed^2), shown as a multiple of calm-day effort at the same cruising speed - not a linear tailwind/headwind sum.");
+    lines.push("Forward: " + ef.lastHalf.forward.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.forward.avgRelSpeedKmh.toFixed(1) + " km/h)");
+    lines.push("Reverse: " + ef.lastHalf.reverse.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.reverse.avgRelSpeedKmh.toFixed(1) + " km/h)");
+    lines.push("");
+    lines.push("=== Conclusion ===");
+    lines.push("Forward: " + (result.fwd.easy / 1000).toFixed(2) + " km easy vs " + (result.fwd.hard / 1000).toFixed(2) + " km hard");
+    lines.push("Reverse: " + (result.rev.easy / 1000).toFixed(2) + " km easy vs " + (result.rev.hard / 1000).toFixed(2) + " km hard");
+    lines.push(verdict);
+    return lines.join("\n");
+  }
+
+  // ---------------------------------------------------------------------
+  // App state + wiring
+  // ---------------------------------------------------------------------
+  var DEFAULT_TILE_PROXY_BASE = "https://tailwind-tally.onrender.com";
+  function loadStoredTileProxyBase() {
+    try { return window.localStorage.getItem("tailwindTally.tileProxyBase") || DEFAULT_TILE_PROXY_BASE; }
+    catch (e) { return DEFAULT_TILE_PROXY_BASE; }
+  }
+  function storeTileProxyBase(url) {
+    try { window.localStorage.setItem("tailwindTally.tileProxyBase", url); }
+    catch (e) { /* private/blocked storage - url just won't persist across reloads */ }
+  }
+
+  var state = {
+    points: buildExampleRoute(),
+    fileLabel: "Sample loop",
+    isExample: true,
+    windFromDeg: 225,
+    resampleM: 25,
+    neutralDeg: 0,
+    veryDeg: 40,
+    windSpeedBeaufort: 4,
+    cruiseSpeedKmh: 25,
+    tileProxyBase: loadStoredTileProxyBase()
+  };
+
+  var dropzone = document.getElementById("dropzone");
+  var fileInput = document.getElementById("fileInput");
+  var fileName = document.getElementById("fileName");
+  var filePoints = document.getElementById("filePoints");
+  var fileBadge = document.getElementById("fileBadge");
+  var fileError = document.getElementById("fileError");
+  var windInput = document.getElementById("windInput");
+  var resampleInput = document.getElementById("resampleInput");
+  var neutralInput = document.getElementById("neutralInput");
+  var veryInput = document.getElementById("veryInput");
+  var windSpeedInput = document.getElementById("windSpeedInput");
+  var cruiseSpeedInput = document.getElementById("cruiseSpeedInput");
+  var tileProxyInput = document.getElementById("tileProxyInput");
+
+  BEAUFORT_KMH.forEach(function (kmh, i) {
+    var opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = i + " — " + BEAUFORT_LABELS[i] + " (" + kmh + " km/h)";
+    windSpeedInput.appendChild(opt);
+  });
+  windSpeedInput.value = state.windSpeedBeaufort;
+  cruiseSpeedInput.value = state.cruiseSpeedKmh;
+  tileProxyInput.value = state.tileProxyBase;
+  veryInput.value = state.veryDeg;
+  var readoutDeg = document.getElementById("readoutDeg");
+  var readoutCode = document.getElementById("readoutCode");
+  var compassArrow = document.getElementById("compassArrow");
+  var compassDial = document.getElementById("compassDial");
+
+  COMPASS_16.forEach(function (pair, idx) {
+    var btn = document.createElement("div");
+    btn.className = "compass-point";
+    btn.textContent = pair[0];
+    btn.tabIndex = 0;
+    btn.setAttribute("role", "button");
+    btn.setAttribute("aria-label", "Wind from " + pair[0]);
+    btn.style.setProperty("--ang", pair[1] + "deg");
+    btn.dataset.deg = pair[1];
+    btn.addEventListener("click", function () { setWind(pair[1]); });
+    btn.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setWind(pair[1]); } });
+    compassDial.appendChild(btn);
+
+    var tick = document.createElement("div");
+    tick.className = "compass-tick";
+    tick.style.setProperty("--ang", pair[1] + "deg");
+    if (idx % 4 === 0) tick.textContent = pair[0];
+    compassDial.appendChild(tick);
+  });
+
+  function setWind(deg) {
+    state.windFromDeg = ((deg % 360) + 360) % 360;
+    windInput.value = degreesToCompass16(state.windFromDeg);
+    fileError.classList.remove("show");
+    scheduleRender();
+  }
+
+  windInput.addEventListener("change", function () {
+    try {
+      state.windFromDeg = parseWindFrom(windInput.value);
+      fileError.classList.remove("show");
+    } catch (e) {
+      fileError.textContent = e.message;
+      fileError.classList.add("show");
+    }
+    scheduleRender();
+  });
+
+  resampleInput.addEventListener("change", function () {
+    var v = parseFloat(resampleInput.value);
+    state.resampleM = isFinite(v) && v >= 0 ? v : 25;
+    scheduleRender();
+  });
+  neutralInput.addEventListener("change", function () {
+    var v = parseFloat(neutralInput.value);
+    state.neutralDeg = isFinite(v) && v >= 0 ? v : 0;
+    scheduleRender();
+  });
+  veryInput.addEventListener("change", function () {
+    var v = parseFloat(veryInput.value);
+    state.veryDeg = isFinite(v) && v >= 0 ? v : 40;
+    scheduleRender();
+  });
+  windSpeedInput.addEventListener("change", function () {
+    var v = parseInt(windSpeedInput.value, 10);
+    state.windSpeedBeaufort = isFinite(v) ? Math.max(0, Math.min(12, v)) : 4;
+    scheduleRender();
+  });
+  cruiseSpeedInput.addEventListener("change", function () {
+    var v = parseFloat(cruiseSpeedInput.value);
+    state.cruiseSpeedKmh = isFinite(v) && v > 0 ? v : 25;
+    scheduleRender();
+  });
+  tileProxyInput.addEventListener("change", function () {
+    state.tileProxyBase = tileProxyInput.value.trim();
+    storeTileProxyBase(state.tileProxyBase);
+    scheduleRender();
+  });
+
+  dropzone.addEventListener("click", function () { fileInput.click(); });
+  dropzone.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+  ["dragover", "dragenter"].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.add("drag"); });
+  });
+  ["dragleave", "drop"].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) { dropzone.classList.remove("drag"); });
+  });
+  dropzone.addEventListener("drop", function (e) {
+    e.preventDefault();
+    var f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+  fileInput.addEventListener("change", function () {
+    if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
+
+  function loadFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var pts = parseGpxPoints(String(reader.result));
+        state.points = pts;
+        state.fileLabel = file.name;
+        state.isExample = false;
+        fileError.classList.remove("show");
+        scheduleRender();
+      } catch (err) {
+        fileError.textContent = err.message;
+        fileError.classList.add("show");
+      }
+    };
+    reader.onerror = function () {
+      fileError.textContent = "Couldn't read that file.";
+      fileError.classList.add("show");
+    };
+    reader.readAsText(file);
+  }
+
+  var rafPending = false;
+  function scheduleRender() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(function () { rafPending = false; render(); });
+  }
+
+  function render() {
+    fileName.textContent = state.fileLabel;
+    filePoints.textContent = state.points.length + " points";
+    fileBadge.textContent = state.isExample ? "Example route" : "Loaded";
+    fileBadge.className = "badge " + (state.isExample ? "example" : "loaded");
+
+    var result;
+    try {
+      result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh);
+    } catch (e) {
+      fileError.textContent = e.message;
+      fileError.classList.add("show");
+      return;
+    }
+
+    readoutDeg.textContent = Math.round(state.windFromDeg) + "°";
+    readoutCode.textContent = degreesToCompass16(state.windFromDeg);
+    compassArrow.style.transform = "rotate(" + ((state.windFromDeg + 180) % 360) + "deg)";
+    document.querySelectorAll(".compass-point").forEach(function (btn) {
+      btn.classList.toggle("active", Math.abs(parseFloat(btn.dataset.deg) - state.windFromDeg) < 0.01);
+    });
+
+    var totalKm = result.totalLength / 1000;
+    var statRow = document.getElementById("statRow");
+    statRow.innerHTML =
+      '<div class="stat-tile"><div class="label">Total length</div><div class="value mono">' + totalKm.toFixed(1) + ' km</div>' +
+        '<div class="sub">' + result.segCount + ' segments &middot; ' + result.rawCount + ' raw pts</div></div>' +
+      '<div class="stat-tile"><div class="label">Closure gap</div><div class="value mono">' + result.closureGap.toFixed(0) + ' m</div>' +
+        '<div class="sub">' + (100 * result.closureGap / result.totalLength).toFixed(2) + '% of length</div></div>' +
+      '<div class="stat-tile"><div class="label">Forward</div><div class="value mono">' + result.fwd.easyPct.toFixed(1) + '%</div>' +
+        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + (result.fwd.easy / 1000).toFixed(1) + ' km easy &middot; ' + (result.fwd.hard / 1000).toFixed(1) + ' km hard</div></div>' +
+      '<div class="stat-tile"><div class="label">Reverse</div><div class="value mono">' + result.rev.easyPct.toFixed(1) + '%</div>' +
+        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + (result.rev.easy / 1000).toFixed(1) + ' km easy &middot; ' + (result.rev.hard / 1000).toFixed(1) + ' km hard</div></div>';
+
+    var banner = document.getElementById("verdictBanner");
+    var diffPp = result.fwd.easyPct - result.rev.easyPct;
+    var checkSvg = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    if (diffPp > 1) {
+      banner.className = "verdict-banner fwd";
+      banner.innerHTML = checkSvg + "Easier ridden <b>forward</b> (as recorded) &mdash; " + Math.abs(diffPp).toFixed(1) + " points more easy distance than in reverse.";
+    } else if (diffPp < -1) {
+      banner.className = "verdict-banner rev";
+      banner.innerHTML = checkSvg + "Easier ridden in <b>reverse</b> &mdash; " + Math.abs(diffPp).toFixed(1) + " points more easy distance than forward.";
+    } else {
+      banner.className = "verdict-banner tie";
+      banner.innerHTML = checkSvg + "Roughly symmetric for this wind &mdash; neither direction has a clear advantage.";
+    }
+
+    document.getElementById("planCaption").textContent = "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°).";
+    renderPolarSweep(result);
+    renderMap(result);
+    renderRouteStats(result);
+    buildSweepTable(result);
+
+    document.getElementById("sweepCallout").innerHTML =
+      "Most asymmetric wind: <b>" + degreesToCompass16(result.sweep.maxI) + " (" + result.sweep.maxI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.maxI]).toFixed(1) + "pp forward/reverse gap.<br>" +
+      "Most symmetric wind: <b>" + degreesToCompass16(result.sweep.minI) + " (" + result.sweep.minI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.minI]).toFixed(1) + "pp gap.";
+
+    renderLastHalf(result);
+    buildCompassTable(result);
+
+    var diagGrid = document.getElementById("diagGrid");
+    diagGrid.innerHTML =
+      '<div class="diag-item"><span class="diag-chip ' + (result.identityOk ? "ok" : "warn") + '">' + (result.identityOk ? "OK" : "WARN") + '</span>' +
+        '<span class="diag-text">L_easy(reverse) = L_total &minus; L_easy(forward): gap <b>' + result.identityGap.toFixed(2) + ' m</b></span></div>' +
+      '<div class="diag-item"><span class="diag-chip ' + (result.balance.ok ? "ok" : "warn") + '">' + (result.balance.ok ? "OK" : "WARN") + '</span>' +
+        '<span class="diag-text">&Sigma; L&middot;cos&phi; = <b>' + result.balance.sum.toFixed(2) + ' m</b> (tolerance ' + result.balance.tolerance.toFixed(2) + ' m)</span></div>';
+
+    document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
+    lastResult = result;
+  }
+
+  document.getElementById("copyBtn").addEventListener("click", function () {
+    var text = document.getElementById("reportText").textContent;
+    var btn = document.getElementById("copyBtn");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        var prev = btn.textContent; btn.textContent = "Copied";
+        setTimeout(function () { btn.textContent = prev; }, 1400);
+      }).catch(function () {});
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Save image: a direct browser download (the standard <a download>
+  // click) works everywhere this file is actually opened as its own
+  // page - a double-clicked local file, or this artifact's own URL. It
+  // only fails inside a viewer that frames the page in a sandbox that
+  // blocks script-driven saves; there, prefer the platform "downloads"
+  // capability instead, when it's been granted.
+  // ---------------------------------------------------------------------
+  var downloadsCapability = null;
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("downloads").then(function (ns) { downloadsCapability = ns; }).catch(function () {});
+  }
+
+  function triggerBrowserDownload(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // A standalone exported SVG has no access to the page's <style> block,
+  // so var(--...) tokens and CSS classes would not resolve. Read each
+  // element's already-resolved computed style from the LIVE (unexported)
+  // node and bake it into the clone as plain attributes before serializing.
+  function svgToInlinedString(svg, bgColor) {
+    var clone = svg.cloneNode(true);
+    var origAll = svg.querySelectorAll("*");
+    var cloneAll = clone.querySelectorAll("*");
+    for (var i = 0; i < origAll.length; i++) {
+      var cs = getComputedStyle(origAll[i]);
+      var c = cloneAll[i];
+      if (cs.fill) c.setAttribute("fill", cs.fill);
+      if (cs.stroke) c.setAttribute("stroke", cs.stroke);
+      if (origAll[i].tagName === "text") {
+        c.setAttribute("font-family", cs.fontFamily);
+        c.setAttribute("font-size", cs.fontSize);
+        c.setAttribute("font-weight", cs.fontWeight);
+      }
+    }
+    clone.setAttribute("xmlns", SVG_NS);
+    var vb = clone.getAttribute("viewBox").split(/\s+/).map(Number);
+    var bg = el("rect", { x: vb[0], y: vb[1], width: vb[2], height: vb[3], fill: bgColor });
+    clone.insertBefore(bg, clone.firstChild);
+    return new XMLSerializer().serializeToString(clone);
+  }
+
+  function svgStringToPngBlob(svgString, pxWidth, pxHeight, scale) {
+    return new Promise(function (resolve, reject) {
+      var svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      var url = URL.createObjectURL(svgBlob);
+      var img = new Image();
+      img.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(pxWidth * scale);
+        canvas.height = Math.round(pxHeight * scale);
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(function (blob) {
+          if (blob) resolve(blob); else reject(new Error("Could not render this chart as an image."));
+        }, "image/png");
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("Could not load this chart for export.")); };
+      img.src = url;
+    });
+  }
+
+  function bindSaveImageButton(buttonId, svgId, filenameFn) {
+    var btn = document.getElementById(buttonId);
+    btn.addEventListener("click", function () {
+      var svg = document.getElementById(svgId);
+      var vb = svg.getAttribute("viewBox").split(/\s+/).map(Number);
+      var panelColor = getComputedStyle(document.body).getPropertyValue("--panel").trim() || "#ffffff";
+      var svgString = svgToInlinedString(svg, panelColor);
+      var prevText = btn.textContent;
+      var filename = filenameFn();
+      btn.disabled = true;
+      btn.textContent = "Preparing…";
+      svgStringToPngBlob(svgString, vb[2], vb[3], 2).then(function (blob) {
+        if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
+        return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
+          return "saved";
+        }).catch(function (err) {
+          if (err && err.code === "declined") return "cancelled";
+          triggerBrowserDownload(blob, filename);
+          return "saved";
+        });
+      }).catch(function () {
+        return "error";
+      }).then(function (outcome) {
+        btn.textContent = outcome === "saved" ? "Saved" : outcome === "error" ? "Couldn't render" : prevText;
+        setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
+      });
+    });
+  }
+
+  function resolvedColor(varName, fallback) {
+    var v = getComputedStyle(document.body).getPropertyValue(varName).trim();
+    return v || fallback;
+  }
+
+  // Draw the same five-way polyline + start marker used on the live map,
+  // but onto a plain canvas via latLngToContainerPoint - lets the
+  // exported image match the map's current pan/zoom exactly.
+  function drawRouteOnCanvas(ctx, result) {
+    var latLon = result.latLon, cats = result.fiveWay.categories;
+    var colorFor = {
+      veryeasy: resolvedColor("--status-good-strong", "#075e07"),
+      easy: resolvedColor("--status-good", "#0ca30c"),
+      hard: resolvedColor("--status-critical", "#d03b3b"),
+      veryhard: resolvedColor("--status-critical-strong", "#7a1f1f"),
+      neutral: resolvedColor("--status-neutral", "#898781")
+    };
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalAlpha = 0.9;
+    var i = 0;
+    while (i < cats.length) {
+      var cat = cats[i], j = i;
+      var p0 = leafletMap.latLngToContainerPoint(latLon[i]);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      while (j < cats.length && cats[j] === cat) {
+        var p = leafletMap.latLngToContainerPoint(latLon[j + 1]);
+        ctx.lineTo(p.x, p.y);
+        j++;
+      }
+      ctx.strokeStyle = colorFor[cat];
+      ctx.stroke();
+      i = j;
+    }
+    ctx.globalAlpha = 1;
+    var start = leafletMap.latLngToContainerPoint(latLon[0]);
+    ctx.beginPath();
+    ctx.arc(start.x, start.y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = resolvedColor("--accent", "#2a78d6");
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = resolvedColor("--panel", "#ffffff");
+    ctx.stroke();
+  }
+
+  // The same Easy/Hard/Neutral breakdown shown below the map in the page
+  // (#routeStats), drawn onto the export canvas below the captured map
+  // area so the saved image matches what's on screen, not just the map.
+  var ROUTE_STATS_FOOTER_H = 350;
+  function drawRouteStatsFooterOnCanvas(ctx, result, top, width) {
+    var pad = 16;
+    var inkColor = resolvedColor("--ink", "#0b0b0b");
+    var mutedColor = resolvedColor("--ink-muted", "#898781");
+    var gridColor = resolvedColor("--grid", "#e1e0d9");
+    var colorFor = {
+      veryeasy: resolvedColor("--status-good-strong", "#075e07"),
+      easy: resolvedColor("--status-good", "#0ca30c"),
+      neutral: resolvedColor("--status-neutral", "#898781"),
+      hard: resolvedColor("--status-critical", "#d03b3b"),
+      veryhard: resolvedColor("--status-critical-strong", "#7a1f1f")
+    };
+    var colW = (width - 2 * pad) / 3;
+    var colX = [pad, pad + colW, pad + 2 * colW];
+
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad, top + 8);
+    ctx.lineTo(width - pad, top + 8);
+    ctx.stroke();
+
+    ctx.textBaseline = "alphabetic";
+    function heading(y, text) {
+      ctx.fillStyle = mutedColor;
+      ctx.font = "600 10.5px 'IBM Plex Sans', sans-serif";
+      ctx.fillText(text, pad, y);
+    }
+    function item(x, y, cat, label, meters) {
+      ctx.fillStyle = colorFor[cat];
+      ctx.fillRect(x, y - 9, 10, 10);
+      ctx.fillStyle = inkColor;
+      ctx.font = "12px 'IBM Plex Mono', monospace";
+      ctx.fillText(label + " " + (meters / 1000).toFixed(2) + " km", x + 15, y);
+    }
+    function bar(x, y, w, h, stats) {
+      var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard;
+      if (total <= 0) return;
+      var cx = x;
+      ["veryeasy", "easy", "neutral", "hard", "veryhard"].forEach(function (cat) {
+        var m = stats[cat];
+        if (m <= 0) return;
+        var segW = (m / total) * w;
+        ctx.fillStyle = colorFor[cat];
+        ctx.fillRect(cx, y, segW, h);
+        cx += segW;
+      });
+    }
+    var BLOCK_H = 106;
+    function block(blockTop, title, stats) {
+      heading(blockTop + 18, title);
+      bar(pad, blockTop + 24, width - 2 * pad, 8, stats);
+      item(colX[0], blockTop + 52, "veryeasy", "Very easy", stats.veryeasy);
+      item(colX[1], blockTop + 52, "easy", "Easy", stats.easy);
+      item(colX[2], blockTop + 52, "neutral", "Neutral", stats.neutral);
+      item(colX[0], blockTop + 74, "hard", "Hard", stats.hard);
+      item(colX[1], blockTop + 74, "veryhard", "Very hard", stats.veryhard);
+    }
+    block(top, "FULL ROUTE (AS RIDDEN)", result.fiveWay.full);
+    block(top + BLOCK_H, "LAST 50% OF THE ROUTE (AS RIDDEN)", result.fiveWay.lastHalfForward);
+    block(top + 2 * BLOCK_H, "LAST 50% OF THE ROUTE (IF RIDDEN REVERSE)", result.fiveWay.lastHalfReverse);
+  }
+
+  // Redraw the map's currently-loaded tiles (already same-origin blob:
+  // URLs thanks to the fetch-based tile loader, so this shouldn't taint
+  // the canvas) plus the route, onto a plain canvas for export.
+  function exportMapToPngBlob(result) {
+    return new Promise(function (resolve, reject) {
+      if (!leafletMap) { reject(new Error("Map not loaded yet.")); return; }
+      var size = leafletMap.getSize();
+      if (!size.x || !size.y) { reject(new Error("Map has no size yet.")); return; }
+      try {
+        var scale = 2;
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(size.x * scale);
+        canvas.height = Math.round((size.y + ROUTE_STATS_FOOTER_H) * scale);
+        var ctx = canvas.getContext("2d");
+        ctx.scale(scale, scale);
+        ctx.fillStyle = resolvedColor("--grid", "#e5e5e3");
+        ctx.fillRect(0, 0, size.x, size.y);
+        ctx.fillStyle = resolvedColor("--panel", "#ffffff");
+        ctx.fillRect(0, size.y, size.x, ROUTE_STATS_FOOTER_H);
+
+        var containerRect = leafletMap.getContainer().getBoundingClientRect();
+        var tileImgs = leafletMap.getPane("tilePane").querySelectorAll("img.leaflet-tile-loaded");
+        for (var t = 0; t < tileImgs.length; t++) {
+          var r = tileImgs[t].getBoundingClientRect();
+          try {
+            ctx.drawImage(tileImgs[t], r.left - containerRect.left, r.top - containerRect.top, r.width, r.height);
+          } catch (e) { /* skip a single bad tile rather than fail the whole export */ }
+        }
+
+        drawRouteOnCanvas(ctx, result);
+        drawRouteStatsFooterOnCanvas(ctx, result, size.y, size.x);
+
+        canvas.toBlob(function (blob) {
+          if (blob) resolve(blob); else reject(new Error("Could not render the map as an image."));
+        }, "image/png");
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function bindSaveMapButton(buttonId) {
+    var btn = document.getElementById(buttonId);
+    btn.addEventListener("click", function () {
+      if (!leafletMap || !lastResult) {
+        var prevText0 = btn.textContent;
+        btn.textContent = "No map yet";
+        setTimeout(function () { btn.textContent = prevText0; }, 1500);
+        return;
+      }
+      var prevText = btn.textContent;
+      var filename = "tailwind-tally-route-" + degreesToCompass16(state.windFromDeg) + ".png";
+      btn.disabled = true;
+      btn.textContent = "Preparing…";
+      exportMapToPngBlob(lastResult).then(function (blob) {
+        if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
+        return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
+          return "saved";
+        }).catch(function (err) {
+          if (err && err.code === "declined") return "cancelled";
+          triggerBrowserDownload(blob, filename);
+          return "saved";
+        });
+      }).catch(function () {
+        return "error";
+      }).then(function (outcome) {
+        btn.textContent = outcome === "saved" ? "Saved" : outcome === "error" ? "Couldn't render" : prevText;
+        setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
+      });
+    });
+  }
+
+  bindSaveMapButton("saveRouteBtn");
+
+  bindSaveImageButton("saveSweepBtn", "polarSvg", function () {
+    return "tailwind-tally-sweep-" + degreesToCompass16(state.windFromDeg) + ".png";
+  });
+
+  render();
+})();
+</script>
