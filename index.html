@@ -450,6 +450,7 @@
     line-height: 1.5;
   }
   .wind-sensitivity b { color: var(--ink); }
+  .best-wind-line { margin-bottom: 14px; }
   .wind-sensitivity-heading {
     font-size: 11px;
     font-weight: 600;
@@ -2479,8 +2480,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     var bestRevDeg = (bestFwdDeg + 180) % 360;
     document.getElementById("sweepCallout").innerHTML =
-      "Best wind, as ridden: <b>" + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "°)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy " +
-      "&mdash; equivalently, <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "°)</b> is the best wind if riding in reverse.<br>" +
+      '<div class="best-wind-line">Best wind, as ridden: <b>' + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "°)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy " +
+      "&mdash; equivalently, <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "°)</b> is the best wind if riding in reverse.</div>" +
       buildAsymSymHTML(result);
 
     document.getElementById("routeWindSensitivity").innerHTML = buildAsymSymHTML(result);
