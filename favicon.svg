@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <title>Tailwind Tally</title>
+  <!-- A compass ring with a north-pointing wind needle, gold like the
+       lead boid / middle line / base bar elsewhere. Palette shared with
+       boids-society, threeline and 42. -->
+  <rect width="32" height="32" rx="7" fill="#14171D"/>
+  <circle cx="16" cy="16" r="9" fill="none" stroke="#F2F3F5" stroke-width="2"/>
+  <g stroke="#F2F3F5" stroke-width="2" stroke-linecap="round">
+    <line x1="16" y1="5" x2="16" y2="7"/>
+    <line x1="16" y1="25" x2="16" y2="27"/>
+    <line x1="5" y1="16" x2="7" y2="16"/>
+    <line x1="25" y1="16" x2="27" y2="16"/>
+  </g>
+  <path d="M 16 8 L 19 17 L 16 14.5 L 13 17 Z" fill="#F5C542"/>
+</svg>
