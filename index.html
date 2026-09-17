@@ -429,10 +429,6 @@
   .chart-card h2 { margin-bottom: 4px; }
   .chart-caption { font-size: 12.5px; color: var(--ink-secondary); margin: 0 0 12px; }
 
-  .legend-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-secondary); }
-  .legend-line { width: 16px; height: 2px; border-radius: 2px; flex: none; }
-
   .stroke-easy { stroke: var(--status-good); }
   .stroke-hard { stroke: var(--status-critical); }
   .stroke-neutral { stroke: var(--status-neutral); }
@@ -440,9 +436,6 @@
   .fill-hard { fill: var(--status-critical); }
   .fill-neutral { fill: var(--status-neutral); }
   .stroke-forward { stroke: var(--accent); }
-  .stroke-reverse { stroke: var(--series-reverse); }
-  .fill-forward { fill: var(--accent); }
-  .fill-reverse { fill: var(--series-reverse); }
   .chart-ink { fill: var(--ink-secondary); }
   .chart-muted { fill: var(--ink-muted); }
   .chart-grid-line { stroke: var(--grid); }
@@ -1339,12 +1332,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <h2>Wind-direction sweep</h2>
         <button class="copy-btn" id="saveSweepBtn">Save image</button>
       </div>
-      <p class="chart-caption">Easy-fraction if the wind came from every direction, 0&ndash;359&deg;.</p>
-      <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, forward and reverse"></svg>
-      <div class="legend-row">
-        <div class="legend-item"><span class="legend-line stroke-forward" style="background:var(--accent)"></span>Forward</div>
-        <div class="legend-item"><span class="legend-line stroke-reverse" style="background:var(--series-reverse)"></span>Reverse</div>
-      </div>
+      <p class="chart-caption">Easy-fraction for the route as ridden, if the wind came from every direction, 0&ndash;359&deg;. Reverse isn't shown separately &mdash; riding in reverse with wind from &theta; is mathematically identical to riding forward with wind from &theta;+180&deg;, so reverse's value at any direction is just this same curve read 180&deg; across.</p>
+      <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, for the route as ridden"></svg>
       <p class="sweep-callout" id="sweepCallout"></p>
       <details class="table-toggle">
         <summary>View sweep as a table</summary>
@@ -1855,29 +1844,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
       return d;
     }
-    svg.appendChild(el("path", { d: pathFor(result.sweep.easyRev), fill: "none", "stroke-width": 2, class: "stroke-reverse" }));
     svg.appendChild(el("path", { d: pathFor(result.sweep.easyFwd), fill: "none", "stroke-width": 2, class: "stroke-forward" }));
 
-    // Mark the wind direction that maximises each direction's own easy
-    // fraction - independent of the asymmetry callout below, since the
-    // best wind for forward and the best wind for reverse need not be
-    // (and on a real route, usually aren't) the same direction.
-    function markMax(arr, colorVar, labelOffsetFrac) {
-      var bestDeg = 0;
-      for (var d = 1; d < 360; d++) { if (arr[d] > arr[bestDeg]) bestDeg = d; }
-      var p = toXY(bestDeg, arr[bestDeg]);
-      svg.appendChild(el("circle", { cx: fmt(p[0]), cy: fmt(p[1]), r: 5, fill: colorVar, stroke: "var(--panel)", "stroke-width": 1.5 }));
-      var lp = toXY(bestDeg, Math.min(scaleMax, arr[bestDeg] + scaleMax * labelOffsetFrac));
-      var t = el("text", {
-        x: fmt(lp[0]), y: fmt(lp[1]), "text-anchor": "middle",
-        fill: colorVar, "font-size": "10.5", "font-weight": "600", "font-family": "var(--font-display)"
-      });
-      t.textContent = degreesToCompass16(bestDeg) + " " + Math.round(arr[bestDeg] * 100) + "%";
-      svg.appendChild(t);
-      return bestDeg;
-    }
-    markMax(result.sweep.easyRev, "var(--series-reverse)", 0.20);
-    markMax(result.sweep.easyFwd, "var(--accent)", 0.09);
+    // Mark the wind direction that maximises the route's own easy
+    // fraction. (Reverse's best wind is this same point rotated 180 deg,
+    // at the same value - see the caption above - so it needs no marker
+    // of its own.)
+    var bestDeg = 0;
+    for (var d = 1; d < 360; d++) { if (result.sweep.easyFwd[d] > result.sweep.easyFwd[bestDeg]) bestDeg = d; }
+    var bp = toXY(bestDeg, result.sweep.easyFwd[bestDeg]);
+    svg.appendChild(el("circle", { cx: fmt(bp[0]), cy: fmt(bp[1]), r: 5, fill: "var(--accent)", stroke: "var(--panel)", "stroke-width": 1.5 }));
+    var blp = toXY(bestDeg, Math.min(scaleMax, result.sweep.easyFwd[bestDeg] + scaleMax * 0.09));
+    var bt = el("text", {
+      x: fmt(blp[0]), y: fmt(blp[1]), "text-anchor": "middle",
+      fill: "var(--accent)", "font-size": "10.5", "font-weight": "600", "font-family": "var(--font-display)"
+    });
+    bt.textContent = degreesToCompass16(bestDeg) + " " + Math.round(result.sweep.easyFwd[bestDeg] * 100) + "%";
+    svg.appendChild(bt);
   }
 
   // ---------------------------------------------------------------------
@@ -2407,14 +2390,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     renderRouteStats(result);
     buildSweepTable(result);
 
-    var bestFwdDeg = 0, bestRevDeg = 0;
+    var bestFwdDeg = 0;
     for (var bd = 1; bd < 360; bd++) {
       if (result.sweep.easyFwd[bd] > result.sweep.easyFwd[bestFwdDeg]) bestFwdDeg = bd;
-      if (result.sweep.easyRev[bd] > result.sweep.easyRev[bestRevDeg]) bestRevDeg = bd;
     }
+    var bestRevDeg = (bestFwdDeg + 180) % 360;
     document.getElementById("sweepCallout").innerHTML =
-      "Best wind for forward: <b>" + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "°)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy.<br>" +
-      "Best wind for reverse: <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "°)</b>, " + (100 * result.sweep.easyRev[bestRevDeg]).toFixed(1) + "% easy.<br>" +
+      "Best wind, as ridden: <b>" + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "°)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy " +
+      "&mdash; equivalently, <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "°)</b> is the best wind if riding in reverse.<br>" +
       "Most asymmetric wind: <b>" + degreesToCompass16(result.sweep.maxI) + " (" + result.sweep.maxI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.maxI]).toFixed(1) + "pp forward/reverse gap.<br>" +
       "Most symmetric wind: <b>" + degreesToCompass16(result.sweep.minI) + " (" + result.sweep.minI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.minI]).toFixed(1) + "pp gap.";
 
