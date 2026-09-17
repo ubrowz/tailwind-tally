@@ -18,7 +18,10 @@ const PORT = process.env.PORT || 3000;
 const MAPTILER_KEY = process.env.MAPTILER_KEY;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const ALLOWED_STYLES = new Set(["dataviz", "dataviz-dark"]);
-const COORD_RE = /^\d{1,3}$/;
+// x/y tile indices can run up to 2^zoom - 1 per axis (e.g. 4095 at zoom 12,
+// over a million at zoom 20), so this needs far more than 3 digits of
+// headroom - it's a sanity bound against garbage input, not a real limit.
+const COORD_RE = /^\d{1,8}$/;
 
 if (!MAPTILER_KEY) {
   console.error("MAPTILER_KEY environment variable is not set - tile requests will fail with 500.");
