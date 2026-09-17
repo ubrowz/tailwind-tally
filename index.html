@@ -441,8 +441,64 @@
   .chart-grid-line { stroke: var(--grid); }
   .chart-axis-line { stroke: var(--axis); }
 
-  .sweep-callout { font-size: 12.5px; color: var(--ink-secondary); margin-top: 10px; line-height: 1.5; }
-  .sweep-callout b { color: var(--ink); }
+  .wind-sensitivity { font-size: 12.5px; color: var(--ink-secondary); margin-top: 10px; line-height: 1.5; }
+  .wind-sensitivity b { color: var(--ink); }
+  .wind-sensitivity-heading {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .info-wrap { position: relative; display: inline-flex; }
+  .info-btn {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel-raised);
+    color: var(--ink-muted);
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .info-btn:hover, .info-btn:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
+  .info-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    width: 260px;
+    max-width: min(70vw, 260px);
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-secondary);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+  }
+  /* :not([hidden]) rather than an unconditional display: an
+     unconditional author rule would win the cascade over the browser's
+     own (non-!important) default [hidden]{display:none}, leaving this
+     stuck visible outside a context that injects its own !important
+     override. */
+  .info-popover:not([hidden]) { display: block; }
 
   details.table-toggle { margin-top: 10px; }
   details.table-toggle summary { cursor: pointer; font-size: 12.5px; color: var(--accent); font-weight: 600; }
@@ -1326,6 +1382,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="leafletMapDiv"></div>
       </div>
       <div class="route-stats" id="routeStats"></div>
+      <div class="wind-sensitivity" id="routeWindSensitivity"></div>
     </div>
     <div class="card chart-card">
       <div class="card-head">
@@ -1334,7 +1391,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <p class="chart-caption">Easy-fraction for the route as ridden, if the wind came from every direction, 0&ndash;359&deg;. Reverse isn't shown separately &mdash; riding in reverse with wind from &theta; is mathematically identical to riding forward with wind from &theta;+180&deg;, so reverse's value at any direction is just this same curve read 180&deg; across.</p>
       <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, for the route as ridden"></svg>
-      <p class="sweep-callout" id="sweepCallout"></p>
+      <div class="wind-sensitivity" id="sweepCallout"></div>
       <details class="table-toggle">
         <summary>View sweep as a table</summary>
         <div class="sweep-table-wrap">
@@ -2179,6 +2236,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return lines.join("\n");
   }
 
+  // Shared between the sweep chart's callout and the Route card - same
+  // numbers, same wording, so they can't drift apart.
+  function buildAsymSymHTML(result) {
+    return (
+      '<div class="wind-sensitivity-heading">Wind sensitivity' +
+        '<span class="info-wrap">' +
+          '<button class="info-btn" type="button" aria-label="What do most asymmetric and most symmetric wind mean?">?</button>' +
+          '<div class="info-popover" hidden>' +
+            "<b>Most asymmetric wind</b> is the one wind direction, out of all 360&deg;, where riding this route forward versus in reverse gives the most different easy%. " +
+            "<b>Most symmetric wind</b> is the opposite &mdash; the direction where forward and reverse come out essentially equal. " +
+            "Both describe the route&rsquo;s own shape, not today&rsquo;s actual wind: they&rsquo;re the best- and worst-case wind angles for whether direction matters, shown for reference." +
+          "</div>" +
+        "</span>" +
+      "</div>" +
+      "Most asymmetric wind: <b>" + degreesToCompass16(result.sweep.maxI) + " (" + result.sweep.maxI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.maxI]).toFixed(1) + "pp forward/reverse gap.<br>" +
+      "Most symmetric wind: <b>" + degreesToCompass16(result.sweep.minI) + " (" + result.sweep.minI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.minI]).toFixed(1) + "pp gap."
+    );
+  }
+
   // ---------------------------------------------------------------------
   // App state + wiring
   // ---------------------------------------------------------------------
@@ -2398,8 +2474,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("sweepCallout").innerHTML =
       "Best wind, as ridden: <b>" + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "°)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy " +
       "&mdash; equivalently, <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "°)</b> is the best wind if riding in reverse.<br>" +
-      "Most asymmetric wind: <b>" + degreesToCompass16(result.sweep.maxI) + " (" + result.sweep.maxI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.maxI]).toFixed(1) + "pp forward/reverse gap.<br>" +
-      "Most symmetric wind: <b>" + degreesToCompass16(result.sweep.minI) + " (" + result.sweep.minI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.minI]).toFixed(1) + "pp gap.";
+      buildAsymSymHTML(result);
+
+    document.getElementById("routeWindSensitivity").innerHTML = buildAsymSymHTML(result);
 
     renderLastHalf(result);
     buildCompassTable(result);
@@ -2716,6 +2793,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   bindSaveImageButton("saveSweepBtn", "polarSvg", function () {
     return "tailwind-tally-sweep-" + degreesToCompass16(state.windFromDeg) + ".png";
+  });
+
+  // Info popovers (the "?" buttons next to "Wind sensitivity") are
+  // regenerated by innerHTML on every render(), so their listeners are
+  // delegated on document rather than bound per-button.
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".info-btn");
+    if (btn) {
+      var pop = btn.nextElementSibling;
+      var wasOpen = pop && !pop.hidden;
+      document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
+      if (pop) pop.hidden = wasOpen;
+      e.stopPropagation();
+      return;
+    }
+    if (e.target.closest(".info-popover")) return;
+    document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
   });
 
   render();
