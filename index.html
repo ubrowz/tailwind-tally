@@ -194,24 +194,6 @@
     background: var(--grid);
   }
   #leafletMapDiv .leaflet-control-attribution { font-size: 11px; }
-  .map-key-placeholder {
-    position: absolute;
-    inset: 0;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 24px;
-    color: var(--ink-muted);
-    font-size: 13px;
-    background: var(--grid);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-  }
-  /* Scoped to :not([hidden]) rather than an unconditional display:flex -
-     an unconditional author display would win the cascade over the
-     browser's own (non-!important, outside the artifact viewer) default
-     [hidden]{display:none}, leaving this stuck visible. */
-  .map-key-placeholder:not([hidden]) { display: flex; }
 
   .route-stats { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
   .route-stats-block { margin-bottom: 16px; }
@@ -1320,11 +1302,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <input type="number" id="veryInput" value="40" min="0" max="90" step="1">
           <p class="field-hint">Total width of the "very" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) — e.g. 40&deg; means the closest 20&deg; to either counts as very easy/very hard. Used by the Route map and its calculations below, not the rest of the page.</p>
         </div>
-        <div class="field">
-          <label for="tileProxyInput">Tile proxy URL</label>
-          <input type="text" id="tileProxyInput" placeholder="https://your-service.onrender.com" autocomplete="off" spellcheck="false">
-          <p class="field-hint">The tile-proxy backend's URL (github.com/ubrowz/tailwind-tally) &mdash; it holds the MapTiler key server-side so this page never needs one. Kept only in your browser's local storage. Feeds the Route map below. On Render's free tier the first request after a while can take 30&ndash;60s while the service wakes up &mdash; that's expected.</p>
-        </div>
         <details class="advanced">
           <summary>Advanced</summary>
           <div class="advanced-grid">
@@ -1347,14 +1324,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="card-head">
         <h2>Route</h2>
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span class="badge example" id="mapStatusBadge">No API key</span>
+          <span class="badge example" id="mapStatusBadge">Loading&hellip;</span>
           <button class="copy-btn" id="saveRouteBtn">Save image</button>
         </div>
       </div>
       <p class="chart-caption" id="planCaption"></p>
       <div class="map-wrap">
         <div id="leafletMapDiv"></div>
-        <div id="mapKeyPlaceholder" class="map-key-placeholder">Enter your tile proxy URL (in the Wind card above) to load the live map.</div>
       </div>
       <div class="route-stats" id="routeStats"></div>
     </div>
@@ -1947,22 +1923,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   function renderMap(result) {
     var badge = document.getElementById("mapStatusBadge");
-    var placeholder = document.getElementById("mapKeyPlaceholder");
     if (typeof L === "undefined") {
       if (badge) { badge.textContent = "Map library blocked"; badge.className = "badge blocked"; }
       return;
     }
 
-    var proxyBase = (state.tileProxyBase || "").trim().replace(/\/+$/, "");
-    if (!proxyBase) {
-      if (badge) { badge.textContent = "No proxy URL"; badge.className = "badge example"; }
-      if (placeholder) placeholder.hidden = false;
-      return;
-    }
-    if (placeholder) placeholder.hidden = true;
-
     var style = prefersDarkTheme() ? "dataviz-dark" : "dataviz";
-    var url = proxyBase + "/tiles/" + style + "/{z}/{x}/{y}.png";
+    var url = TILE_PROXY_BASE + "/tiles/" + style + "/{z}/{x}/{y}.png";
 
     if (!leafletMap) {
       leafletMap = L.map("leafletMapDiv", { attributionControl: true, scrollWheelZoom: true });
@@ -2211,15 +2178,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // ---------------------------------------------------------------------
   // App state + wiring
   // ---------------------------------------------------------------------
-  var DEFAULT_TILE_PROXY_BASE = "https://tailwind-tally.onrender.com";
-  function loadStoredTileProxyBase() {
-    try { return window.localStorage.getItem("tailwindTally.tileProxyBase") || DEFAULT_TILE_PROXY_BASE; }
-    catch (e) { return DEFAULT_TILE_PROXY_BASE; }
-  }
-  function storeTileProxyBase(url) {
-    try { window.localStorage.setItem("tailwindTally.tileProxyBase", url); }
-    catch (e) { /* private/blocked storage - url just won't persist across reloads */ }
-  }
+  // Fixed infrastructure, not a user setting - the tile proxy is this
+  // page's own backend (github.com/ubrowz/tailwind-tally), not something
+  // a visitor would ever point elsewhere.
+  var TILE_PROXY_BASE = "https://tailwind-tally.onrender.com";
 
   var state = {
     points: buildExampleRoute(),
@@ -2230,8 +2192,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     neutralDeg: 0,
     veryDeg: 40,
     windSpeedBeaufort: 4,
-    cruiseSpeedKmh: 25,
-    tileProxyBase: loadStoredTileProxyBase()
+    cruiseSpeedKmh: 25
   };
 
   var dropzone = document.getElementById("dropzone");
@@ -2246,7 +2207,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var veryInput = document.getElementById("veryInput");
   var windSpeedInput = document.getElementById("windSpeedInput");
   var cruiseSpeedInput = document.getElementById("cruiseSpeedInput");
-  var tileProxyInput = document.getElementById("tileProxyInput");
 
   BEAUFORT_KMH.forEach(function (kmh, i) {
     var opt = document.createElement("option");
@@ -2256,7 +2216,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
   windSpeedInput.value = state.windSpeedBeaufort;
   cruiseSpeedInput.value = state.cruiseSpeedKmh;
-  tileProxyInput.value = state.tileProxyBase;
   veryInput.value = state.veryDeg;
   var readoutDeg = document.getElementById("readoutDeg");
   var readoutCode = document.getElementById("readoutCode");
@@ -2324,11 +2283,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   cruiseSpeedInput.addEventListener("change", function () {
     var v = parseFloat(cruiseSpeedInput.value);
     state.cruiseSpeedKmh = isFinite(v) && v > 0 ? v : 25;
-    scheduleRender();
-  });
-  tileProxyInput.addEventListener("change", function () {
-    state.tileProxyBase = tileProxyInput.value.trim();
-    storeTileProxyBase(state.tileProxyBase);
     scheduleRender();
   });
 
