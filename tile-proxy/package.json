@@ -1,0 +1,15 @@
+{
+  "name": "tailwind-tally-tile-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Server-side proxy that holds the MapTiler API key and serves map tiles on behalf of the Tailwind Tally frontend, so the key never ships to the browser.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
