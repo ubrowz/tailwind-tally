@@ -31,6 +31,18 @@ const STRAVA_CLIENT_ID = "280279";
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 const ID_RE = /^\d+$/;
 
+// Strava's route ids are 64-bit integers that can exceed
+// Number.MAX_SAFE_INTEGER (2^53). JSON.parse silently rounds anything
+// bigger to the nearest representable double, which then sends a WRONG
+// id to export_gpx later ("Resource Not Found" for an id that was never
+// real). Quoting large "id" values before parsing preserves them
+// exactly, as strings - harmless, since every caller here only ever
+// uses this id as a string (built into a URL, or compared as text).
+function parseJsonPreservingBigIds(text) {
+  const safe = text.replace(/"id":(\d{16,})/g, '"id":"$1"');
+  return JSON.parse(safe);
+}
+
 if (!MAPTILER_KEY) {
   console.error("MAPTILER_KEY environment variable is not set - tile requests will fail with 500.");
 }
@@ -113,7 +125,8 @@ app.post("/strava/token", async (req, res) => {
         grant_type: "authorization_code"
       })
     });
-    const data = await upstream.json();
+    const rawText = await upstream.text();
+    const data = parseJsonPreservingBigIds(rawText);
     if (!upstream.ok) {
       res.status(upstream.status).json({ error: (data && data.message) || "Strava rejected that code." });
       return;
@@ -148,7 +161,8 @@ app.get("/strava/routes", async (req, res) => {
       "https://www.strava.com/api/v3/athletes/" + athleteId + "/routes?page=1&per_page=50",
       { headers: { Authorization: "Bearer " + accessToken } }
     );
-    const data = await upstream.json();
+    const rawText = await upstream.text();
+    const data = parseJsonPreservingBigIds(rawText);
     if (!upstream.ok) {
       res.status(upstream.status).json({ error: (data && data.message) || "Strava rejected that request." });
       return;
