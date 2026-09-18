@@ -2364,7 +2364,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     statRow.innerHTML =
       '<div class="stat-tile"><div class="label">Total length</div><div class="value mono">' + totalKm.toFixed(1) + ' km</div>' +
         '<div class="sub">' + result.segCount + ' segments &middot; ' + result.rawCount + ' raw pts</div></div>' +
-      '<div class="stat-tile"><div class="label">Forward</div><div class="value mono">' + result.fwd.easyPct.toFixed(1) + '%</div>' +
+      '<div class="stat-tile"><div class="label">Tailwind</div><div class="value mono">' + result.fwd.easyPct.toFixed(1) + '%</div>' +
         '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + (result.fwd.easy / 1000).toFixed(1) + ' km tailwind &middot; ' + (result.fwd.hard / 1000).toFixed(1) + ' km headwind</div></div>';
 
     var banner = document.getElementById("verdictBanner");
