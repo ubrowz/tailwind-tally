@@ -1324,9 +1324,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p class="field-hint">Total width of the neutral band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Neutral segments count as neither easy nor hard.</p>
         </div>
         <div class="field">
-          <label for="veryInput">Very easy / very hard band (&deg;)</label>
+          <label for="veryInput">Full tailwind / full headwind band (&deg;)</label>
           <input type="number" id="veryInput" value="40" min="0" max="90" step="1">
-          <p class="field-hint">Total width of the "very" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) — e.g. 40&deg; means the closest 20&deg; to either counts as very easy/very hard. Used by the Route map and its calculations below, not the rest of the page.</p>
+          <p class="field-hint">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) — e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</p>
         </div>
         <details class="advanced">
           <summary>Advanced</summary>
@@ -1754,8 +1754,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
     };
 
-    // Five-way (very easy/easy/neutral/hard/very hard) breakdown for the
-    // Route map and its calculations only.
+    // Five-way (full tailwind/tailwind/side wind/headwind/full headwind)
+    // breakdown for the Route map and its calculations only. Purely a
+    // function of wind DIRECTION vs. heading (cosphi) - it says nothing
+    // about wind speed, unlike the effort/power-multiplier figures below.
     var fiveWay = {
       categories: classifyFiveWay(cosphiFwd, neutralDeg, veryDeg),
       full: rangeStatsFiveWay(lengths, cosphiFwd, neutralDeg, veryDeg, 0, lengths.length),
@@ -1996,7 +1998,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function renderRouteStats(result) {
     var wrap = document.getElementById("routeStats");
     wrap.innerHTML = "";
-    var CATS = [["veryeasy", "Very easy"], ["easy", "Easy"], ["neutral", "Neutral"], ["hard", "Hard"], ["veryhard", "Very hard"]];
+    var CATS = [["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Side wind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]];
 
     function block(title, stats) {
       var container = document.createElement("div");
@@ -2603,11 +2605,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     function block(blockTop, title, stats) {
       heading(blockTop + 18, title);
       bar(pad, blockTop + 24, width - 2 * pad, 8, stats);
-      item(colX[0], blockTop + 52, "veryeasy", "Very easy", stats.veryeasy);
-      item(colX[1], blockTop + 52, "easy", "Easy", stats.easy);
-      item(colX[2], blockTop + 52, "neutral", "Neutral", stats.neutral);
-      item(colX[0], blockTop + 74, "hard", "Hard", stats.hard);
-      item(colX[1], blockTop + 74, "veryhard", "Very hard", stats.veryhard);
+      item(colX[0], blockTop + 52, "veryeasy", "Full tailwind", stats.veryeasy);
+      item(colX[1], blockTop + 52, "easy", "Tailwind", stats.easy);
+      item(colX[2], blockTop + 52, "neutral", "Side wind", stats.neutral);
+      item(colX[0], blockTop + 74, "hard", "Headwind", stats.hard);
+      item(colX[1], blockTop + 74, "veryhard", "Full headwind", stats.veryhard);
     }
     block(top, "FULL ROUTE (AS RIDDEN)", result.fiveWay.full);
     block(top + BLOCK_H, "LAST 50% OF THE ROUTE (AS RIDDEN)", result.fiveWay.lastHalfForward);
