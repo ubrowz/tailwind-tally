@@ -178,7 +178,8 @@ app.get("/strava/routes/:id/gpx", async (req, res) => {
       { headers: { Authorization: "Bearer " + accessToken } }
     );
     if (!upstream.ok) {
-      res.status(upstream.status).type("text/plain").send("Strava rejected that request.");
+      const errBody = await upstream.text();
+      res.status(upstream.status).type("text/plain").send(errBody || "Strava rejected that request.");
       return;
     }
     const text = await upstream.text();
