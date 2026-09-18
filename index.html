@@ -223,6 +223,7 @@
   .strava-panel { margin-top: 14px; }
   .strava-status { font-size: 13px; color: var(--ink-secondary); margin-bottom: 10px; }
   .strava-status b { color: var(--ink); }
+  .strava-scope { font-family: var(--font-display); font-size: 11.5px; color: var(--ink-muted); }
   .strava-route-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .strava-route-row select {
     flex: 1;
@@ -2453,7 +2454,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       client_id: STRAVA_CLIENT_ID,
       response_type: "code",
       redirect_uri: stravaRedirectUri(),
-      approval_prompt: "auto",
+      // "force" (not "auto") so Strava always shows the consent screen
+      // and re-grants the scope requested here, rather than silently
+      // reusing whatever narrower scope a previous connection approved -
+      // export_gpx needs read_all for private routes, list-routes only
+      // needs read, so a stale "auto" grant can list routes fine and
+      // still 404 on exporting one.
+      approval_prompt: "force",
       scope: "read,read_all"
     });
     window.location.href = "https://www.strava.com/oauth/authorize?" + params.toString();
@@ -2463,6 +2470,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     strava.accessToken = null;
     strava.athleteId = null;
     strava.athleteName = null;
+    strava.scope = null;
     strava.routes = [];
     stravaPanel.hidden = true;
     stravaDisconnectBtn.hidden = true;
@@ -2488,15 +2496,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
   }
 
+  function stravaScopeSuffix() {
+    return strava.scope ? " <span class=\"strava-scope\">(scope: " + strava.scope + ")</span>" : "";
+  }
+
   function stravaLoadRoutes() {
-    stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>. Loading your routes&hellip;";
+    stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>." + stravaScopeSuffix() + " Loading your routes&hellip;";
     fetch(TILE_PROXY_BASE + "/strava/routes?access_token=" + encodeURIComponent(strava.accessToken) +
       "&athlete_id=" + encodeURIComponent(strava.athleteId))
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (result) {
         if (!result.ok) throw new Error(result.data.error || "Strava rejected that request.");
         strava.routes = result.data;
-        stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>. " +
+        stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>." + stravaScopeSuffix() + " " +
           strava.routes.length + " route" + (strava.routes.length === 1 ? "" : "s") + " found.";
         stravaRenderRoutePicker();
       })
@@ -2536,12 +2548,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var params = new URLSearchParams(window.location.search);
     var code = params.get("code");
     var oauthError = params.get("error");
+    var grantedScope = params.get("scope") || "";
     if (!code && !oauthError) return;
     window.history.replaceState({}, document.title, stravaRedirectUri());
     if (oauthError) {
       stravaShowError("Strava connection was cancelled.");
       return;
     }
+    strava.scope = grantedScope;
     stravaConnectBtn.disabled = true;
     stravaConnectBtn.textContent = "Connecting…";
     fetch(TILE_PROXY_BASE + "/strava/token", {
