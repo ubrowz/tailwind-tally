@@ -377,14 +377,13 @@
   /* ---------- Stat tiles ---------- */
   .stat-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1px;
     background: var(--border);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     overflow: hidden;
   }
-  @media (max-width: 720px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
   .stat-tile { background: var(--panel); padding: 16px 18px; }
   .stat-tile .label {
     font-size: 11px;
@@ -1320,7 +1319,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p class="field-hint">Wind speed and cruising speed feed the last-50% wind-effort estimate below.</p>
         <div class="field">
           <label for="neutralInput">Crosswind band (&deg;)</label>
-          <input type="number" id="neutralInput" value="0" min="0" max="45" step="1">
+          <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
           <p class="field-hint">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</p>
         </div>
         <div class="field">
@@ -2059,8 +2058,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // in cosphi). So only forward is shown - but the equivalence is a
   // consequence of the route actually closing, not a given, so it's
   // checked live rather than assumed: a route that doesn't return to its
-  // start (see the "Closure gap" stat tile above) would show a real gap
-  // here, and that gets surfaced instead of hidden.
+  // start (see "Closure gap" in the full report below) would show a real
+  // gap here, and that gets surfaced instead of hidden.
   function renderLastHalf(result) {
     var lh = result.lastHalf, ef = result.effort;
     var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
@@ -2090,7 +2089,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       verdict = "Forward and reverse come out the same here (within " + gap.toFixed(3) + "&times;) &mdash; expected for a route that returns to its start.";
     } else {
       verdict = "Forward (" + fwdEffort.powerMultiplier.toFixed(2) + "&times;) and reverse (" + revEffort.powerMultiplier.toFixed(2) +
-        "&times;) actually differ here &mdash; a bigger gap than a closed loop should give, which usually means this route doesn't fully return to its start (see the \"Closure gap\" stat tile above).";
+        "&times;) actually differ here &mdash; a bigger gap than a closed loop should give, which usually means this route doesn't fully return to its start (see \"Closure gap\" in the full report below).";
     }
     document.getElementById("halfVerdict").innerHTML = verdict;
   }
@@ -2178,7 +2177,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     isExample: true,
     windFromDeg: 225,
     resampleM: 25,
-    neutralDeg: 0,
+    neutralDeg: 10,
     veryDeg: 40,
     windSpeedBeaufort: 4,
     cruiseSpeedKmh: 25
@@ -2256,7 +2255,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
   neutralInput.addEventListener("change", function () {
     var v = parseFloat(neutralInput.value);
-    state.neutralDeg = isFinite(v) && v >= 0 ? v : 0;
+    state.neutralDeg = isFinite(v) && v >= 0 ? v : 10;
     scheduleRender();
   });
   veryInput.addEventListener("change", function () {
@@ -2348,12 +2347,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     statRow.innerHTML =
       '<div class="stat-tile"><div class="label">Total length</div><div class="value mono">' + totalKm.toFixed(1) + ' km</div>' +
         '<div class="sub">' + result.segCount + ' segments &middot; ' + result.rawCount + ' raw pts</div></div>' +
-      '<div class="stat-tile"><div class="label">Closure gap</div><div class="value mono">' + result.closureGap.toFixed(0) + ' m</div>' +
-        '<div class="sub">' + (100 * result.closureGap / result.totalLength).toFixed(2) + '% of length</div></div>' +
       '<div class="stat-tile"><div class="label">Forward</div><div class="value mono">' + result.fwd.easyPct.toFixed(1) + '%</div>' +
-        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + (result.fwd.easy / 1000).toFixed(1) + ' km easy &middot; ' + (result.fwd.hard / 1000).toFixed(1) + ' km hard</div></div>' +
-      '<div class="stat-tile"><div class="label">Reverse</div><div class="value mono">' + result.rev.easyPct.toFixed(1) + '%</div>' +
-        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + (result.rev.easy / 1000).toFixed(1) + ' km easy &middot; ' + (result.rev.hard / 1000).toFixed(1) + ' km hard</div></div>';
+        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + (result.fwd.easy / 1000).toFixed(1) + ' km tailwind &middot; ' + (result.fwd.hard / 1000).toFixed(1) + ' km headwind</div></div>';
 
     var banner = document.getElementById("verdictBanner");
     var diffPp = result.fwd.easyPct - result.rev.easyPct;
