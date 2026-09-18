@@ -1,0 +1,69 @@
+name: TailwindTally
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  bundleIdPrefix: com.ubrowz
+
+targets:
+  TailwindTally:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Sources
+    resources:
+      - path: Resources/Assets.xcassets
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Tailwind Tally
+        LSRequiresIPhoneOS: true
+        UIRequiresFullScreen: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+        # Lets iOS offer "Tailwind Tally" in the Share Sheet ("Open
+        # in...") for any .gpx file - exported from Strava's own app, an
+        # email attachment, AirDrop, Files - so a route can be handed to
+        # the app without going through the in-app Strava login or the
+        # file drop-zone at all. See WebViewCoordinator.handleIncomingFile.
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.topografix.gpx
+            UTTypeDescription: GPX Track
+            UTTypeConformsTo:
+              - public.xml
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - gpx
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: GPX Track
+            LSItemContentTypes:
+              - com.topografix.gpx
+            LSHandlerRank: Alternate
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ubrowz.tailwindtally
+        PRODUCT_NAME: Tailwind Tally
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+
+schemes:
+  TailwindTally:
+    build:
+      targets:
+        TailwindTally: all
+    run:
+      config: Debug
+    archive:
+      config: Release
