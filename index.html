@@ -516,12 +516,13 @@
   table.sweep-table th { color: var(--ink-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
 
   /* ---------- Last-50% comparison ---------- */
+  .half-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 720px) { .half-grid { grid-template-columns: 1fr; } }
   .half-card {
     background: var(--panel-raised);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 15px 16px;
-    max-width: 360px;
   }
   .half-card .half-title {
     font-size: 11px;
@@ -1750,6 +1751,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       lastHalf: {
         forward: windEffortStats(lengths, cosphiFwd, vMs, wMs, split.idx, lengths.length),
         reverse: windEffortStats(lengths, cosphiRev, vMs, wMs, 0, split.idx)
+      },
+      firstHalf: {
+        forward: windEffortStats(lengths, cosphiFwd, vMs, wMs, 0, split.idx)
       }
     };
 
@@ -2065,16 +2069,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   }
 
-  // Forward's and reverse's effort multiplier for the last 50% are always
-  // nearly equal for a genuine round trip: whatever tailwind push you get
-  // on one half of a closed loop is mirrored by headwind drag on the
-  // other, in either riding direction (same reasoning as the plain-
-  // distance version of this split, extended to a metric that's linear
-  // in cosphi). So only forward is shown - but the equivalence is a
-  // consequence of the route actually closing, not a given, so it's
-  // checked live rather than assumed: a route that doesn't return to its
-  // start (see "Closure gap" in the full report below) would show a real
-  // gap here, and that gets surfaced instead of hidden.
+  // Three effort figures side by side - first 50%, last 50%, and the
+  // whole route - so it's visible at a glance whether the wind gets
+  // kinder or harsher as the ride goes on, not just what the closing
+  // half looks like in isolation. First 50% and Whole route only show
+  // the forward (as-ridden) number: the same closed-loop reasoning that
+  // makes forward and reverse agree on the last 50% (checked live below)
+  // applies to these too, since first-half + last-half = whole-route by
+  // construction. Last 50% keeps its explicit forward/reverse check,
+  // since that's the one users would actually plan a return leg around.
   function renderLastHalf(result) {
     var lh = result.lastHalf, ef = result.effort;
     var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
@@ -2084,19 +2087,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "aerodynamic drag scales with relative-airspeed <i>squared</i>, not with the wind component directly, so this is shown as a multiple of the effort a completely calm day at the same speed would take.";
 
     var fwdEffort = ef.lastHalf.forward, revEffort = ef.lastHalf.reverse;
-    var mult = fwdEffort.powerMultiplier;
-    var good = mult < 1;
-    var maxScale = Math.max(2.0, mult * 1.1);
-    var refPct = Math.min(100, 100 / maxScale);
-    var fillPct = Math.min(100, 100 * mult / maxScale);
+    var firstEffort = ef.firstHalf.forward, wholeEffort = ef.full.forward;
+    var maxScale = Math.max(2.0, 1.1 * Math.max(fwdEffort.powerMultiplier, firstEffort.powerMultiplier, wholeEffort.powerMultiplier));
+
+    function cell(title, eff) {
+      var mult = eff.powerMultiplier;
+      var good = mult < 1;
+      var refPct = Math.min(100, 100 / maxScale);
+      var fillPct = Math.min(100, 100 * mult / maxScale);
+      return '<div class="half-card">' +
+          '<div class="half-title">' + title + '</div>' +
+          '<div class="half-multiplier ' + (good ? "good" : "bad") + '">' + mult.toFixed(2) + '&times; <span class="unit">calm-day aero effort</span></div>' +
+          '<div class="half-bar"><div class="half-bar-fill ' + (good ? "good" : "bad") + '" style="width:' + fillPct.toFixed(1) + '%"></div><div class="half-bar-ref" style="left:' + refPct.toFixed(1) + '%"></div></div>' +
+          '<div class="half-net">Effective wind-in-your-face speed: <b>' + eff.avgRelSpeedKmh.toFixed(1) + ' km/h</b> (vs. ' + ef.cruiseSpeedKmh.toFixed(0) + ' km/h on a calm day).</div>' +
+        '</div>';
+    }
 
     document.getElementById("halfGrid").innerHTML =
-      '<div class="half-card">' +
-        '<div class="half-title">Last 50%, either direction</div>' +
-        '<div class="half-multiplier ' + (good ? "good" : "bad") + '">' + mult.toFixed(2) + '&times; <span class="unit">calm-day aero effort</span></div>' +
-        '<div class="half-bar"><div class="half-bar-fill ' + (good ? "good" : "bad") + '" style="width:' + fillPct.toFixed(1) + '%"></div><div class="half-bar-ref" style="left:' + refPct.toFixed(1) + '%"></div></div>' +
-        '<div class="half-net">Effective wind-in-your-face speed: <b>' + fwdEffort.avgRelSpeedKmh.toFixed(1) + ' km/h</b> (vs. ' + ef.cruiseSpeedKmh.toFixed(0) + ' km/h on a calm day).</div>' +
-      '</div>';
+      cell("First 50%", firstEffort) +
+      cell("Last 50%, either direction", fwdEffort) +
+      cell("Whole route", wholeEffort);
 
     var gap = Math.abs(fwdEffort.powerMultiplier - revEffort.powerMultiplier);
     var verdict;
