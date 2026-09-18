@@ -1319,9 +1319,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
         <p class="field-hint">Wind speed and cruising speed feed the last-50% wind-effort estimate below.</p>
         <div class="field">
-          <label for="neutralInput">Neutral band (&deg;)</label>
+          <label for="neutralInput">Crosswind band (&deg;)</label>
           <input type="number" id="neutralInput" value="0" min="0" max="45" step="1">
-          <p class="field-hint">Total width of the neutral band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Neutral segments count as neither easy nor hard.</p>
+          <p class="field-hint">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</p>
         </div>
         <div class="field">
           <label for="veryInput">Full tailwind / full headwind band (&deg;)</label>
@@ -1754,7 +1754,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
     };
 
-    // Five-way (full tailwind/tailwind/side wind/headwind/full headwind)
+    // Five-way (full tailwind/tailwind/crosswind/headwind/full headwind)
     // breakdown for the Route map and its calculations only. Purely a
     // function of wind DIRECTION vs. heading (cosphi) - it says nothing
     // about wind speed, unlike the effort/power-multiplier figures below.
@@ -1998,7 +1998,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function renderRouteStats(result) {
     var wrap = document.getElementById("routeStats");
     wrap.innerHTML = "";
-    var CATS = [["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Side wind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]];
+    var CATS = [["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Crosswind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]];
 
     function block(title, stats) {
       var container = document.createElement("div");
@@ -2607,7 +2607,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       bar(pad, blockTop + 24, width - 2 * pad, 8, stats);
       item(colX[0], blockTop + 52, "veryeasy", "Full tailwind", stats.veryeasy);
       item(colX[1], blockTop + 52, "easy", "Tailwind", stats.easy);
-      item(colX[2], blockTop + 52, "neutral", "Side wind", stats.neutral);
+      item(colX[2], blockTop + 52, "neutral", "Crosswind", stats.neutral);
       item(colX[0], blockTop + 74, "hard", "Headwind", stats.hard);
       item(colX[1], blockTop + 74, "veryhard", "Full headwind", stats.veryhard);
     }
