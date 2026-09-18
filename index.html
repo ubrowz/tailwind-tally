@@ -185,6 +185,57 @@
   .badge.loaded { background: var(--status-good-wash); color: var(--status-good); }
   .badge.blocked { background: var(--status-critical-wash); color: var(--status-critical); }
 
+  /* ---------- Strava import ---------- */
+  .strava-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+  }
+  .strava-divider::before, .strava-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .strava-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    background: #fc4c02;
+    border: 1px solid #fc4c02;
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .strava-btn:hover { background: #e14602; border-color: #e14602; }
+  .strava-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .strava-btn:disabled { opacity: 0.6; cursor: default; }
+  .strava-panel { margin-top: 14px; }
+  .strava-status { font-size: 13px; color: var(--ink-secondary); margin-bottom: 10px; }
+  .strava-status b { color: var(--ink); }
+  .strava-route-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .strava-route-row select {
+    flex: 1;
+    min-width: 220px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 9px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--ink);
+  }
+
   .map-wrap { position: relative; }
   #leafletMapDiv {
     height: 440px;
@@ -1289,6 +1340,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <span class="badge example" id="fileBadge">Example route</span>
     </div>
     <p class="error-text" id="fileError"></p>
+
+    <div class="strava-divider">or</div>
+    <button type="button" class="strava-btn" id="stravaConnectBtn">Connect to Strava</button>
+    <button type="button" class="copy-btn" id="stravaDisconnectBtn" hidden>Disconnect</button>
+    <div class="strava-panel" id="stravaPanel" hidden>
+      <p class="strava-status" id="stravaStatus"></p>
+      <div class="strava-route-row">
+        <select id="stravaRouteSelect"></select>
+        <button type="button" class="copy-btn" id="stravaLoadBtn">Load route</button>
+      </div>
+    </div>
+    <p class="error-text" id="stravaError"></p>
   </div>
 
   <div class="card">
@@ -2193,8 +2256,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // ---------------------------------------------------------------------
   // Fixed infrastructure, not a user setting - the tile proxy is this
   // page's own backend (github.com/ubrowz/tailwind-tally), not something
-  // a visitor would ever point elsewhere.
+  // a visitor would ever point elsewhere. The same backend also holds the
+  // Strava OAuth client secret and proxies Strava API calls (Strava
+  // doesn't send CORS headers, so the browser can't call it directly).
   var TILE_PROXY_BASE = "https://tailwind-tally.onrender.com";
+  // Strava's Client ID is not secret - it's meant to be public, the same
+  // way an app's name is. Only the Client Secret (server-side only, on
+  // the backend above) matters for security.
+  var STRAVA_CLIENT_ID = "280279";
 
   var state = {
     points: buildExampleRoute(),
@@ -2207,6 +2276,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     windSpeedBeaufort: 4,
     cruiseSpeedKmh: 25
   };
+
+  // Nothing Strava-related is persisted (no localStorage, no backend
+  // storage) - a fresh Strava connection is a fresh OAuth round trip
+  // each time, and this in-memory access token is discarded on reload.
+  var strava = { accessToken: null, athleteId: null, athleteName: null, routes: [] };
 
   var dropzone = document.getElementById("dropzone");
   var fileInput = document.getElementById("fileInput");
@@ -2316,16 +2390,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
   });
 
+  // Shared by the file drop-zone and the Strava route picker below - both
+  // end up with GPX text from somewhere and feed it into the same parse
+  // + state update, so a route loaded from Strava is indistinguishable
+  // downstream from one dropped in by hand.
+  function loadGpxText(text, label) {
+    var pts = parseGpxPoints(text);
+    state.points = pts;
+    state.fileLabel = label;
+    state.isExample = false;
+    fileError.classList.remove("show");
+    scheduleRender();
+  }
+
   function loadFile(file) {
     var reader = new FileReader();
     reader.onload = function () {
       try {
-        var pts = parseGpxPoints(String(reader.result));
-        state.points = pts;
-        state.fileLabel = file.name;
-        state.isExample = false;
-        fileError.classList.remove("show");
-        scheduleRender();
+        loadGpxText(String(reader.result), file.name);
       } catch (err) {
         fileError.textContent = err.message;
         fileError.classList.add("show");
@@ -2337,6 +2419,156 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
     reader.readAsText(file);
   }
+
+  // ---------------------------------------------------------------------
+  // Strava import - OAuth Authorization Code flow. The Client Secret step
+  // (exchanging a one-time code for an access token) has to happen on the
+  // backend, since a secret can't be kept out of a static page's source;
+  // the resulting access token is used directly by the browser afterward
+  // (not re-proxied per call) because it's the visitor's own token,
+  // scoped to their own account, and short-lived - Strava's API just
+  // doesn't send CORS headers, so listing routes and exporting a GPX
+  // still have to go through the backend, purely to get around that.
+  // ---------------------------------------------------------------------
+  var stravaConnectBtn = document.getElementById("stravaConnectBtn");
+  var stravaDisconnectBtn = document.getElementById("stravaDisconnectBtn");
+  var stravaPanel = document.getElementById("stravaPanel");
+  var stravaStatus = document.getElementById("stravaStatus");
+  var stravaRouteSelect = document.getElementById("stravaRouteSelect");
+  var stravaLoadBtn = document.getElementById("stravaLoadBtn");
+  var stravaError = document.getElementById("stravaError");
+
+  function stravaShowError(msg) {
+    stravaError.textContent = msg;
+    stravaError.classList.add("show");
+  }
+
+  function stravaRedirectUri() {
+    return window.location.origin + window.location.pathname;
+  }
+
+  stravaConnectBtn.addEventListener("click", function () {
+    stravaError.classList.remove("show");
+    var params = new URLSearchParams({
+      client_id: STRAVA_CLIENT_ID,
+      response_type: "code",
+      redirect_uri: stravaRedirectUri(),
+      approval_prompt: "auto",
+      scope: "read,read_all"
+    });
+    window.location.href = "https://www.strava.com/oauth/authorize?" + params.toString();
+  });
+
+  stravaDisconnectBtn.addEventListener("click", function () {
+    strava.accessToken = null;
+    strava.athleteId = null;
+    strava.athleteName = null;
+    strava.routes = [];
+    stravaPanel.hidden = true;
+    stravaDisconnectBtn.hidden = true;
+    stravaConnectBtn.hidden = false;
+    stravaError.classList.remove("show");
+  });
+
+  function stravaRenderRoutePicker() {
+    stravaRouteSelect.innerHTML = "";
+    if (strava.routes.length === 0) {
+      var opt = document.createElement("option");
+      opt.textContent = "No routes found on this Strava account";
+      stravaRouteSelect.appendChild(opt);
+      stravaLoadBtn.disabled = true;
+      return;
+    }
+    stravaLoadBtn.disabled = false;
+    strava.routes.forEach(function (route) {
+      var opt = document.createElement("option");
+      opt.value = route.id;
+      opt.textContent = route.name + " (" + (route.distance / 1000).toFixed(1) + " km)";
+      stravaRouteSelect.appendChild(opt);
+    });
+  }
+
+  function stravaLoadRoutes() {
+    stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>. Loading your routes&hellip;";
+    fetch(TILE_PROXY_BASE + "/strava/routes?access_token=" + encodeURIComponent(strava.accessToken) +
+      "&athlete_id=" + encodeURIComponent(strava.athleteId))
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Strava rejected that request.");
+        strava.routes = result.data;
+        stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>. " +
+          strava.routes.length + " route" + (strava.routes.length === 1 ? "" : "s") + " found.";
+        stravaRenderRoutePicker();
+      })
+      .catch(function (err) {
+        stravaShowError(err.message || "Couldn't load your Strava routes.");
+      });
+  }
+
+  stravaLoadBtn.addEventListener("click", function () {
+    var routeId = stravaRouteSelect.value;
+    var route = strava.routes.filter(function (r) { return String(r.id) === String(routeId); })[0];
+    if (!route) return;
+    stravaError.classList.remove("show");
+    stravaLoadBtn.disabled = true;
+    stravaLoadBtn.textContent = "Loading…";
+    fetch(TILE_PROXY_BASE + "/strava/routes/" + encodeURIComponent(routeId) + "/gpx?access_token=" + encodeURIComponent(strava.accessToken))
+      .then(function (res) {
+        if (!res.ok) return res.text().then(function (t) { throw new Error(t || "Strava rejected that request."); });
+        return res.text();
+      })
+      .then(function (gpxText) {
+        loadGpxText(gpxText, route.name + " (Strava)");
+      })
+      .catch(function (err) {
+        stravaShowError(err.message || "Couldn't load that route.");
+      })
+      .finally(function () {
+        stravaLoadBtn.disabled = false;
+        stravaLoadBtn.textContent = "Load route";
+      });
+  });
+
+  // On return from Strava's authorize page, the URL carries ?code=... (or
+  // ?error=... if the visitor declined). Handle it once, then strip it
+  // from the URL so a page refresh doesn't try to reuse a spent code.
+  (function handleStravaRedirect() {
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get("code");
+    var oauthError = params.get("error");
+    if (!code && !oauthError) return;
+    window.history.replaceState({}, document.title, stravaRedirectUri());
+    if (oauthError) {
+      stravaShowError("Strava connection was cancelled.");
+      return;
+    }
+    stravaConnectBtn.disabled = true;
+    stravaConnectBtn.textContent = "Connecting…";
+    fetch(TILE_PROXY_BASE + "/strava/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code })
+    })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "Strava rejected that connection.");
+        strava.accessToken = result.data.access_token;
+        strava.athleteId = result.data.athlete && result.data.athlete.id;
+        strava.athleteName = result.data.athlete ?
+          (result.data.athlete.firstname + " " + result.data.athlete.lastname).trim() : "your Strava account";
+        stravaConnectBtn.hidden = true;
+        stravaDisconnectBtn.hidden = false;
+        stravaPanel.hidden = false;
+        stravaLoadRoutes();
+      })
+      .catch(function (err) {
+        stravaShowError(err.message || "Couldn't connect to Strava.");
+      })
+      .finally(function () {
+        stravaConnectBtn.disabled = false;
+        stravaConnectBtn.textContent = "Connect to Strava";
+      });
+  })();
 
   var rafPending = false;
   function scheduleRender() {
