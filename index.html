@@ -213,6 +213,7 @@
   .route-stats-bar-seg.neutral { background-color: var(--status-neutral); }
   .route-stats-bar-seg.hard { background-color: var(--status-critical); }
   .route-stats-bar-seg.veryhard { background-color: var(--status-critical-strong); }
+  .route-stats-bar-seg.calm { background-color: var(--accent); }
   .route-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; }
   .route-stats-item {
     display: flex;
@@ -231,6 +232,7 @@
   .route-stats-swatch.hard { background-color: var(--status-critical); }
   .route-stats-swatch.veryhard { background-color: var(--status-critical-strong); }
   .route-stats-swatch.neutral { background-color: var(--status-neutral); }
+  .route-stats-swatch.calm { background-color: var(--accent); }
   .error-text {
     margin-top: 10px;
     font-size: 13px;
@@ -1661,7 +1663,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
 
   function rangeStatsFiveWay(lengths, cosphi, neutralDeg, veryDeg, start, end) {
-    var out = { veryeasy: 0, easy: 0, neutral: 0, hard: 0, veryhard: 0, dist: 0 };
+    var out = { veryeasy: 0, easy: 0, neutral: 0, hard: 0, veryhard: 0, calm: 0, dist: 0 };
     for (var i = start; i < end; i++) {
       out.dist += lengths[i];
       var c = cosphi[i];
@@ -1761,8 +1763,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
       categories: classifyFiveWay(cosphiFwd, neutralDeg, veryDeg),
       full: rangeStatsFiveWay(lengths, cosphiFwd, neutralDeg, veryDeg, 0, lengths.length),
       lastHalfForward: rangeStatsFiveWay(lengths, cosphiFwd, neutralDeg, veryDeg, split.idx, lengths.length),
-      lastHalfReverse: rangeStatsFiveWay(lengths, cosphiRev, neutralDeg, veryDeg, 0, split.idx)
+      lastHalfReverse: rangeStatsFiveWay(lengths, cosphiRev, neutralDeg, veryDeg, 0, split.idx),
+      isCalm: windSpeedKmh === 0
     };
+    // At 0 wind speed the tailwind/headwind direction is meaningless (see
+    // the windEffortStats power multiplier, which correctly goes flat at
+    // 1x everywhere) - so instead of showing a directional breakdown that
+    // has no physical basis, collapse the whole route into one "calm"
+    // bucket and zero out the rest.
+    if (fiveWay.isCalm) {
+      fiveWay.categories = fiveWay.categories.map(function () { return "calm"; });
+      [fiveWay.full, fiveWay.lastHalfForward, fiveWay.lastHalfReverse].forEach(function (stats) {
+        stats.calm = stats.dist;
+        stats.veryeasy = stats.easy = stats.neutral = stats.hard = stats.veryhard = 0;
+      });
+    }
 
     return {
       rawCount: points.length, xy: xy, latLon: latLon, lengths: lengths, segCount: lengths.length,
@@ -1974,7 +1989,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var latLon = result.latLon, cats = result.fiveWay.categories;
     var colorFor = {
       veryeasy: "var(--status-good-strong)", easy: "var(--status-good)", neutral: "var(--status-neutral)",
-      hard: "var(--status-critical)", veryhard: "var(--status-critical-strong)"
+      hard: "var(--status-critical)", veryhard: "var(--status-critical-strong)", calm: "var(--accent)"
     };
     var i = 0;
     while (i < cats.length) {
@@ -1997,7 +2012,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function renderRouteStats(result) {
     var wrap = document.getElementById("routeStats");
     wrap.innerHTML = "";
-    var CATS = [["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Crosswind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]];
+    var CATS = result.fiveWay.isCalm
+      ? [["calm", "Calm"], ["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Crosswind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]]
+      : [["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Crosswind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]];
 
     function block(title, stats) {
       var container = document.createElement("div");
@@ -2008,7 +2025,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       h.textContent = title;
       container.appendChild(h);
 
-      var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard;
+      var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard + stats.calm;
       var bar = document.createElement("div");
       bar.className = "route-stats-bar";
       CATS.forEach(function (item) {
@@ -2512,7 +2529,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       easy: resolvedColor("--status-good", "#0ca30c"),
       hard: resolvedColor("--status-critical", "#d03b3b"),
       veryhard: resolvedColor("--status-critical-strong", "#7a1f1f"),
-      neutral: resolvedColor("--status-neutral", "#898781")
+      neutral: resolvedColor("--status-neutral", "#898781"),
+      calm: resolvedColor("--accent", "#2a78d6")
     };
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
@@ -2558,7 +2576,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       easy: resolvedColor("--status-good", "#0ca30c"),
       neutral: resolvedColor("--status-neutral", "#898781"),
       hard: resolvedColor("--status-critical", "#d03b3b"),
-      veryhard: resolvedColor("--status-critical-strong", "#7a1f1f")
+      veryhard: resolvedColor("--status-critical-strong", "#7a1f1f"),
+      calm: resolvedColor("--accent", "#2a78d6")
     };
     var colW = (width - 2 * pad) / 3;
     var colX = [pad, pad + colW, pad + 2 * colW];
@@ -2584,10 +2603,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ctx.fillText(label + " " + (meters / 1000).toFixed(2) + " km", x + 15, y);
     }
     function bar(x, y, w, h, stats) {
-      var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard;
+      var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard + stats.calm;
       if (total <= 0) return;
       var cx = x;
-      ["veryeasy", "easy", "neutral", "hard", "veryhard"].forEach(function (cat) {
+      ["veryeasy", "easy", "neutral", "hard", "veryhard", "calm"].forEach(function (cat) {
         var m = stats[cat];
         if (m <= 0) return;
         var segW = (m / total) * w;
@@ -2605,6 +2624,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       item(colX[2], blockTop + 52, "neutral", "Crosswind", stats.neutral);
       item(colX[0], blockTop + 74, "hard", "Headwind", stats.hard);
       item(colX[1], blockTop + 74, "veryhard", "Full headwind", stats.veryhard);
+      if (stats.calm > 0) item(colX[2], blockTop + 74, "calm", "Calm", stats.calm);
     }
     block(top, "FULL ROUTE (AS RIDDEN)", result.fiveWay.full);
     block(top + BLOCK_H, "LAST 50% OF THE ROUTE (AS RIDDEN)", result.fiveWay.lastHalfForward);
