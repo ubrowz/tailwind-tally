@@ -546,33 +546,6 @@
   .half-verdict { font-size: 13px; color: var(--ink-secondary); margin-top: 14px; }
   .half-verdict b { color: var(--ink); }
 
-  /* ---------- Diagnostics ---------- */
-  .diag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 720px) { .diag-grid { grid-template-columns: 1fr; } }
-  .diag-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 14px;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-  }
-  .diag-chip {
-    flex: none;
-    font-size: 10.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 2px 7px;
-    border-radius: 100px;
-    margin-top: 1px;
-  }
-  .diag-chip.ok { background: var(--status-good-wash); color: var(--status-good); }
-  .diag-chip.warn { background: var(--status-critical-wash); color: var(--status-critical); }
-  .diag-item .diag-text { font-size: 12.5px; color: var(--ink-secondary); }
-  .diag-item .diag-text b { color: var(--ink); font-family: var(--font-display); font-weight: 600; }
-
   /* ---------- Report console ---------- */
   .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .card-head h2 { margin-bottom: 0; }
@@ -1416,11 +1389,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 
   <div class="card">
-    <h2>Self-checks</h2>
-    <div class="diag-grid" id="diagGrid"></div>
-  </div>
-
-  <div class="card">
     <div class="card-head">
       <h2>Full report</h2>
       <button class="copy-btn" id="copyBtn">Copy</button>
@@ -2089,7 +2057,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // in cosphi). So only forward is shown - but the equivalence is a
   // consequence of the route actually closing, not a given, so it's
   // checked live rather than assumed: a route that doesn't return to its
-  // start (see the closure gap under Self-checks) would show a real gap
+  // start (see the "Closure gap" stat tile above) would show a real gap
   // here, and that gets surfaced instead of hidden.
   function renderLastHalf(result) {
     var lh = result.lastHalf, ef = result.effort;
@@ -2120,7 +2088,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       verdict = "Forward and reverse come out the same here (within " + gap.toFixed(3) + "&times;) &mdash; expected for a route that returns to its start.";
     } else {
       verdict = "Forward (" + fwdEffort.powerMultiplier.toFixed(2) + "&times;) and reverse (" + revEffort.powerMultiplier.toFixed(2) +
-        "&times;) actually differ here &mdash; a bigger gap than a closed loop should give, which usually means this route doesn't fully return to its start (see the closure gap under Self-checks below).";
+        "&times;) actually differ here &mdash; a bigger gap than a closed loop should give, which usually means this route doesn't fully return to its start (see the \"Closure gap\" stat tile above).";
     }
     document.getElementById("halfVerdict").innerHTML = verdict;
   }
@@ -2416,13 +2384,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       buildAsymSymHTML(result);
 
     renderLastHalf(result);
-
-    var diagGrid = document.getElementById("diagGrid");
-    diagGrid.innerHTML =
-      '<div class="diag-item"><span class="diag-chip ' + (result.identityOk ? "ok" : "warn") + '">' + (result.identityOk ? "OK" : "WARN") + '</span>' +
-        '<span class="diag-text">L_easy(reverse) = L_total &minus; L_easy(forward): gap <b>' + result.identityGap.toFixed(2) + ' m</b></span></div>' +
-      '<div class="diag-item"><span class="diag-chip ' + (result.balance.ok ? "ok" : "warn") + '">' + (result.balance.ok ? "OK" : "WARN") + '</span>' +
-        '<span class="diag-text">&Sigma; L&middot;cos&phi; = <b>' + result.balance.sum.toFixed(2) + ' m</b> (tolerance ' + result.balance.tolerance.toFixed(2) + ' m)</span></div>';
 
     document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
     lastResult = result;
