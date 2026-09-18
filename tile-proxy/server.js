@@ -39,7 +39,7 @@ const ID_RE = /^\d+$/;
 // exactly, as strings - harmless, since every caller here only ever
 // uses this id as a string (built into a URL, or compared as text).
 function parseJsonPreservingBigIds(text) {
-  const safe = text.replace(/"id":(\d{16,})/g, '"id":"$1"');
+  const safe = text.replace(/"id"\s*:\s*(\d{16,})/g, '"id":"$1"');
   return JSON.parse(safe);
 }
 
