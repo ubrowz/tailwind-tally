@@ -1349,13 +1349,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <div class="page">
 
   <div class="masthead">
-    <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
-      <circle cx="23" cy="23" r="21" fill="none" stroke="var(--axis)" stroke-width="1.2"/>
-      <line x1="23" y1="4" x2="23" y2="12" stroke="var(--ink-muted)" stroke-width="1.4"/>
-      <line x1="23" y1="34" x2="23" y2="42" stroke="var(--ink-muted)" stroke-width="1.4"/>
-      <line x1="4" y1="23" x2="12" y2="23" stroke="var(--ink-muted)" stroke-width="1.4"/>
-      <line x1="34" y1="23" x2="42" y2="23" stroke="var(--ink-muted)" stroke-width="1.4"/>
-      <path d="M23 8 L27 23 L23 20 L19 23 Z" fill="var(--accent)"/>
+    <svg width="46" height="46" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#14171D"/>
+      <circle cx="16" cy="16" r="9" fill="none" stroke="#F2F3F5" stroke-width="2"/>
+      <g stroke="#F2F3F5" stroke-width="2" stroke-linecap="round">
+        <line x1="16" y1="5" x2="16" y2="7"/>
+        <line x1="16" y1="25" x2="16" y2="27"/>
+        <line x1="5" y1="16" x2="7" y2="16"/>
+        <line x1="25" y1="16" x2="27" y2="16"/>
+      </g>
+      <path d="M 16 8 L 19 17 L 16 14.5 L 13 17 Z" fill="#F5C542"/>
     </svg>
     <div class="masthead-text">
       <h1>Tailwind Tally</h1>
@@ -2211,7 +2214,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     document.getElementById("halfGrid").innerHTML =
       cell("First 50%", firstEffort) +
-      cell("Last 50%, either direction", fwdEffort) +
+      cell("Last 50%", fwdEffort) +
       cell("Whole route", wholeEffort);
 
     var gap = Math.abs(fwdEffort.powerMultiplier - revEffort.powerMultiplier);
