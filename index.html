@@ -278,6 +278,9 @@
   .route-stats-bar-seg.veryhard { background-color: var(--status-critical-strong); }
   .route-stats-bar-seg.calm { background-color: var(--accent); }
   .route-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; }
+  /* Temperature legend entries are longer ("-3.0 C to -4.8 C  1.05 km"), so they get fewer, wider columns. */
+  .route-stats-grid.temp-legend { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .route-stats-grid.temp-legend .route-stats-item { white-space: nowrap; }
   .route-stats-item {
     display: flex;
     align-items: center;
@@ -433,6 +436,32 @@
   .mode-toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
   .mode-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .forecast-panel { margin-bottom: 18px; }
+
+  /* Wind / Temperature tabs. The panels are flex columns with the same gap
+     as .page so the cards inside keep their normal spacing; the [hidden]
+     rule is needed because display:flex would otherwise beat the attribute. */
+  .tabbar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+  .tabbar button {
+    background: none;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    padding: 10px 18px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-secondary);
+    cursor: pointer;
+  }
+  .tabbar button:hover { color: var(--ink); }
+  .tabbar button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tabbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+  .tabpanel { display: flex; flex-direction: column; gap: 22px; }
+  .tabpanel[hidden] { display: none; }
+  /* The one Route card is moved between the two panels' slots. */
+  .route-slot { min-width: 0; display: flex; }
+  .route-slot > .card { flex: 1; min-width: 0; }
+
   /* Narrow: date on its own row, From/To side by side. Wide: all three in one row. */
   .forecast-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .forecast-grid .field:first-child { grid-column: 1 / -1; }
@@ -1432,8 +1461,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <p class="error-text" id="stravaError"></p>
   </div>
 
-  <div class="card">
-    <h2>Wind</h2>
+  <div class="card" id="weatherCard">
+    <h2>Weather for the ride</h2>
     <div class="mode-toggle" role="group" aria-label="Wind source">
       <button type="button" id="modeManual" aria-pressed="true">Set manually</button>
       <button type="button" id="modeForecast" aria-pressed="false">From forecast</button>
@@ -1453,13 +1482,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <input type="time" id="fcEnd" value="14:00">
         </div>
       </div>
-      <p class="field-hint">Times are local to the route, wherever in the world it is. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind fields below, and you can still adjust them.</p>
+      <p class="field-hint">Times are local to the route, wherever in the world it is. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature below, and you can still adjust them.</p>
       <div class="forecast-actions">
         <button type="button" class="copy-btn" id="fcGetBtn">Get forecast</button>
       </div>
       <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></p>
       <p class="error-text" id="forecastError"></p>
     </div>
+    <p class="field-hint" id="manualHint">Set the wind and the temperature yourself, in the Wind and Temperature tabs below.</p>
+  </div>
+
+  <div class="tabbar" role="tablist" aria-label="What to look at">
+    <button type="button" role="tab" id="tabWind" aria-selected="true" aria-controls="panelWind">Wind</button>
+    <button type="button" role="tab" id="tabTemp" aria-selected="false" aria-controls="panelTemp" tabindex="-1">Temperature</button>
+  </div>
+
+  <div class="tabpanel" id="panelWind" role="tabpanel" aria-labelledby="tabWind">
+  <div class="card">
+    <h2>Wind</h2>
     <div class="wind-control">
       <div class="compass-dial" id="compassDial">
         <div class="compass-arrow" id="compassArrow"></div>
@@ -1485,20 +1525,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
         </div>
         <p class="field-hint">Wind speed and cruising speed feed the last-50% wind-effort estimate below.</p>
-        <div class="two-col-grid">
-          <div class="field">
-            <label for="tempInput">Temperature</label>
-            <input type="number" id="tempInput" min="-80" max="140" step="1">
-          </div>
-          <div class="field">
-            <label for="tempUnitInput">Unit</label>
-            <select id="tempUnitInput">
-              <option value="C">&deg;C</option>
-              <option value="F">&deg;F</option>
-            </select>
-          </div>
-        </div>
-        <p class="field-hint">Air temperature during the ride. With your speed and the wind, it sets how cold it feels (see &ldquo;Feels like on the bike&rdquo; below).</p>
         <div class="field">
           <label for="neutralInput">Crosswind band (&deg;)</label>
           <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
@@ -1527,7 +1553,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <p class="method-note">Easy/hard here is a plain distance count: every metre where the wind has any tailwind component at all counts as easy, and any headwind component counts as hard &mdash; regardless of how strong that push or drag actually is.</p>
 
   <div class="chart-grid">
-    <div class="card chart-card">
+    <div class="route-slot" id="routeSlotWind">
+    <div class="card chart-card" id="routeCard">
       <div class="card-head">
         <h2>Route</h2>
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -1541,19 +1568,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div class="route-stats" id="routeStats"></div>
     </div>
+    </div>
     <div class="card chart-card">
       <h2>Effort in the last 50% of the round trip</h2>
       <p class="chart-caption" id="halfCaption"></p>
       <div class="half-grid" id="halfGrid"></div>
       <p class="half-verdict" id="halfVerdict"></p>
     </div>
-  </div>
-
-  <div class="card chart-card" id="chillCard">
-    <h2>Feels like on the bike</h2>
-    <p class="chart-caption" id="chillCaption"></p>
-    <div class="half-grid" id="chillGrid"></div>
-    <p class="half-verdict" id="chillVerdict"></p>
   </div>
 
   <div class="card">
@@ -1575,6 +1596,38 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </details>
     </div>
+  </div>
+
+  </div>
+
+  <div class="tabpanel" id="panelTemp" role="tabpanel" aria-labelledby="tabTemp" hidden>
+  <div class="card">
+    <h2>Temperature</h2>
+    <div class="two-col-grid">
+          <div class="field">
+            <label for="tempInput">Air temperature</label>
+            <input type="number" id="tempInput" min="-80" max="140" step="1">
+          </div>
+          <div class="field">
+            <label for="tempUnitInput">Unit</label>
+            <select id="tempUnitInput">
+              <option value="C">&deg;C</option>
+              <option value="F">&deg;F</option>
+            </select>
+          </div>
+        </div>
+        <p class="field-hint">Air temperature during the ride. With your speed and the wind, it sets how cold it feels (see &ldquo;Feels like on the bike&rdquo; below).</p>
+  </div>
+
+  <div class="chart-grid">
+    <div class="route-slot" id="routeSlotTemp"></div>
+    <div class="card chart-card" id="chillCard">
+    <h2>Feels like on the bike</h2>
+    <p class="chart-caption" id="chillCaption"></p>
+    <div class="half-grid" id="chillGrid"></div>
+    <p class="half-verdict" id="chillVerdict"></p>
+  </div>
+  </div>
   </div>
 
 
@@ -1996,15 +2049,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // GPS wobble that points a 25 m segment backwards would otherwise set
   // the headline number.
   function windChillStats(lengths, cosphi, vMs, wMs, tempC) {
-    var items = [], dist = 0, sum = 0;
+    var items = [], perSeg = [], dist = 0, sum = 0;
     for (var i = 0; i < lengths.length; i++) {
       var rel2 = vMs * vMs + wMs * wMs - 2 * vMs * wMs * cosphi[i];
       var c = windChillC(tempC, Math.sqrt(Math.max(0, rel2)) * 3.6);
       items.push([c, lengths[i]]);
+      perSeg.push(c);
       dist += lengths[i];
       sum += c * lengths[i];
     }
-    if (dist <= 0) return { avgFeelsC: tempC, coldestFeelsC: tempC };
+    if (dist <= 0) return { avgFeelsC: tempC, coldestFeelsC: tempC, perSeg: perSeg };
     items.sort(function (a, b) { return a[0] - b[0]; });
     var target = 0.1 * dist, taken = 0, coldSum = 0;
     for (var j = 0; j < items.length && taken < target; j++) {
@@ -2012,7 +2066,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
       coldSum += items[j][0] * take;
       taken += take;
     }
-    return { avgFeelsC: sum / dist, coldestFeelsC: coldSum / target };
+    return { avgFeelsC: sum / dist, coldestFeelsC: coldSum / target, perSeg: perSeg };
+  }
+
+  // Turns per-segment feels-like values into colour bands for the map.
+  // The scale runs between the 2nd and 98th distance-weighted percentiles,
+  // so a stray segment (a GPS wobble that points backwards) can't stretch
+  // it and wash out everything else; values outside just fall into the end
+  // bands. Band 0 is the MILDEST (highest feels-like), the last band the
+  // coldest, which is the order a light-to-dark ramp wants. When the whole
+  // route feels within `minSpreadC` of the same, there is nothing to tell
+  // apart, so it is one band ("uniform") instead of five near-identical ones.
+  // bands[i] = { fromC (warm edge), toC (cold edge), dist (metres) }.
+  function chillBands(perSeg, lengths, n, minSpreadC) {
+    var total = 0, i;
+    for (i = 0; i < lengths.length; i++) total += lengths[i];
+    if (!perSeg.length || total <= 0) return { uniform: true, bin: [], bands: [] };
+    var order = perSeg.map(function (v, k) { return k; }).sort(function (a, b) { return perSeg[a] - perSeg[b]; });
+    function pct(q) {
+      var target = q * total, acc = 0;
+      for (var k = 0; k < order.length; k++) {
+        acc += lengths[order[k]];
+        if (acc >= target) return perSeg[order[k]];
+      }
+      return perSeg[order[order.length - 1]];
+    }
+    var lo = pct(0.02), hi = pct(0.98);
+    if (hi - lo < minSpreadC) {
+      return { uniform: true, bin: perSeg.map(function () { return 0; }),
+               bands: [{ fromC: hi, toC: lo, dist: total }] };
+    }
+    var w = (hi - lo) / n, bands = [], bin = [];
+    for (i = 0; i < n; i++) bands.push({ fromC: hi - i * w, toC: hi - (i + 1) * w, dist: 0 });
+    for (i = 0; i < perSeg.length; i++) {
+      var b = Math.max(0, Math.min(n - 1, Math.floor((hi - perSeg[i]) / w)));
+      bin.push(b);
+      bands[b].dist += lengths[i];
+    }
+    return { uniform: false, bin: bin, bands: bands };
   }
   // END chill-pure
 
@@ -2078,6 +2169,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       forward: windChillStats(lengths, cosphiFwd, vMs, wMs, tempC),
       reverse: windChillStats(lengths, cosphiRev, vMs, wMs, tempC)
     };
+    chill.bands = chillBands(chill.forward.perSeg, lengths, 5, 1.0);   // under 1 C of spread, don't fake contrast
 
     // Five-way (full tailwind/tailwind/crosswind/headwind/full headwind)
     // breakdown for the Route map and its calculations only. Purely a
@@ -2278,6 +2370,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   });
 
+  // One-hue blue ramps for the temperature-coloured track, index 0 = the
+  // mildest band, last = the coldest. Steps from the reference palette,
+  // checked with its ordinal validator (one hue, monotone lightness, light
+  // end clears the surface). The dark ramp runs the other way round -
+  // colder is LIGHTER - because a sequential scale flips its anchor on a
+  // dark surface, so "more chill" always stands out more from the map.
+  var TEMP_RAMP_LIGHT = ["#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281"];
+  var TEMP_RAMP_DARK = ["#184f95", "#256abf", "#3987e5", "#6da7ec", "#9ec5f4"];
+  function tempBandColors(bandCount) {
+    var ramp = prefersDarkTheme() ? TEMP_RAMP_DARK : TEMP_RAMP_LIGHT;
+    if (bandCount <= 1) return [ramp[2]];
+    return ramp.slice(0, bandCount);
+  }
+
   function renderMap(result) {
     var badge = document.getElementById("mapStatusBadge");
     if (typeof L === "undefined") {
@@ -2310,11 +2416,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     leafletTileLayer._proxiedUrl = url;
 
     leafletRouteLayer.clearLayers();
-    var latLon = result.latLon, cats = result.fiveWay.categories;
-    var colorFor = {
-      veryeasy: "var(--status-good-strong)", easy: "var(--status-good)", neutral: "var(--status-neutral)",
-      hard: "var(--status-critical)", veryhard: "var(--status-critical-strong)", calm: "var(--accent)"
-    };
+    var latLon = result.latLon, cats, colorFor;
+    if (state.view === "temp") {
+      // Same runs-of-one-colour drawing as the wind view, but the "category"
+      // of each segment is its feels-like band.
+      var ramp = tempBandColors(result.chill.bands.bands.length);
+      cats = result.chill.bands.bin;
+      colorFor = ramp;
+    } else {
+      cats = result.fiveWay.categories;
+      colorFor = {
+        veryeasy: "var(--status-good-strong)", easy: "var(--status-good)", neutral: "var(--status-neutral)",
+        hard: "var(--status-critical)", veryhard: "var(--status-critical-strong)", calm: "var(--accent)"
+      };
+    }
     var i = 0;
     while (i < cats.length) {
       var cat = cats[i], j = i;
@@ -2326,6 +2441,67 @@ svg.leaflet-image-layer.leaflet-interactive path {
     L.circleMarker(latLon[0], { radius: 6, color: "var(--panel)", weight: 2, fillColor: "var(--accent)", fillOpacity: 1, interactive: false }).addTo(leafletRouteLayer);
     leafletMap.invalidateSize();
     leafletMap.fitBounds(L.latLngBounds(latLon), { padding: [20, 20] });
+  }
+
+  // Always one decimal, so legend ranges line up ("16.0" not "16").
+  function fmtTempPrec(c) {
+    var t = cToDisplay(c).toFixed(1);
+    if (Number(t) === 0) t = "0.0";               // no "-0.0"
+    return (t.charAt(0) === "-" ? "\u2212" + t.slice(1) : t) + "\u00b0" + state.tempUnit;
+  }
+
+  // Legend for the temperature-coloured track. It doubles as the table view
+  // of the same data: each band, its range and how far the route spends in it.
+  function renderTempLegend(result) {
+    var wrap = document.getElementById("routeStats");
+    wrap.innerHTML = "";
+    var bands = result.chill.bands, colors = tempBandColors(bands.bands.length);
+    var total = 0;
+    bands.bands.forEach(function (b) { total += b.dist; });
+
+    var block = document.createElement("div");
+    block.className = "route-stats-block";
+    var h = document.createElement("div");
+    h.className = "route-stats-heading";
+    h.textContent = "Feels like, as ridden";
+    block.appendChild(h);
+
+    var bar = document.createElement("div");
+    bar.className = "route-stats-bar";
+    bands.bands.forEach(function (b, i) {
+      if (b.dist <= 0) return;
+      var seg = document.createElement("div");
+      seg.className = "route-stats-bar-seg";
+      seg.style.backgroundColor = colors[i];
+      seg.style.flex = (total > 0 ? b.dist / total : 0).toFixed(4);
+      bar.appendChild(seg);
+    });
+    block.appendChild(bar);
+
+    var grid = document.createElement("div");
+    grid.className = "route-stats-grid temp-legend";
+    bands.bands.forEach(function (b, i) {
+      var el = document.createElement("div");
+      el.className = "route-stats-item";
+      var label = bands.uniform
+        ? "About " + fmtTempPrec((b.fromC + b.toC) / 2) + " all the way"
+        : fmtTempPrec(b.fromC) + " to " + fmtTempPrec(b.toC);
+      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[i] + '"></span>' + label + " " + (b.dist / 1000).toFixed(2) + " km";
+      grid.appendChild(el);
+    });
+    block.appendChild(grid);
+    wrap.appendChild(block);
+  }
+
+  function tempViewCaption(result) {
+    var ch = result.chill;
+    var head = "Coloured by how cold each stretch feels at " + fmtTemp(ch.tempC) + " air temperature, riding it as recorded at " +
+      result.effort.cruiseSpeedKmh.toFixed(0) + " km/h in a wind from " + degreesToCompass16(result.windFromDeg) + ". Darker means colder. ";
+    if (ch.bands.uniform) {
+      return head + "Here the whole route feels much the same, so it is one colour: the wind hardly changes how cold it feels at this temperature.";
+    }
+    return head + "The scale is stretched over this route\u2019s own range, so compare the bands below, not the colours between days." +
+      (ch.extended ? " Above " + chillOfficialLimitText() + " the wind chill formula is extended past its official range (see the card beside it)." : "");
   }
 
   // Plain-language easy/hard/neutral distance breakdown below the map -
@@ -2615,6 +2791,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     // Temperature is always held in deg C; the field and every readout
     // convert to the chosen unit only for display. The unit defaults to
     // Fahrenheit for US locales and Celsius everywhere else.
+    view: "wind",                // which tab is showing: "wind" or "temp"
     tempC: 8,
     tempUnit: /-US$/i.test(navigator.language || "") ? "F" : "C"
   };
@@ -2739,6 +2916,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
 
   // ---------------------------------------------------------------------
+  // Wind / Temperature tabs. Only the results are tabbed; the route, the
+  // weather source and all state are shared, so nothing is lost switching.
+  // There is ONE Route card and ONE map: switching tabs moves that card
+  // into the other panel's slot and recolours it, which avoids a second map
+  // and a second round of tile downloads.
+  // ---------------------------------------------------------------------
+  var tabWind = document.getElementById("tabWind"), tabTemp = document.getElementById("tabTemp");
+  var panelWind = document.getElementById("panelWind"), panelTemp = document.getElementById("panelTemp");
+  var routeCard = document.getElementById("routeCard");
+  var routeSlotWind = document.getElementById("routeSlotWind"), routeSlotTemp = document.getElementById("routeSlotTemp");
+  var saveRouteBtnEl = document.getElementById("saveRouteBtn");
+
+  function setView(view, focusTab) {
+    var temp = view === "temp";
+    state.view = temp ? "temp" : "wind";
+    panelWind.hidden = temp;
+    panelTemp.hidden = !temp;
+    [[tabWind, !temp], [tabTemp, temp]].forEach(function (pair) {
+      pair[0].setAttribute("aria-selected", String(pair[1]));
+      pair[0].tabIndex = pair[1] ? 0 : -1;
+    });
+    (temp ? routeSlotTemp : routeSlotWind).appendChild(routeCard);
+    // The image export is built around the wind colours and wind statistics,
+    // so it only makes sense on the wind view.
+    saveRouteBtnEl.hidden = temp;
+    if (focusTab) (temp ? tabTemp : tabWind).focus();
+    scheduleRender();
+  }
+  tabWind.addEventListener("click", function () { setView("wind"); });
+  tabTemp.addEventListener("click", function () { setView("temp"); });
+  [tabWind, tabTemp].forEach(function (tab) {
+    tab.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "Home" || e.key === "End") {
+        e.preventDefault();
+        setView(e.key === "ArrowLeft" || e.key === "Home" ? "wind" : "temp", true);
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------
   // Wind from a forecast. Open-Meteo is called straight from the page (no
   // key, CORS open). The request carries only the rounded sample points
   // from forecastSamplePoints, never the route itself. `timezone=auto`
@@ -2761,8 +2978,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
   fcDate.value = tomorrow.getFullYear() + "-" + pad2(tomorrow.getMonth() + 1) + "-" + pad2(tomorrow.getDate());
 
+  var manualHint = document.getElementById("manualHint");
   function setWindMode(fromForecast) {
     forecastPanel.hidden = !fromForecast;
+    manualHint.hidden = fromForecast;
     modeManual.setAttribute("aria-pressed", String(!fromForecast));
     modeForecast.setAttribute("aria-pressed", String(fromForecast));
   }
@@ -3108,10 +3327,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       banner.innerHTML = checkSvg + "Roughly symmetric for this wind &mdash; neither direction has a clear advantage.";
     }
 
-    document.getElementById("planCaption").textContent = "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°).";
+    document.getElementById("planCaption").textContent = state.view === "temp"
+      ? tempViewCaption(result)
+      : "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°).";
     renderPolarSweep(result);
     renderMap(result);
-    renderRouteStats(result);
+    if (state.view === "temp") renderTempLegend(result); else renderRouteStats(result);
     buildSweepTable(result);
 
     var bestFwdDeg = 0;
