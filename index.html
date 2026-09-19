@@ -1616,7 +1616,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </select>
           </div>
         </div>
-<p class="field-hint">Air temperature during the ride. On a cold day it sets, with your speed and the wind, how cold it feels; on a hot day, with the humidity, how hot.</p>
+<p class="field-hint">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels.</p>
     <div class="field" id="humidityField" hidden>
       <label for="humidityInput">Humidity</label>
       <select id="humidityInput">
@@ -2063,16 +2063,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // formula averaged with the temperature, the Rothfusz regression once that
   // reaches 80 F, and two humidity adjustments.
   //
+  // In the app this is the "standing still" figure (no breeze from riding) and the
+  // basis of the NWS heat-illness warnings; how it feels while riding is the
+  // apparent temperature below, which includes wind.
+  //
   // The published algorithm has small STEPS of its own where it switches
   // (up to ~1.3 C at high humidity), the same kind of jump as the wind chill
   // cutoff. Three smoothings remove them and change nothing at 80 F and
   // above except the blend zone:
   //   - simple -> regression is blended over 78-82 F instead of switching;
   //   - the two adjustments fade in over 78-80 F instead of starting at 80;
-  //   - the whole effect ramps in over 22-26 C, where the wind chill has
-  //     essentially faded out (under ~0.2 C left at 23 C for any airspeed up
-  //     to 60 km/h). The two are simply added, so any small overlap is
-  //     harmless: both are continuous, and so is their sum.
+  //   - the whole effect ramps in over 22-26 C.
   // From ~29 C up it is exactly the published value. Air temperature is held
   // at the NWS chart's top (110 F, 43.3 C) and humidity to 0-100%.
   // Like the wind chill extension, this is a tested shape, not something
@@ -2101,69 +2102,91 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return w * ((hiF - 32) * 5 / 9 - tc);
   }
 
-  // Per-segment wind chill from the relative airspeed on that segment
-  // (rider speed and wind combined, same geometry as windEffortStats),
-  // then averaged by distance. The "coldest tenth" is the mean over the
-  // coldest 10% of the distance, not the single coldest segment: one
-  // GPS wobble that points a 25 m segment backwards would otherwise set
-  // the headline number.
-  function windChillStats(lengths, cosphi, vMs, wMs, tempC, extraC) {
-    extraC = extraC || 0;             // heat effect: independent of wind, so a constant per segment
+  // ---- Feels like for a moving rider ---------------------------------
+  // Three regimes, blended so nothing jumps:
+  //   up to 10 C   the official wind chill, unchanged;
+  //   10 - 20 C    a smooth fade from wind chill into the apparent temperature;
+  //   20 C and up  the apparent temperature.
+  // Apparent temperature is the Australian Bureau of Meteorology's
+  // (Steadman) model of how warm it feels to an adult walking outdoors in the
+  // shade: AT = T + 0.33 e - 0.7 v - 4.0, with e the water vapour pressure
+  // in hPa from temperature and relative humidity, and v the wind speed in
+  // m/s (formally at 10 m; here it is the airspeed on the rider, the same
+  // approximation as for the wind chill). Wind cools, humidity feels warmer,
+  // and it is continuous at every temperature. It is not the same model as
+  // the wind chill and the two differ by a few deg C in the blend zone, which
+  // is why the blend exists. Known limit of the blend: in the 10-20 C zone,
+  // in very dry air (<= ~20% humidity) at high airspeed (>= ~40 km/h), a
+  // slightly warmer air temperature can feel up to ~1 C colder (about 3 C
+  // only in the extreme corner of bone-dry air at 60 km/h). It never happens
+  // at up to 25 km/h of airspeed, or in humid air. Its wind term is linear, so it keeps helping in
+  // very hot dry air (above ~35 C), where real moving air stops cooling and
+  // can add heat: not captured. Sun is not included either.
+  var APPARENT_FULL_C = 20;
+  function apparentTempC(tempC, rhPercent, airspeedKmh) {
+    var rh = Math.max(0, Math.min(100, rhPercent));
+    var e = rh / 100 * 6.105 * Math.exp(17.27 * tempC / (237.7 + tempC));
+    return tempC + 0.33 * e - 0.7 * (Math.max(0, airspeedKmh) / 3.6) - 4.0;
+  }
+  function feelsLikeC(tempC, rhPercent, airspeedKmh) {
+    var b = smoothstep01((tempC - WIND_CHILL_OFFICIAL_MAX_C) / (APPARENT_FULL_C - WIND_CHILL_OFFICIAL_MAX_C));
+    if (b <= 0) return windChillC(tempC, airspeedKmh);
+    var at = apparentTempC(tempC, rhPercent, airspeedKmh);
+    if (b >= 1) return at;
+    return (1 - b) * windChillC(tempC, airspeedKmh) + b * at;
+  }
+
+  // Per-segment feels-like from the relative airspeed on that segment (rider
+  // speed and wind combined, same geometry as windEffortStats), averaged by
+  // distance. The "coldest / warmest tenth" is the mean over the coldest /
+  // warmest 10% of the distance, not the single most extreme segment: one GPS
+  // wobble that points a 25 m segment backwards would otherwise set the
+  // headline number.
+  function feelsStats(lengths, cosphi, vMs, wMs, tempC, rhPercent) {
     var items = [], perSeg = [], dist = 0, sum = 0;
     for (var i = 0; i < lengths.length; i++) {
       var rel2 = vMs * vMs + wMs * wMs - 2 * vMs * wMs * cosphi[i];
-      var c = windChillC(tempC, Math.sqrt(Math.max(0, rel2)) * 3.6) + extraC;
+      var c = feelsLikeC(tempC, rhPercent, Math.sqrt(Math.max(0, rel2)) * 3.6);
       items.push([c, lengths[i]]);
       perSeg.push(c);
       dist += lengths[i];
       sum += c * lengths[i];
     }
-    if (dist <= 0) return { avgFeelsC: tempC + extraC, coldestFeelsC: tempC + extraC, perSeg: perSeg };
+    if (dist <= 0) return { avgFeelsC: tempC, coldestFeelsC: tempC, warmestFeelsC: tempC, perSeg: perSeg };
     items.sort(function (a, b) { return a[0] - b[0]; });
-    var target = 0.1 * dist, taken = 0, coldSum = 0;
-    for (var j = 0; j < items.length && taken < target; j++) {
-      var take = Math.min(items[j][1], target - taken);
-      coldSum += items[j][0] * take;
-      taken += take;
+    var target = 0.1 * dist;
+    function tenth(fromEnd) {
+      var taken = 0, s2 = 0;
+      for (var j = 0; j < items.length && taken < target; j++) {
+        var it = items[fromEnd ? items.length - 1 - j : j];
+        var take = Math.min(it[1], target - taken);
+        s2 += it[0] * take;
+        taken += take;
+      }
+      return s2 / target;
     }
-    return { avgFeelsC: sum / dist, coldestFeelsC: coldSum / target, perSeg: perSeg };
+    return { avgFeelsC: sum / dist, coldestFeelsC: tenth(false), warmestFeelsC: tenth(true), perSeg: perSeg };
   }
 
-  // Turns per-segment feels-like values into colour bands for the map.
-  // The scale runs between the 2nd and 98th distance-weighted percentiles,
-  // so a stray segment (a GPS wobble that points backwards) can't stretch
-  // it and wash out everything else; values outside just fall into the end
-  // bands. Band 0 is the MILDEST (highest feels-like), the last band the
-  // coldest, which is the order a light-to-dark ramp wants. When the whole
-  // route feels within `minSpreadC` of the same, there is nothing to tell
-  // apart, so it is one band ("uniform") instead of five near-identical ones.
-  // bands[i] = { fromC (warm edge), toC (cold edge), dist (metres) }.
-  function chillBands(perSeg, lengths, n, minSpreadC) {
-    var total = 0, i;
-    for (i = 0; i < lengths.length; i++) total += lengths[i];
-    if (!perSeg.length || total <= 0) return { uniform: true, bin: [], bands: [] };
-    var order = perSeg.map(function (v, k) { return k; }).sort(function (a, b) { return perSeg[a] - perSeg[b]; });
-    function pct(q) {
-      var target = q * total, acc = 0;
-      for (var k = 0; k < order.length; k++) {
-        acc += lengths[order[k]];
-        if (acc >= target) return perSeg[order[k]];
-      }
-      return perSeg[order[order.length - 1]];
+  // Colour classes for the map: fixed steps of (feels-like minus air
+  // temperature), deg C, so the same colour means the same thing on every
+  // route and day (no per-route stretching). Index 0 = strongest chill,
+  // 4 = mild chill, 5 = about the same as the air, 6 = mild heat, 9 =
+  // strongest heat. More cold steps than hot ones because cold days swing
+  // much further from the air temperature.
+  var FEELS_CLASS_EDGES = [-12, -8, -5, -3, -1, 1, 3, 5, 8];
+  function feelsClasses(perSeg, lengths, airC) {
+    var n = FEELS_CLASS_EDGES.length + 1, classes = [], cls = [], i, k;
+    for (k = 0; k < n; k++) {
+      classes.push({ loC: k === 0 ? -Infinity : FEELS_CLASS_EDGES[k - 1], hiC: k === n - 1 ? Infinity : FEELS_CLASS_EDGES[k], dist: 0 });
     }
-    var lo = pct(0.02), hi = pct(0.98);
-    if (hi - lo < minSpreadC) {
-      return { uniform: true, bin: perSeg.map(function () { return 0; }),
-               bands: [{ fromC: hi, toC: lo, dist: total }] };
-    }
-    var w = (hi - lo) / n, bands = [], bin = [];
-    for (i = 0; i < n; i++) bands.push({ fromC: hi - i * w, toC: hi - (i + 1) * w, dist: 0 });
     for (i = 0; i < perSeg.length; i++) {
-      var b = Math.max(0, Math.min(n - 1, Math.floor((hi - perSeg[i]) / w)));
-      bin.push(b);
-      bands[b].dist += lengths[i];
+      var d = perSeg[i] - airC, c = 0;
+      for (k = 0; k < FEELS_CLASS_EDGES.length; k++) if (d >= FEELS_CLASS_EDGES[k]) c = k + 1;
+      cls.push(c);
+      classes[c].dist += lengths[i];
     }
-    return { uniform: false, bin: bin, bands: bands };
+    return { cls: cls, classes: classes };
   }
   // END chill-pure
 
@@ -2223,23 +2246,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
     };
 
-    // Cold: wind chill from the relative airspeed on each segment. Hot: the
-    // heat index, which depends on humidity and not on wind, so it is one
-    // constant added to every segment. The two never both matter.
-    var heatC = heatDeltaC(tempC, rh);
+    // How it feels while riding: per segment, from the relative airspeed on
+    // that segment (wind chill when cold, apparent temperature when mild or
+    // hot, blended in between; see feelsLikeC). "Standing still" is the NWS
+    // heat index, which has no airspeed: still-air heat, for warnings.
     var chill = {
       tempC: tempC,
       rh: rh,
-      heatC: heatC,
-      extended: tempC > WIND_CHILL_OFFICIAL_MAX_C,   // beyond the formula's official range
-      forward: windChillStats(lengths, cosphiFwd, vMs, wMs, tempC, heatC),
-      reverse: windChillStats(lengths, cosphiRev, vMs, wMs, tempC, heatC)
+      model: tempC <= WIND_CHILL_OFFICIAL_MAX_C ? "windchill" : (tempC < APPARENT_FULL_C ? "blend" : "apparent"),
+      stillHeatC: heatDeltaC(tempC, rh),
+      forward: feelsStats(lengths, cosphiFwd, vMs, wMs, tempC, rh),
+      reverse: feelsStats(lengths, cosphiRev, vMs, wMs, tempC, rh)
     };
-    // Which effect is in play, for the card and the map: "heat", "cold", or
-    // "even" when neither changes how it feels by a noticeable amount.
-    var coolC = tempC - (chill.forward.avgFeelsC - heatC);       // wind chill part only
-    chill.side = Math.abs(heatC) >= CHILL_NEGLIGIBLE_C ? "heat" : (coolC >= CHILL_NEGLIGIBLE_C ? "cold" : "even");
-    chill.bands = chillBands(chill.forward.perSeg, lengths, 5, 1.0);   // under 1 C of spread, don't fake contrast
+    chill.classes = feelsClasses(chill.forward.perSeg, lengths, tempC);
+    var feelDelta = chill.forward.avgFeelsC - tempC;
+    chill.tone = feelDelta <= -CHILL_NEGLIGIBLE_C ? "colder" : (feelDelta >= CHILL_NEGLIGIBLE_C ? "hotter" : "even");
 
     // Five-way (full tailwind/tailwind/crosswind/headwind/full headwind)
     // breakdown for the Route map and its calculations only. Purely a
@@ -2440,24 +2461,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   });
 
-  // One-hue blue ramps for the temperature-coloured track, index 0 = the
-  // mildest band, last = the coldest. Steps from the reference palette,
-  // checked with its ordinal validator (one hue, monotone lightness, light
-  // end clears the surface). The dark ramp runs the other way round -
-  // colder is LIGHTER - because a sequential scale flips its anchor on a
-  // dark surface, so "more chill" always stands out more from the map.
-  var TEMP_RAMP_LIGHT = ["#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281"];
-  var TEMP_RAMP_DARK = ["#184f95", "#256abf", "#3987e5", "#6da7ec", "#9ec5f4"];
-  // Hot days have no spatial variation (humidity, not wind, sets the heat
-  // index), so the track is one colour; a warm hue tells it apart from the
-  // blue cold ramp. Orange is the second hue of the reference palette.
-  var HEAT_COLOR_LIGHT = "#eb6834", HEAT_COLOR_DARK = "#d95926";
-  function tempBandColors(bandCount, side) {
+  // Diverging scale for the temperature-coloured track, in (feels-like minus
+  // air temperature): blue where it feels colder than the air, red where it
+  // feels hotter, a grey midpoint where it feels like the air. Each arm is one
+  // hue, light to dark = weak to strong. Class order is feelsClasses' order:
+  // 0 strongest chill ... 4 mild chill, 5 about the same, 6 mild heat ...
+  // 9 strongest heat. Steps come from the reference palette (blue arm) and
+  // the same lightness steps at the palette's red hue (red arm); every arm
+  // passed its ordinal validator (one hue, monotone lightness, visible step
+  // gaps, light end clears the surface) in both modes. On a dark surface each
+  // arm is flipped - stronger is LIGHTER - because a magnitude scale reverses
+  // its anchor there, so a stronger effect always stands out more from the
+  // map. The neutral is the palette's muted ink, the same in both modes.
+  var FEELS_COLD_LIGHT = ["#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281"];   // mild -> strong
+  var FEELS_COLD_DARK = ["#184f95", "#256abf", "#3987e5", "#6da7ec", "#9ec5f4"];
+  var FEELS_HOT_LIGHT = ["#ff8c85", "#e84f4d", "#bb1e27", "#830112"];
+  var FEELS_HOT_DARK = ["#a7031a", "#cb3235", "#ee5451", "#ff847d"];
+  var FEELS_NEUTRAL = "#898781";
+  function feelsClassColors() {
     var dark = prefersDarkTheme();
-    if (side === "heat") return [dark ? HEAT_COLOR_DARK : HEAT_COLOR_LIGHT];
-    var ramp = dark ? TEMP_RAMP_DARK : TEMP_RAMP_LIGHT;
-    if (bandCount <= 1) return [ramp[2]];
-    return ramp.slice(0, bandCount);
+    var cold = (dark ? FEELS_COLD_DARK : FEELS_COLD_LIGHT).slice().reverse();      // index 0 = strongest
+    var hot = dark ? FEELS_HOT_DARK : FEELS_HOT_LIGHT;                             // mild -> strong
+    return cold.concat([FEELS_NEUTRAL], hot);
   }
 
   function renderMap(result) {
@@ -2495,10 +2520,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var latLon = result.latLon, cats, colorFor;
     if (state.view === "temp") {
       // Same runs-of-one-colour drawing as the wind view, but the "category"
-      // of each segment is its feels-like band.
-      var ramp = tempBandColors(result.chill.bands.bands.length, result.chill.side);
-      cats = result.chill.bands.bin;
-      colorFor = ramp;
+      // of each segment is its feels-like class.
+      cats = result.chill.classes.cls;
+      colorFor = feelsClassColors();
     } else {
       cats = result.fiveWay.categories;
       colorFor = {
@@ -2519,50 +2543,56 @@ svg.leaflet-image-layer.leaflet-interactive path {
     leafletMap.fitBounds(L.latLngBounds(latLon), { padding: [20, 20] });
   }
 
-  // Always one decimal, so legend ranges line up ("16.0" not "16").
-  function fmtTempPrec(c) {
-    var t = cToDisplay(c).toFixed(1);
-    if (Number(t) === 0) t = "0.0";               // no "-0.0"
-    return (t.charAt(0) === "-" ? "\u2212" + t.slice(1) : t) + "\u00b0" + state.tempUnit;
+  // A temperature DIFFERENCE as a bare number in the chosen unit (9/5 only,
+  // no +32), for ranges like "3 to 5" with the unit written once at the end.
+  function diffNum(dC) { return Math.round(Math.abs(dC) * (state.tempUnit === "F" ? 9 / 5 : 1)); }
+  function feelsClassLabel(k, c) {
+    var unit = "\u00b0" + state.tempUnit;
+    if (k === 5) return "About the same as the air";
+    if (k < 5) {
+      if (c.loC === -Infinity) return "More than " + diffNum(c.hiC) + unit + " colder";
+      return diffNum(c.hiC) + " to " + diffNum(c.loC) + unit + " colder";
+    }
+    if (c.hiC === Infinity) return "More than " + diffNum(c.loC) + unit + " hotter";
+    return diffNum(c.loC) + " to " + diffNum(c.hiC) + unit + " hotter";
   }
 
   // Legend for the temperature-coloured track. It doubles as the table view
-  // of the same data: each band, its range and how far the route spends in it.
+  // of the same data: each class present, how much colder or hotter than the
+  // air it feels, and how far the route spends in it.
   function renderTempLegend(result) {
     var wrap = document.getElementById("routeStats");
     wrap.innerHTML = "";
-    var bands = result.chill.bands, colors = tempBandColors(bands.bands.length, result.chill.side);
+    var classes = result.chill.classes.classes, colors = feelsClassColors();
     var total = 0;
-    bands.bands.forEach(function (b) { total += b.dist; });
+    classes.forEach(function (c) { total += c.dist; });
 
     var block = document.createElement("div");
     block.className = "route-stats-block";
     var h = document.createElement("div");
     h.className = "route-stats-heading";
-    h.textContent = "Feels like, as ridden";
+    h.textContent = "Feels like, compared with the air, as ridden";
     block.appendChild(h);
 
     var bar = document.createElement("div");
     bar.className = "route-stats-bar";
-    bands.bands.forEach(function (b, i) {
-      if (b.dist <= 0) return;
+    classes.forEach(function (c, k) {
+      if (c.dist <= 0) return;
       var seg = document.createElement("div");
       seg.className = "route-stats-bar-seg";
-      seg.style.backgroundColor = colors[i];
-      seg.style.flex = (total > 0 ? b.dist / total : 0).toFixed(4);
+      seg.style.backgroundColor = colors[k];
+      seg.style.flex = (total > 0 ? c.dist / total : 0).toFixed(4);
       bar.appendChild(seg);
     });
     block.appendChild(bar);
 
     var grid = document.createElement("div");
     grid.className = "route-stats-grid temp-legend";
-    bands.bands.forEach(function (b, i) {
+    classes.forEach(function (c, k) {
+      if (c.dist <= 0) return;
       var el = document.createElement("div");
       el.className = "route-stats-item";
-      var label = bands.uniform
-        ? "About " + fmtTempPrec((b.fromC + b.toC) / 2) + " all the way" + (result.chill.side === "heat" ? ", whatever the wind" : "")
-        : fmtTempPrec(b.fromC) + " to " + fmtTempPrec(b.toC);
-      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[i] + '"></span>' + label + " " + (b.dist / 1000).toFixed(2) + " km";
+      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + feelsClassLabel(k, c) + " " + (c.dist / 1000).toFixed(2) + " km";
       grid.appendChild(el);
     });
     block.appendChild(grid);
@@ -2571,17 +2601,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   function tempViewCaption(result) {
     var ch = result.chill;
-    if (ch.side === "heat") {
-      return "On a hot day humidity, not wind, decides how hot it feels, so it feels the same all along the route: about " + fmtTemp(ch.forward.avgFeelsC) +
-        " at " + fmtTemp(ch.tempC) + " and " + Math.round(ch.rh) + "% humidity. The whole track is one warm colour.";
-    }
-    var head = "Coloured by how cold each stretch feels at " + fmtTemp(ch.tempC) + " air temperature, riding it as recorded at " +
-      result.effort.cruiseSpeedKmh.toFixed(0) + " km/h in a wind from " + degreesToCompass16(result.windFromDeg) + ". Darker means colder. ";
-    if (ch.bands.uniform) {
-      return head + "Here the whole route feels much the same, so it is one colour: the wind hardly changes how cold it feels at this temperature.";
-    }
-    return head + "The scale is stretched over this route\u2019s own range, so compare the bands below, not the colours between days." +
-      (ch.extended ? " Above " + chillOfficialLimitText() + " the wind chill formula is extended past its official range (see the card beside it)." : "");
+    return "Coloured by how much colder (blue) or hotter (red) each stretch feels than the air at " + fmtTemp(ch.tempC) +
+      ", riding it as recorded at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h in a wind from " + degreesToCompass16(result.windFromDeg) +
+      ". Darker means a bigger difference; grey means it feels like the air. The scale is fixed, so a colour means the same thing on every route and day.";
   }
 
   // Plain-language easy/hard/neutral distance breakdown below the map -
@@ -2729,68 +2751,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // 125 F and up "heat stroke highly likely".
   var HEAT_ILLNESS_LIKELY_C = (103 - 32) * 5 / 9, HEAT_STROKE_LIKELY_C = (125 - 32) * 5 / 9;
 
-  // Hot day: the heat index. Humidity, not wind, decides it, so forward and
-  // reverse are the same and there is one "feels like" card.
-  function renderHeat(result) {
-    var ch = result.chill;
-    var feels = ch.forward.avgFeelsC, delta = feels - ch.tempC;
-    var word = humidityStep(ch.rh)[1];
-    document.getElementById("chillCaption").innerHTML =
-      "At <b>" + fmtTemp(ch.tempC) + "</b> and about <b>" + Math.round(ch.rh) + "%</b> relative humidity (" + (state.rhFromForecast ? "from the forecast" : "your setting") + "). " +
-      "Humid air slows the evaporation of sweat, which is how your body cools itself, so it feels hotter than the thermometer says; very dry air does the opposite. " +
-      "This is the US National Weather Service heat index. It assumes shade and does not take wind into account, so the cooling from your own riding speed is not included, " +
-      "and full sun can add up to about " + (state.tempUnit === "F" ? "15\u00b0F (8\u00b0C)" : "8\u00b0C (15\u00b0F)") + ". Treat it as a guide, not a measure of effort.";
-
-    document.getElementById("chillGrid").innerHTML =
-      '<div class="half-card"><div class="half-title">Air temperature</div>' +
-        '<div class="half-multiplier">' + fmtTemp(ch.tempC) + '</div>' +
-        '<div class="half-net">What a thermometer reads.</div></div>' +
-      '<div class="half-card"><div class="half-title">Humidity</div>' +
-        '<div class="half-multiplier">' + Math.round(ch.rh) + '%</div>' +
-        '<div class="half-net">' + word + ' air. It only matters on hot days.</div></div>' +
-      '<div class="half-card"><div class="half-title">Feels like (heat index)</div>' +
-        '<div class="half-multiplier">' + fmtTemp(feels) + '</div>' +
-        '<div class="half-net">' + (delta >= 0
-          ? "That is <b>" + fmtTempDiff(delta) + " hotter</b> than the air: humid air slows the evaporation of sweat."
-          : "That is <b>" + fmtTempDiff(delta) + " cooler</b> than the air: dry air lets sweat evaporate quickly.") + '</div></div>';
-
-    var verdict;
-    if (feels >= HEAT_STROKE_LIKELY_C) {
-      verdict = "According to the National Weather Service, at " + fmtTemp(HEAT_STROKE_LIKELY_C) + " and above heat stroke is highly likely.";
-    } else if (feels >= HEAT_ILLNESS_LIKELY_C) {
-      verdict = "According to the National Weather Service, from " + fmtTemp(HEAT_ILLNESS_LIKELY_C) + " to " + fmtTemp(HEAT_STROKE_LIKELY_C) + " heat cramps or heat exhaustion are likely, and heat stroke is possible.";
-    } else {
-      verdict = "The same either way round: humidity, not wind, sets this, so forward and reverse feel alike.";
-    }
-    document.getElementById("chillVerdict").innerHTML = verdict;
-  }
-
+  // One card for every temperature: how it feels while riding (wind chill
+  // when cold, apparent temperature when mild or hot, blended between), with
+  // forward and reverse, since the wind on you matters on hot days too.
   function renderChill(result) {
-    if (result.chill.side === "heat") { renderHeat(result); return; }
     var ch = result.chill, ef = result.effort;
     var beaufort = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
-    var coolFwd = ch.tempC - ch.forward.avgFeelsC, coolRev = ch.tempC - ch.reverse.avgFeelsC;
-    var negligible = coolFwd < CHILL_NEGLIGIBLE_C && coolRev < CHILL_NEGLIGIBLE_C;
+    var warm = ch.model !== "windchill";
 
-    document.getElementById("chillCaption").innerHTML =
-      "At <b>" + fmtTemp(ch.tempC) + "</b> air temperature, riding <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> in a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) +
-      " (" + beaufort + ")</b> wind. The cold you feel depends on the wind <i>on you</i>, which is your own speed combined with the wind, so it is worked out for every segment and averaged by distance. " +
-      "It uses the standard wind chill formula (Environment Canada and the US National Weather Service), which describes how fast exposed skin cools. " +
-      (ch.extended
-        ? "That formula is only officially defined up to " + chillOfficialLimitText() + ", so above it the formula is <b>extended</b> here: the cooling fades smoothly to nothing at roughly " + fmtTemp(21) + " and never goes below the air temperature. Treat these numbers as rough. "
-        : "") +
-      "It is a guide to what to wear, not a measure of effort.";
+    var caption =
+      "At <b>" + fmtTemp(ch.tempC) + "</b>" +
+      (warm ? " and about <b>" + Math.round(ch.rh) + "%</b> relative humidity (" + (state.rhFromForecast ? "from the forecast" : "your setting") + ")" : "") +
+      ", riding <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> in a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufort + ")</b> wind. " +
+      "Your speed and the wind combine into the wind on you, so how it feels is worked out for every segment and averaged by distance. ";
+    if (ch.model === "windchill") {
+      caption += "It uses the standard wind chill formula (Environment Canada and the US National Weather Service), which describes how fast exposed skin cools. ";
+    } else {
+      if (ch.model === "blend") {
+        caption += "Between " + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C) + " and " + fmtTemp(APPARENT_FULL_C) + " it fades from the wind chill formula (official up to " + chillOfficialLimitText() + ") into the apparent temperature. ";
+      }
+      caption += "The apparent temperature (Australian Bureau of Meteorology, after Steadman) is a model of how warm it feels to an adult walking outdoors in the shade: wind cools, and humid air, which slows the evaporation of sweat, feels hotter. " +
+        "Sun is not included (full sun feels hotter), and above about " + fmtTemp(35) + " in dry air moving air stops helping and can add heat, which this does not capture. ";
+    }
+    caption += "It is a guide, not a measure of effort, and what a cyclist feels also depends on clothing and on the person.";
+    document.getElementById("chillCaption").innerHTML = caption;
 
-    function cell(title, feelsC, coldestC) {
-      var body;
-      if (ch.tempC - feelsC < CHILL_NEGLIGIBLE_C) {
-        body = "At this temperature the wind hardly cools you: it feels like the air temperature.";
+    function cell(title, st) {
+      var delta = st.avgFeelsC - ch.tempC, body;
+      if (Math.abs(delta) < CHILL_NEGLIGIBLE_C) {
+        body = "About the same as the air temperature.";
+      } else if (delta < 0) {
+        body = "That is <b>" + fmtTempDiff(delta) + " colder</b> than the air. The coldest tenth of the route feels like <b>" + fmtTemp(st.coldestFeelsC) + "</b>.";
       } else {
-        body = "That is <b>" + fmtTempDiff(feelsC - ch.tempC) + " colder</b> than the air. The coldest tenth of the route feels like <b>" + fmtTemp(coldestC) + "</b>.";
+        body = "That is <b>" + fmtTempDiff(delta) + " hotter</b> than the air. The hottest tenth of the route feels like <b>" + fmtTemp(st.warmestFeelsC) + "</b>.";
       }
       return '<div class="half-card">' +
           '<div class="half-title">' + title + '</div>' +
-          '<div class="half-multiplier">' + fmtTemp(feelsC) + '</div>' +
+          '<div class="half-multiplier">' + fmtTemp(st.avgFeelsC) + '</div>' +
           '<div class="half-net">' + body + '</div>' +
         '</div>';
     }
@@ -2798,19 +2795,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("chillGrid").innerHTML =
       '<div class="half-card"><div class="half-title">Air temperature</div>' +
         '<div class="half-multiplier">' + fmtTemp(ch.tempC) + '</div>' +
-        '<div class="half-net">What a thermometer reads.' + (ch.extended && ch.tempC <= 22
-          ? ' Wind chill is officially defined up to ' + chillOfficialLimitText() + '; above that this card extends it.' : '') + '</div></div>' +
-      cell("Feels like, as ridden", ch.forward.avgFeelsC, ch.forward.coldestFeelsC) +
-      cell("Feels like, in reverse", ch.reverse.avgFeelsC, ch.reverse.coldestFeelsC);
+        '<div class="half-net">What a thermometer reads.' + (warm ? " Humidity " + Math.round(ch.rh) + "% (" + humidityStep(ch.rh)[1].toLowerCase() + ")." : "") + '</div></div>' +
+      cell("Feels like, as ridden", ch.forward) +
+      cell("Feels like, in reverse", ch.reverse);
 
+    var gapC = Math.abs(ch.forward.avgFeelsC - ch.reverse.avgFeelsC);
     var verdict;
-    if (negligible) {
-      verdict = "At this temperature the wind hardly changes how cold it feels on this ride.";
+    if (gapC * (state.tempUnit === "F" ? 9 / 5 : 1) < 0.5) {
+      verdict = ch.tone === "even" && warm
+        ? "Here the cooling from riding and the extra heat from humidity roughly cancel: it feels about like the air, either way round."
+        : "Ridden either way it feels about the same on average.";
     } else {
-      var gapC = Math.abs(ch.forward.avgFeelsC - ch.reverse.avgFeelsC);
-      verdict = gapC * (state.tempUnit === "F" ? 9 / 5 : 1) < 0.5
-        ? "Ridden either way it feels about the same on average."
-        : "Riding it " + (ch.forward.avgFeelsC > ch.reverse.avgFeelsC ? "as recorded" : "in reverse") + " feels about <b>" + fmtTempDiff(gapC) + " warmer</b> on average.";
+      verdict = "Riding it " + (ch.forward.avgFeelsC > ch.reverse.avgFeelsC ? "as recorded" : "in reverse") + " feels about <b>" + fmtTempDiff(gapC) + " warmer</b> on average.";
+    }
+    // Standing still or crawling uphill there is no breeze from riding: the
+    // NWS heat index, and its heat-illness warnings, apply to that case.
+    if (ch.stillHeatC >= CHILL_NEGLIGIBLE_C) {
+      var hi = ch.tempC + ch.stillHeatC;
+      verdict += " <b>Standing still</b>, or crawling uphill with no breeze, it feels like <b>" + fmtTemp(hi) + "</b> (the NWS heat index, " + fmtTempDiff(ch.stillHeatC) + " hotter than the air).";
+      if (hi >= HEAT_STROKE_LIKELY_C) {
+        verdict += " According to the National Weather Service, at " + fmtTemp(HEAT_STROKE_LIKELY_C) + " and above heat stroke is highly likely.";
+      } else if (hi >= HEAT_ILLNESS_LIKELY_C) {
+        verdict += " According to the National Weather Service, from " + fmtTemp(HEAT_ILLNESS_LIKELY_C) + " to " + fmtTemp(HEAT_STROKE_LIKELY_C) + " heat cramps or heat exhaustion are likely, and heat stroke is possible.";
+      }
     }
     document.getElementById("chillVerdict").innerHTML = verdict;
   }
@@ -2859,22 +2866,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     lines.push("Reverse: " + ef.lastHalf.reverse.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.reverse.avgRelSpeedKmh.toFixed(1) + " km/h)");
     lines.push("");
     var ch = result.chill;
-    if (ch.side === "heat") {
-      lines.push("=== Feels like on the bike (heat index) ===");
-      lines.push("Air temperature: " + fmtTemp(ch.tempC) + ", relative humidity " + Math.round(ch.rh) + "% (" + (state.rhFromForecast ? "forecast" : "set by hand") + ")");
-      lines.push("Feels like: " + fmtTemp(ch.forward.avgFeelsC) + " (" + fmtTempDiff(ch.heatC) + (ch.heatC >= 0 ? " hotter" : " cooler") + " than the air), the same in both directions.");
-      lines.push("US National Weather Service heat index: assumes shade, no wind effect from riding, full sun can add up to about 8 C (15 F).");
-    } else {
-    lines.push("=== Feels like on the bike (wind chill) ===");
-    lines.push("Air temperature: " + fmtTemp(ch.tempC));
-    if (ch.extended) lines.push("Above " + chillOfficialLimitText() + " the standard wind chill formula is extended beyond its official range (rough guide).");
-    function chillLine(label, st) {
-      if (ch.tempC - st.avgFeelsC < CHILL_NEGLIGIBLE_C) lines.push(label + ": the wind hardly cools you, feels like the air temperature");
-      else lines.push(label + ": feels like " + fmtTemp(st.avgFeelsC) + " on average, coldest tenth of the route " + fmtTemp(st.coldestFeelsC));
+    lines.push("=== Feels like on the bike ===");
+    lines.push("Air temperature: " + fmtTemp(ch.tempC) + (ch.model === "windchill" ? "" : ", relative humidity " + Math.round(ch.rh) + "% (" + (state.rhFromForecast ? "forecast" : "set by hand") + ")"));
+    lines.push("Model: " + (ch.model === "windchill" ? "wind chill (Environment Canada / US NWS)"
+      : ch.model === "blend" ? "blend of wind chill and apparent temperature (Australian BoM / Steadman)"
+      : "apparent temperature (Australian BoM / Steadman: wind and humidity, adult walking in shade, no sun)"));
+    function feelsLine(label, st) {
+      var d = st.avgFeelsC - ch.tempC;
+      if (Math.abs(d) < CHILL_NEGLIGIBLE_C) lines.push(label + ": about the same as the air temperature");
+      else if (d < 0) lines.push(label + ": feels like " + fmtTemp(st.avgFeelsC) + " on average (" + fmtTempDiff(d) + " colder), coldest tenth of the route " + fmtTemp(st.coldestFeelsC));
+      else lines.push(label + ": feels like " + fmtTemp(st.avgFeelsC) + " on average (" + fmtTempDiff(d) + " hotter), hottest tenth of the route " + fmtTemp(st.warmestFeelsC));
     }
-    chillLine("Forward", ch.forward);
-    chillLine("Reverse", ch.reverse);
-    }
+    feelsLine("Forward", ch.forward);
+    feelsLine("Reverse", ch.reverse);
+    if (ch.stillHeatC >= CHILL_NEGLIGIBLE_C) lines.push("Standing still (NWS heat index, no breeze): " + fmtTemp(ch.tempC + ch.stillHeatC) + " (" + fmtTempDiff(ch.stillHeatC) + " hotter than the air)");
     lines.push("");
     lines.push("=== Conclusion ===");
     lines.push("Forward: " + (result.fwd.easy / 1000).toFixed(2) + " km easy vs " + (result.fwd.hard / 1000).toFixed(2) + " km hard");
@@ -3055,10 +3060,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     scheduleRender();
   });
 
-  // Humidity: asked for only on hot days (below this, only wind matters), as
+  // Humidity: asked for only from mild temperatures up (below this, only wind matters), as
   // a word scale rather than a percentage. The forecast fills in the real
   // figure, and the select then shows the nearest word.
-  var HUMIDITY_SHOW_C = 24;
+  var HUMIDITY_SHOW_C = 15;                // the apparent temperature uses humidity from about here up
   var humidityField = document.getElementById("humidityField");
   var humidityInput = document.getElementById("humidityInput");
   var humidityHint = document.getElementById("humidityHint");
@@ -3067,7 +3072,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     humidityInput.value = String(humidityStep(state.rh)[0]);
     humidityHint.textContent = state.rhFromForecast
       ? "From the forecast: about " + Math.round(state.rh) + "%. Pick a word to override it."
-      : "Only matters on a hot day. With \u201cFrom forecast\u201d the real figure is filled in for you.";
+      : "Only matters on mild and hot days: humid air feels hotter. With \u201cFrom forecast\u201d the real figure is filled in for you.";
   }
   humidityInput.addEventListener("change", function () {
     forecastNote.hidden = true;
