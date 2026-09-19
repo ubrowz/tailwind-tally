@@ -124,6 +124,11 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-card);
     padding: 20px;
+    /* Lets components inside react to the card's own rendered width
+       (e.g. .half-grid below) rather than only the viewport - matters
+       once a card can end up either full-width or sharing a row inside
+       .chart-grid, like the Effort card does. */
+    container-type: inline-size;
   }
   .card > h2 {
     font-size: 13px;
@@ -479,12 +484,37 @@
   /* ---------- Charts ---------- */
   .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 820px) { .chart-grid { grid-template-columns: 1fr; } }
-  /* Direct-child selector only: a bare "svg" descendant selector here also
-     matches Leaflet's tiny internal attribution-flag SVG (buried deep
-     inside #leafletMapDiv), blowing a 12x8 icon up to fill the card. */
-  .chart-card > svg { width: 100%; height: auto; display: block; }
   .chart-card h2 { margin-bottom: 4px; }
   .chart-caption { font-size: 12.5px; color: var(--ink-secondary); margin: 0 0 12px; }
+
+  /* Targeted by id, not a bare "svg" descendant selector - that also
+     matched Leaflet's tiny internal attribution-flag SVG (buried deep
+     inside #leafletMapDiv) once, blowing a 12x8 icon up to fill the card. */
+  #polarSvg { width: 100%; height: auto; display: block; }
+  /* Single column on narrow screens (matches this page's caption-above-
+     chart order exactly, unchanged); on wide screens, rearranged into a
+     fixed-size chart on the left with everything else beside it, so the
+     chart doesn't blow up to fill an entire half-width card. */
+  .sweep-layout {
+    display: grid;
+    grid-template-areas: "caption" "chart" "callout" "table";
+    gap: 16px;
+  }
+  .sweep-layout .chart-caption { grid-area: caption; margin: 0; }
+  .sweep-layout #polarSvg { grid-area: chart; }
+  .sweep-layout #sweepCallout { grid-area: callout; }
+  .sweep-layout .table-toggle { grid-area: table; margin-top: 0; }
+  @media (min-width: 821px) {
+    .sweep-layout {
+      grid-template-columns: 340px 1fr;
+      grid-template-areas:
+        "chart caption"
+        "chart callout"
+        "chart table";
+      align-items: start;
+      gap: 16px 28px;
+    }
+  }
 
   .stroke-easy { stroke: var(--status-good); }
   .stroke-hard { stroke: var(--status-critical); }
@@ -576,6 +606,10 @@
   /* ---------- Last-50% comparison ---------- */
   .half-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
   @media (max-width: 720px) { .half-grid { grid-template-columns: 1fr; } }
+  /* Also stack when the card itself is narrow, regardless of viewport -
+     covers the Effort card sharing a row inside .chart-grid on desktop,
+     where the viewport is wide but this card's own column isn't. */
+  @container (max-width: 480px) { .half-grid { grid-template-columns: 1fr; } }
   .half-card {
     background: var(--panel-raised);
     border: 1px solid var(--border);
@@ -1431,30 +1465,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="route-stats" id="routeStats"></div>
     </div>
     <div class="card chart-card">
-      <div class="card-head">
-        <h2>Wind-direction sweep</h2>
-        <button class="copy-btn" id="saveSweepBtn">Save image</button>
-      </div>
-      <p class="chart-caption">Easy-fraction for the route as ridden, if the wind came from every direction, 0&ndash;359&deg;. Reverse isn't shown separately &mdash; riding in reverse with wind from &theta; is mathematically identical to riding forward with wind from &theta;+180&deg;, so reverse's value at any direction is just this same curve read 180&deg; across.</p>
-      <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, for the route as ridden"></svg>
-      <div class="wind-sensitivity" id="sweepCallout"></div>
-      <details class="table-toggle">
-        <summary>View sweep as a table</summary>
-        <div class="sweep-table-wrap">
-          <table class="sweep-table" id="sweepTable">
-            <thead><tr><th>From</th><th>Bearing</th><th>Forward easy</th><th>Reverse easy</th><th>Diff.</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </details>
+      <h2>Effort in the last 50% of the round trip</h2>
+      <p class="chart-caption" id="halfCaption"></p>
+      <div class="half-grid" id="halfGrid"></div>
+      <p class="half-verdict" id="halfVerdict"></p>
     </div>
   </div>
 
   <div class="card">
-    <h2>Effort in the last 50% of the round trip</h2>
-    <p class="chart-caption" id="halfCaption"></p>
-    <div class="half-grid" id="halfGrid"></div>
-    <p class="half-verdict" id="halfVerdict"></p>
+    <div class="card-head">
+      <h2>Wind-direction sweep</h2>
+      <button class="copy-btn" id="saveSweepBtn">Save image</button>
+    </div>
+    <div class="sweep-layout">
+    <p class="chart-caption">Easy-fraction for the route as ridden, if the wind came from every direction, 0&ndash;359&deg;. Reverse isn't shown separately &mdash; riding in reverse with wind from &theta; is mathematically identical to riding forward with wind from &theta;+180&deg;, so reverse's value at any direction is just this same curve read 180&deg; across.</p>
+    <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, for the route as ridden"></svg>
+    <div class="wind-sensitivity" id="sweepCallout"></div>
+    <details class="table-toggle">
+      <summary>View sweep as a table</summary>
+      <div class="sweep-table-wrap">
+        <table class="sweep-table" id="sweepTable">
+          <thead><tr><th>From</th><th>Bearing</th><th>Forward easy</th><th>Reverse easy</th><th>Diff.</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+    </div>
   </div>
 
 
