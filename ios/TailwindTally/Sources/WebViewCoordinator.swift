@@ -42,6 +42,10 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
     // with no address bar.
     private let allowedHost = "ubrowz.github.io"
     private let stravaHost = "www.strava.com"
+    // Third-party services Strava's own pages depend on (a cookie-
+    // consent widget, so far) - matched by suffix since these can use
+    // more than one subdomain.
+    private let allowedHostSuffixes = [".cookiebot.com"]
 
     // Plain-text GPX files are small; this is a generous ceiling against
     // a maliciously (or just accidentally) huge shared file being read
@@ -98,7 +102,18 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
             decisionHandler(.cancel)
             return
         }
-        if host == allowedHost || host == stravaHost {
+        // Only top-level navigation needs restricting. An iframe embedded
+        // in an already-trusted page (Strava's own cookie-consent widget,
+        // for example) is that page's own content, not a navigation away
+        // from it - blocking it just breaks the page for no security
+        // benefit, since it never takes over the app's own address-bar-
+        // less chrome the way a main-frame navigation would.
+        let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? true
+        if !isMainFrame {
+            decisionHandler(.allow)
+            return
+        }
+        if host == allowedHost || host == stravaHost || allowedHostSuffixes.contains(where: { host.hasSuffix($0) }) {
             decisionHandler(.allow)
             return
         }
