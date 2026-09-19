@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Tailwind Tally</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --font-display: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --ink: #0b0b0b;
+    --ink-secondary: #52514e;
+    --ink-muted: #898781;
+    --paper: #f9f9f7;
+    --panel: #fcfcfb;
+    --border: rgba(11, 11, 11, 0.10);
+    --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ffffff;
+      --ink-secondary: #c3c2b7;
+      --ink-muted: #898781;
+      --paper: #0d0d0d;
+      --panel: #1a1a19;
+      --border: rgba(255, 255, 255, 0.11);
+      --accent: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+    --paper: #0d0d0d;
+    --panel: #1a1a19;
+    --border: rgba(255, 255, 255, 0.11);
+    --accent: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); }
+  body {
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .page { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+  a { color: var(--accent); }
+  header { margin-bottom: 40px; }
+  header .eyebrow {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
+  }
+  h1 { font-family: var(--font-display); font-size: 28px; font-weight: 600; margin: 0 0 8px; }
+  header p { color: var(--ink-secondary); margin: 0; font-size: 14px; }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 36px 0 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  h2:first-of-type { border-top: none; padding-top: 0; }
+  p, li { font-size: 15px; color: var(--ink-secondary); }
+  strong { color: var(--ink); font-weight: 600; }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  code {
+    font-family: var(--font-display);
+    font-size: 0.9em;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; }
+  td { color: var(--ink-secondary); }
+  .back { display: inline-block; margin-top: 40px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <span class="eyebrow">Tailwind Tally</span>
+    <h1>Privacy Policy</h1>
+    <p>Effective September 19, 2026 &middot; applies to the Tailwind Tally web app and the Tailwind Tally iOS app, which shows the same web app in a native shell.</p>
+  </header>
+
+  <h2>The short version</h2>
+  <p>Tailwind Tally doesn't have accounts, doesn't set its own tracking cookies, and doesn't store anything server-side beyond map tiles and Strava data it briefly relays on your behalf. Your GPX route data is processed entirely on your own device. The sections below explain exactly what does happen, and why.</p>
+
+  <h2>Route files (GPX)</h2>
+  <p>Whether you drop a file in the browser, share one from another app on your phone, or load one from Strava, the route data is parsed and analyzed <strong>entirely on your device</strong> &mdash; in your browser's own JavaScript, or inside the iOS app. It is never uploaded to, or stored on, any server we operate.</p>
+
+  <h2>Connecting to Strava (optional)</h2>
+  <p>If you choose to tap "Connect to Strava," you're sent to Strava's own login page to authorize Tailwind Tally to read your routes. We request the <code>read</code> and <code>read_all</code> scopes, which let the app list and export your Strava routes (including private ones).</p>
+  <p>What we receive and how it's used:</p>
+  <ul>
+    <li><strong>An access token</strong>, scoped by Strava to your account and to the permissions you approved. It's held in your browser's memory for the current page session only, and is discarded when you reload or close the app. It is never written to a database, a file, or browser storage (no <code>localStorage</code>, no cookies set by us).</li>
+    <li><strong>Your Strava name and athlete id</strong>, shown in the app so you can see which account is connected (e.g. "Connected as &hellip;"). This is displayed, not stored.</li>
+    <li><strong>Your route list and the GPX content of a route you choose to load</strong>, used only to render the map and calculations you asked for.</li>
+  </ul>
+  <p>A small backend service we operate (see "Infrastructure," below) performs two things that require holding our Strava application's client secret, which can't safely live in a browser or a mobile app: exchanging Strava's one-time login code for that access token, and relaying the route-list/route-export API calls (only because Strava's API doesn't allow browsers to call it directly - not because it needs our secret). That backend does not log, store, or retain any Strava data that passes through it.</p>
+  <p>Disconnecting is as simple as reloading the page or restarting the app - there is nothing stored to delete.</p>
+
+  <h2>Map tiles</h2>
+  <p>Map imagery is served by MapTiler, requested through our backend so our MapTiler API key stays private. MapTiler receives the map area you're viewing and your IP address, the same as any map tile request - no Tailwind Tally-specific personal data is attached to these requests.</p>
+
+  <h2>Analytics</h2>
+  <p>We use <a href="https://www.goatcounter.com/" target="_blank" rel="noopener">GoatCounter</a> to count page visits. It sets no cookies and collects no personally identifying information - see <a href="https://www.goatcounter.com/privacy" target="_blank" rel="noopener">GoatCounter's privacy policy</a>.</p>
+
+  <h2>Fonts</h2>
+  <p>Page text uses fonts loaded directly from Google Fonts. Google may log standard web request data (such as your IP address) for these requests, as with any font served from their CDN.</p>
+
+  <h2>The iOS app specifically</h2>
+  <p>The iOS app is a thin native shell around the same web app described above, so everything on this page applies to it too. The one native-only feature is that Tailwind Tally can be offered as an "Open in&hellip;" destination for <code>.gpx</code> files shared from other apps (Strava's own app, Mail, Files, AirDrop). That file is read on-device and handed to the same in-app web page - it is not uploaded anywhere by the app itself.</p>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>No user accounts, passwords, or sign-up of any kind on our side.</li>
+    <li>No advertising, ad tracking, or ad-network SDKs.</li>
+    <li>No selling or sharing of your data with third parties beyond what's described above (each of which only ever sees a request you directly triggered).</li>
+    <li>No server-side database - the backend that supports this app is intentionally stateless.</li>
+  </ul>
+
+  <h2>Infrastructure (who's actually involved)</h2>
+  <table>
+    <thead><tr><th>Service</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>GitHub Pages</td><td>Hosts the web app's files.</td></tr>
+      <tr><td>Render</td><td>Hosts the small backend that proxies map tiles and Strava API calls.</td></tr>
+      <tr><td>Strava</td><td>Provides route data you explicitly connect and authorize.</td></tr>
+      <tr><td>MapTiler</td><td>Provides map tile imagery.</td></tr>
+      <tr><td>GoatCounter</td><td>Cookieless page-visit analytics.</td></tr>
+      <tr><td>Google Fonts</td><td>Serves the page's typefaces.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Children's privacy</h2>
+  <p>Tailwind Tally is not directed at children and we do not knowingly collect data from children.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes, the updated version will be posted at this same address with a new effective date above.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy or your data can be sent to <a href="mailto:8r1a1wwxc@mozmail.com">8r1a1wwxc@mozmail.com</a>.</p>
+
+  <a class="back" href="./">&larr; Back to Tailwind Tally</a>
+</div>
+</body>
+</html>
