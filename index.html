@@ -1485,6 +1485,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
         </div>
         <p class="field-hint">Wind speed and cruising speed feed the last-50% wind-effort estimate below.</p>
+        <div class="two-col-grid">
+          <div class="field">
+            <label for="tempInput">Temperature</label>
+            <input type="number" id="tempInput" min="-80" max="140" step="1">
+          </div>
+          <div class="field">
+            <label for="tempUnitInput">Unit</label>
+            <select id="tempUnitInput">
+              <option value="C">&deg;C</option>
+              <option value="F">&deg;F</option>
+            </select>
+          </div>
+        </div>
+        <p class="field-hint">Air temperature during the ride. With your speed and the wind, it sets how cold it feels (see &ldquo;Feels like on the bike&rdquo; below).</p>
         <div class="field">
           <label for="neutralInput">Crosswind band (&deg;)</label>
           <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
@@ -1533,6 +1547,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="half-grid" id="halfGrid"></div>
       <p class="half-verdict" id="halfVerdict"></p>
     </div>
+  </div>
+
+  <div class="card chart-card" id="chillCard">
+    <h2>Feels like on the bike</h2>
+    <p class="chart-caption" id="chillCaption"></p>
+    <div class="half-grid" id="chillGrid"></div>
+    <p class="half-verdict" id="chillVerdict"></p>
   </div>
 
   <div class="card">
@@ -1910,8 +1931,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // degrees would say 180); speed is the plain mean of the hourly speeds,
   // because a vector mean shrinks whenever the wind swings around and
   // would understate how hard it actually blows.
+  // Temperature (deg C, 2 m) is a plain mean over the same hours and places.
   function summarizeForecast(locations, dateStr, startMin, endMin) {
-    var sumSin = 0, sumCos = 0, sumSpeed = 0, n = 0, gust = 0, hours = {};
+    var sumSin = 0, sumCos = 0, sumSpeed = 0, n = 0, gust = 0, hours = {}, sumTemp = 0, nTemp = 0;
     locations.forEach(function (loc) {
       var h = loc.hourly;
       for (var i = 0; i < h.time.length; i++) {
@@ -1929,15 +1951,61 @@ svg.leaflet-image-layer.leaflet-interactive path {
         hours[hour] = true;
         var g = h.wind_gusts_10m ? h.wind_gusts_10m[i] : null;
         if (g != null && g > gust) gust = g;
+        var tc = h.temperature_2m ? h.temperature_2m[i] : null;
+        if (tc != null) { sumTemp += tc; nTemp++; }
       }
     });
     if (n === 0) return null;
     var speed = sumSpeed / n;
     // Direction means nothing in a dead calm; the caller keeps its own.
     var dir = speed < 0.5 ? null : (Math.atan2(sumSin, sumCos) * 180 / Math.PI + 360) % 360;
-    return { dirFromDeg: dir, speedKmh: speed, gustKmh: gust, hourCount: Object.keys(hours).length, placeCount: locations.length };
+    return { dirFromDeg: dir, speedKmh: speed, gustKmh: gust, tempC: nTemp ? sumTemp / nTemp : null,
+             hourCount: Object.keys(hours).length, placeCount: locations.length };
   }
   // END forecast-pure
+
+  // ---------------------------------------------------------------------
+  // Wind chill ("feels like") for a moving rider. Pure maths again.
+  // ---------------------------------------------------------------------
+  // BEGIN chill-pure
+  // The standard wind chill index (Environment Canada / US National Weather
+  // Service). Only defined at 10 deg C or below and for airspeeds above
+  // 4.8 km/h; outside that there is no wind chill and it feels like the
+  // air temperature. It was calibrated for a walking person's face, so
+  // feeding it a cyclist's airspeed is the usual approximation, not exact.
+  var WIND_CHILL_MAX_C = 10, WIND_CHILL_MIN_KMH = 4.8;
+  function windChillC(tempC, airspeedKmh) {
+    if (tempC > WIND_CHILL_MAX_C || airspeedKmh <= WIND_CHILL_MIN_KMH) return tempC;
+    var v = Math.pow(airspeedKmh, 0.16);
+    return 13.12 + 0.6215 * tempC - 11.37 * v + 0.3965 * tempC * v;
+  }
+
+  // Per-segment wind chill from the relative airspeed on that segment
+  // (rider speed and wind combined, same geometry as windEffortStats),
+  // then averaged by distance. The "coldest tenth" is the mean over the
+  // coldest 10% of the distance, not the single coldest segment: one
+  // GPS wobble that points a 25 m segment backwards would otherwise set
+  // the headline number.
+  function windChillStats(lengths, cosphi, vMs, wMs, tempC) {
+    var items = [], dist = 0, sum = 0;
+    for (var i = 0; i < lengths.length; i++) {
+      var rel2 = vMs * vMs + wMs * wMs - 2 * vMs * wMs * cosphi[i];
+      var c = windChillC(tempC, Math.sqrt(Math.max(0, rel2)) * 3.6);
+      items.push([c, lengths[i]]);
+      dist += lengths[i];
+      sum += c * lengths[i];
+    }
+    if (dist <= 0) return { avgFeelsC: tempC, coldestFeelsC: tempC };
+    items.sort(function (a, b) { return a[0] - b[0]; });
+    var target = 0.1 * dist, taken = 0, coldSum = 0;
+    for (var j = 0; j < items.length && taken < target; j++) {
+      var take = Math.min(items[j][1], target - taken);
+      coldSum += items[j][0] * take;
+      taken += take;
+    }
+    return { avgFeelsC: sum / dist, coldestFeelsC: coldSum / target };
+  }
+  // END chill-pure
 
   function windEffortStats(lengths, cosphi, vMs, wMs, start, end) {
     var sumWeighted = 0, dist = 0;
@@ -1956,7 +2024,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
   }
 
-  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh) {
+  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC) {
     var proj = projectToEnu(points);
     var xy = resamplePolyline(proj.xy, resampleM);
     var latLon = enuToLatLon(xy, proj.lat0, proj.lon0, proj.cosLat0);
@@ -1995,6 +2063,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
     };
 
+    var chill = {
+      tempC: tempC,
+      applicable: tempC <= WIND_CHILL_MAX_C,
+      forward: windChillStats(lengths, cosphiFwd, vMs, wMs, tempC),
+      reverse: windChillStats(lengths, cosphiRev, vMs, wMs, tempC)
+    };
+
     // Five-way (full tailwind/tailwind/crosswind/headwind/full headwind)
     // breakdown for the Route map and its calculations only. Purely a
     // function of wind DIRECTION vs. heading (cosphi) - it says nothing
@@ -2024,7 +2099,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       totalLength: totalLength, closureGap: closureGap,
       windFromDeg: windFromDeg, resampleM: resampleM, neutralDeg: neutralDeg, veryDeg: veryDeg,
       fwd: fwd, rev: rev, identityGap: identityGap, identityOk: identityOk,
-      balance: balance, sweep: sweep, lastHalf: lastHalf, effort: effort, fiveWay: fiveWay
+      balance: balance, sweep: sweep, lastHalf: lastHalf, effort: effort, chill: chill, fiveWay: fiveWay
     };
   }
 
@@ -2358,6 +2433,65 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
 
   // ---------------------------------------------------------------------
+  // Feels like on the bike (wind chill). Temperature is held in deg C in
+  // state and converted here only for display.
+  // ---------------------------------------------------------------------
+  function cToDisplay(c) { return state.tempUnit === "F" ? c * 9 / 5 + 32 : c; }
+  function displayToC(v) { return state.tempUnit === "F" ? (v - 32) * 5 / 9 : v; }
+  function fmtTemp(c) {
+    var t = Math.round(cToDisplay(c));
+    if (t === 0) t = 0;                       // no "-0"
+    return (t < 0 ? "\u2212" + (-t) : String(t)) + "\u00b0" + state.tempUnit;
+  }
+  // A temperature DIFFERENCE converts by 9/5 only (no +32).
+  function fmtTempDiff(dC) {
+    return Math.round(Math.abs(dC) * (state.tempUnit === "F" ? 9 / 5 : 1)) + "\u00b0" + state.tempUnit;
+  }
+  function chillThresholdText() { return fmtTemp(WIND_CHILL_MAX_C); }
+
+  function renderChill(result) {
+    var ch = result.chill, ef = result.effort;
+    var beaufort = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
+    document.getElementById("chillCaption").innerHTML =
+      "At <b>" + fmtTemp(ch.tempC) + "</b> air temperature, riding <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> in a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) +
+      " (" + beaufort + ")</b> wind. The cold you feel depends on the wind <i>on you</i>, which is your own speed combined with the wind, so it is worked out for every segment and averaged by distance. " +
+      "It uses the standard wind chill formula (Environment Canada and the US National Weather Service), which describes how fast exposed skin cools. " +
+      "Treat it as a guide to what to wear, not a measure of effort.";
+
+    function cell(title, feelsC, coldestC) {
+      var body;
+      if (ch.applicable) {
+        body = "That is <b>" + fmtTempDiff(feelsC - ch.tempC) + " colder</b> than the air. The coldest tenth of the route feels like <b>" + fmtTemp(coldestC) + "</b>.";
+      } else {
+        body = "No wind chill above " + chillThresholdText() + ": it feels like the air temperature.";
+      }
+      return '<div class="half-card">' +
+          '<div class="half-title">' + title + '</div>' +
+          '<div class="half-multiplier">' + fmtTemp(ch.applicable ? feelsC : ch.tempC) + '</div>' +
+          '<div class="half-net">' + body + '</div>' +
+        '</div>';
+    }
+
+    document.getElementById("chillGrid").innerHTML =
+      '<div class="half-card"><div class="half-title">Air temperature</div>' +
+        '<div class="half-multiplier">' + fmtTemp(ch.tempC) + '</div>' +
+        '<div class="half-net">What a thermometer reads. Wind chill only applies at ' + chillThresholdText() + ' or below.</div></div>' +
+      cell("Feels like, as ridden", ch.forward.avgFeelsC, ch.forward.coldestFeelsC) +
+      cell("Feels like, in reverse", ch.reverse.avgFeelsC, ch.reverse.coldestFeelsC);
+
+    var verdict;
+    if (!ch.applicable) {
+      verdict = "It is above " + chillThresholdText() + ", where wind chill isn&rsquo;t defined, so the wind doesn&rsquo;t change how cold it feels on this ride.";
+    } else {
+      var gapC = Math.abs(ch.forward.avgFeelsC - ch.reverse.avgFeelsC);
+      verdict = gapC * (state.tempUnit === "F" ? 9 / 5 : 1) < 0.5
+        ? "Ridden either way it feels about the same on average."
+        : "Riding it " + (ch.forward.avgFeelsC > ch.reverse.avgFeelsC ? "as recorded" : "in reverse") + " feels about <b>" + fmtTempDiff(gapC) + " warmer</b> on average.";
+    }
+    document.getElementById("chillVerdict").innerHTML = verdict;
+  }
+
+  // ---------------------------------------------------------------------
   // Text report (mirrors the CLI's report)
   // ---------------------------------------------------------------------
   function buildReportText(result, fileLabel) {
@@ -2399,6 +2533,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
     lines.push("Effort here is relative-airspeed-based (drag ~ airspeed^2), shown as a multiple of calm-day effort at the same cruising speed - not a linear tailwind/headwind sum.");
     lines.push("Forward: " + ef.lastHalf.forward.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.forward.avgRelSpeedKmh.toFixed(1) + " km/h)");
     lines.push("Reverse: " + ef.lastHalf.reverse.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.reverse.avgRelSpeedKmh.toFixed(1) + " km/h)");
+    lines.push("");
+    var ch = result.chill;
+    lines.push("=== Feels like on the bike (wind chill) ===");
+    lines.push("Air temperature: " + fmtTemp(ch.tempC));
+    if (ch.applicable) {
+      lines.push("Forward: feels like " + fmtTemp(ch.forward.avgFeelsC) + " on average, coldest tenth of the route " + fmtTemp(ch.forward.coldestFeelsC));
+      lines.push("Reverse: feels like " + fmtTemp(ch.reverse.avgFeelsC) + " on average, coldest tenth of the route " + fmtTemp(ch.reverse.coldestFeelsC));
+    } else {
+      lines.push("No wind chill above " + chillThresholdText() + ": it feels like the air temperature in both directions.");
+    }
     lines.push("");
     lines.push("=== Conclusion ===");
     lines.push("Forward: " + (result.fwd.easy / 1000).toFixed(2) + " km easy vs " + (result.fwd.hard / 1000).toFixed(2) + " km hard");
@@ -2449,7 +2593,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     neutralDeg: 10,
     veryDeg: 40,
     windSpeedBeaufort: 4,
-    cruiseSpeedKmh: 25
+    cruiseSpeedKmh: 25,
+    // Temperature is always held in deg C; the field and every readout
+    // convert to the chosen unit only for display. The unit defaults to
+    // Fahrenheit for US locales and Celsius everywhere else.
+    tempC: 8,
+    tempUnit: /-US$/i.test(navigator.language || "") ? "F" : "C"
   };
 
   // Nothing Strava-related is persisted (no localStorage, no backend
@@ -2551,6 +2700,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
     scheduleRender();
   });
 
+  var tempInput = document.getElementById("tempInput");
+  var tempUnitInput = document.getElementById("tempUnitInput");
+  // The field shows the temperature in the chosen unit to 0.1, so a value
+  // typed in one unit survives a round trip through the other.
+  function showTempInField() { tempInput.value = String(Number(cToDisplay(state.tempC).toFixed(1))); }
+  tempUnitInput.value = state.tempUnit;
+  showTempInField();
+  tempInput.addEventListener("change", function () {
+    forecastNote.hidden = true;
+    var v = parseFloat(tempInput.value);
+    if (isFinite(v)) state.tempC = Math.max(-80, Math.min(60, displayToC(v)));
+    showTempInField();
+    scheduleRender();
+  });
+  tempUnitInput.addEventListener("change", function () {
+    state.tempUnit = tempUnitInput.value === "F" ? "F" : "C";
+    showTempInField();
+    scheduleRender();
+  });
+
   // ---------------------------------------------------------------------
   // Wind from a forecast. Open-Meteo is called straight from the page (no
   // key, CORS open). The request carries only the rounded sample points
@@ -2598,7 +2767,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var url = FORECAST_API +
       "?latitude=" + sample.map(function (p) { return p.lat.toFixed(1); }).join(",") +
       "&longitude=" + sample.map(function (p) { return p.lon.toFixed(1); }).join(",") +
-      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=auto" +
+      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
       "&start_date=" + dateStr + "&end_date=" + dateStr;
     return fetch(url).then(function (res) {
       return res.json().then(function (data) { return { ok: res.ok, data: data }; }, function () { return { ok: false, data: {} }; });
@@ -2641,6 +2810,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
       state.windSpeedBeaufort = beaufort;
       windSpeedInput.value = beaufort;
+      if (sm.tempC !== null) { state.tempC = sm.tempC; showTempInField(); }
       fileError.classList.remove("show");
       scheduleRender();
 
@@ -2649,7 +2819,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         "from " + degreesToCompass16(sm.dirFromDeg) + " (" + Math.round(sm.dirFromDeg) + "\u00b0)";
       forecastNoteText.textContent =
         "Forecast for " + day + ", " + fcStart.value + "\u2013" + fcEnd.value + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + dirText +
-        ", " + sm.speedKmh.toFixed(0) + " km/h on average with gusts up to " + sm.gustKmh.toFixed(0) + " km/h \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + "). " +
+        ", " + sm.speedKmh.toFixed(0) + " km/h on average with gusts up to " + sm.gustKmh.toFixed(0) + " km/h \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + ")" +
+        (sm.tempC !== null ? ", air temperature " + fmtTemp(sm.tempC) : "") + ". " +
         "Averaged over " + sm.hourCount + " hour" + (sm.hourCount === 1 ? "" : "s") + " at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
       forecastNote.hidden = false;
     }).catch(showForecastError).then(function () {
@@ -2883,7 +3054,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var result;
     try {
-      result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh);
+      result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC);
     } catch (e) {
       fileError.textContent = e.message;
       fileError.classList.add("show");
@@ -2936,6 +3107,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       buildAsymSymHTML(result);
 
     renderLastHalf(result);
+    renderChill(result);
 
     document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
     lastResult = result;
