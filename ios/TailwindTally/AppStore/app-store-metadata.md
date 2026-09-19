@@ -15,7 +15,7 @@ Tailwind Tally
 ## Subtitle (30 char max)
 
 ```
-Know your wind before you ride
+Wind impact by GPX route
 ```
 30 chars. Shown under the app name in search results and on the product page.
 
@@ -24,49 +24,34 @@ Alternative, if you'd rather lead with the mechanic instead of the pitch:
 
 ## Promotional text (170 char max)
 
-Editable any time without a new build submission — good place to update for
-seasons/campaigns later.
+Editable any time without a new build submission, so it's a reasonable place
+to update copy later without a full release.
 
 ```
-See how much of your ride is tailwind vs headwind before you go, in either direction. Works with any GPX file, or import routes straight from Strava.
+See how much of a ride is tailwind vs headwind before you go, in either direction. Import a GPX file or connect Strava.
 ```
-149 chars.
+119 chars.
 
 ## Description (4000 char max)
 
 ```
-Before you ride, know which way the wind actually helps you.
+Tailwind Tally shows how much of a bike route is tailwind versus headwind for a given wind direction, ridden forward or the other way around.
 
-Tailwind Tally takes a route — dropped in as a GPX file or imported straight from Strava — and shows you exactly how much of it is tailwind versus headwind for a given wind direction, ridden forward or in reverse. No more guessing whether looping the other way around your usual route would actually be easier.
+Load a route by dropping in a GPX file, sharing one from Strava, Mail, or Files, or connecting your Strava account and picking straight from your own routes.
 
-WHAT IT SHOWS YOU
+The route map is colored by wind angle: full tailwind, tailwind, crosswind, headwind, full headwind. You get the split for the whole route and for just the second half, since that's usually the part that decides how a ride actually feels. A 360 degree sweep shows the easy fraction for every possible wind direction, so you can find the best wind for a given loop or check how bad a specific direction would really be. There is also a simple effort estimate: how much harder a given wind speed makes the ride at your normal cruising speed, compared to riding it on a calm day.
 
-• A color-coded map of your route: full tailwind, tailwind, crosswind, headwind, and full headwind, segment by segment
-• The split for the route as a whole, and for just the closing half of an out-and-back or loop — useful for judging how the ride home will actually feel
-• A full 360° sweep: for every possible wind direction, what fraction of the route would be easy, so you can spot the best (and worst) wind for this exact route
-• An aerodynamic effort estimate — how much harder a given wind speed makes the ride, compared to a calm day, based on your cruising speed
-
-HOW YOU GET A ROUTE IN
-
-• Drop a .gpx file onto the app, or share one in from Strava's own app, Mail, Files, or AirDrop
-• Or connect your Strava account directly and pick a route from your own library
-
-BUILT TO RESPECT YOUR DATA
-
-Your route is analyzed entirely on your device — it's never uploaded to a server. There's no account to create, no password, nothing stored. Connecting Strava is optional and only fetches what you ask for, when you ask for it.
-
-Whether you're planning a long ride, deciding which direction to tackle a loop, or just curious if that headwind on the way out will turn into a tailwind on the way back — Tailwind Tally answers it before you clip in.
+Everything runs on your device. Routes are not uploaded anywhere, there is no account to create, and nothing is stored. Connecting Strava is optional and only pulls what you ask it to, when you ask for it.
 ```
-1641 chars.
+1085 chars.
 
 ## Keywords (100 char max, comma-separated)
 
 ```
 cycling,wind,tailwind,headwind,strava,gpx,route planner,bike,ride,bicycle,weather,windfinder
 ```
-92 chars. Don't repeat words already in the app name/subtitle ("tailwind" is
-borderline-redundant with the app name, but Apple's search indexing weighs
-them somewhat independently, so it's left in.)
+92 chars. "Tailwind" overlaps with the app name, but keywords and the name
+are indexed separately, so it's kept in the list too.
 
 ## Category
 
