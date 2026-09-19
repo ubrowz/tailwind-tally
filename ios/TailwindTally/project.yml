@@ -1,14 +1,14 @@
 name: TailwindTally
 options:
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.4"
   bundleIdPrefix: com.ubrowz
 
 targets:
   TailwindTally:
     type: application
     platform: iOS
-    deploymentTarget: "16.0"
+    deploymentTarget: "17.4"
     sources:
       - path: Sources
     resources:
