@@ -89,7 +89,15 @@ its own site plus Strava's login).
 
 ## Screenshots
 
-Not drafted here - these need actual device screenshots (6.7" and 5.5"
-iPhone sizes, minimum, per Apple's current requirements). Once the app's
-running on your phone, the Route map card and the Wind-direction sweep card
-are probably the two most visually compelling to lead with.
+In `Screenshots/6.7-inch/` and `Screenshots/5.5-inch/` - the Route map card
+and the Wind-direction sweep card, at the exact pixel dimensions App Store
+Connect asks for (1290x2796 and 1242x2208). Captured against the live site
+in its actual mobile layout (device CSS viewport at 3x scale, not just the
+output image resized), using the app's built-in sample route so they show a
+real, computed result rather than an empty state.
+
+These two sizes are the historically stable, safe pair to have covered;
+double check App Store Connect's upload screen for the current exact set it
+wants at submission time; Apple has added new required sizes before as
+device lineups changed; other slots typically accept these same 6.7"
+originals scaled down automatically.
