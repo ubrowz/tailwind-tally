@@ -398,7 +398,7 @@
     color: var(--ink-muted);
     margin-bottom: 5px;
   }
-  .field input[type="text"], .field input[type="number"] {
+  .field input[type="text"], .field input[type="number"], .field input[type="date"], .field input[type="time"] {
     width: 100%;
     background: var(--panel-raised);
     border: 1px solid var(--border);
@@ -408,7 +408,41 @@
     font-size: 14px;
     color: var(--ink);
   }
+  .field input[type="date"], .field input[type="time"] { min-width: 0; min-height: 34px; }
   .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Manual / forecast wind-source switch, and the forecast form under it. */
+  .mode-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .mode-toggle button {
+    background: var(--panel-raised);
+    color: var(--ink-secondary);
+    border: 0;
+    padding: 7px 14px;
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .mode-toggle button + button { border-left: 1px solid var(--border); }
+  .mode-toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .mode-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .forecast-panel { margin-bottom: 18px; }
+  /* Narrow: date on its own row, From/To side by side. Wide: all three in one row. */
+  .forecast-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .forecast-grid .field:first-child { grid-column: 1 / -1; }
+  @container (min-width: 460px) {
+    .forecast-grid { grid-template-columns: 1.5fr 1fr 1fr; }
+    .forecast-grid .field:first-child { grid-column: auto; }
+  }
+  .forecast-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .forecast-note { font-size: 12.5px; color: var(--ink-secondary); margin-top: 10px; }
+  .forecast-note a { color: inherit; }
   .field-hint { font-size: 11.5px; color: var(--ink-muted); margin-top: 4px; }
 
   details.advanced { margin-top: 4px; }
@@ -1362,7 +1396,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </svg>
     <div class="masthead-text">
       <h1>Tailwind Tally</h1>
-      <p>Upload a ride's GPX track and a wind direction to see how many kilometres are tailwind ("easy") versus headwind ("hard") &mdash; ridden as recorded, and in reverse.</p>
+      <p>Upload a ride's GPX track and a wind direction &mdash; set by hand, or taken from the forecast for your ride &mdash; to see how many kilometres are tailwind ("easy") versus headwind ("hard") &mdash; ridden as recorded, and in reverse.</p>
     </div>
   </div>
 
@@ -1400,6 +1434,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="card">
     <h2>Wind</h2>
+    <div class="mode-toggle" role="group" aria-label="Wind source">
+      <button type="button" id="modeManual" aria-pressed="true">Set manually</button>
+      <button type="button" id="modeForecast" aria-pressed="false">From forecast</button>
+    </div>
+    <div class="forecast-panel" id="forecastPanel" hidden>
+      <div class="forecast-grid">
+        <div class="field">
+          <label for="fcDate">Ride date</label>
+          <input type="date" id="fcDate">
+        </div>
+        <div class="field">
+          <label for="fcStart">From</label>
+          <input type="time" id="fcStart" value="10:00">
+        </div>
+        <div class="field">
+          <label for="fcEnd">To</label>
+          <input type="time" id="fcEnd" value="14:00">
+        </div>
+      </div>
+      <p class="field-hint">Times are local to the route, wherever in the world it is. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind fields below, and you can still adjust them.</p>
+      <div class="forecast-actions">
+        <button type="button" class="copy-btn" id="fcGetBtn">Get forecast</button>
+      </div>
+      <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></p>
+      <p class="error-text" id="forecastError"></p>
+    </div>
     <div class="wind-control">
       <div class="compass-dial" id="compassDial">
         <div class="compass-arrow" id="compassArrow"></div>
@@ -1810,6 +1870,74 @@ svg.leaflet-image-layer.leaflet-interactive path {
     "Strong breeze", "Near gale", "Gale", "Strong gale", "Storm", "Violent storm", "Hurricane force"
   ];
   function beaufortToKmh(n) { return BEAUFORT_KMH[Math.max(0, Math.min(12, Math.round(n)))]; }
+
+  // ---------------------------------------------------------------------
+  // Wind from a weather forecast (the "From forecast" mode). The pure
+  // maths lives here so it can be tested without a network or a DOM.
+  // ---------------------------------------------------------------------
+  // BEGIN forecast-pure
+  // Lower edge (km/h) of each Beaufort force 1..12; a forecast speed is
+  // filed under the highest force whose edge it reaches. Beaufort is
+  // defined on 10 m wind, which is also what the forecast reports, so the
+  // two wind modes stay comparable with no height correction.
+  var BEAUFORT_LOWER_KMH = [1, 6, 12, 20, 29, 39, 50, 62, 75, 89, 103, 118];
+  function kmhToBeaufort(kmh) {
+    var b = 0;
+    while (b < 12 && kmh >= BEAUFORT_LOWER_KMH[b]) b++;
+    return b;
+  }
+
+  // Start, middle and end of the route, rounded to 0.1 deg (~11 km) and
+  // de-duplicated (a loop's start and end usually collapse into one). That
+  // is finer than the forecast models resolve anyway, and it means the
+  // request never carries the route's exact coordinates.
+  function forecastSamplePoints(points) {
+    var idx = [0, Math.floor((points.length - 1) / 2), points.length - 1];
+    var seen = {}, out = [];
+    idx.forEach(function (i) {
+      var lat = Math.round(points[i][0] * 10) / 10;
+      var lon = Math.round(points[i][1] * 10) / 10;
+      var key = lat + "," + lon;
+      if (!seen[key]) { seen[key] = true; out.push({ lat: lat, lon: lon }); }
+    });
+    return out;
+  }
+
+  // locations: Open-Meteo hourly results, one per sample point, times as
+  // local "YYYY-MM-DDTHH:00" strings. The window is minutes-after-midnight
+  // on dateStr; an hour counts if any part of it falls inside the window.
+  // Direction is a speed-weighted VECTOR mean (a plain mean of 350 and 10
+  // degrees would say 180); speed is the plain mean of the hourly speeds,
+  // because a vector mean shrinks whenever the wind swings around and
+  // would understate how hard it actually blows.
+  function summarizeForecast(locations, dateStr, startMin, endMin) {
+    var sumSin = 0, sumCos = 0, sumSpeed = 0, n = 0, gust = 0, hours = {};
+    locations.forEach(function (loc) {
+      var h = loc.hourly;
+      for (var i = 0; i < h.time.length; i++) {
+        var t = h.time[i];
+        if (t.slice(0, 10) !== dateStr) continue;
+        var hour = parseInt(t.slice(11, 13), 10);
+        if (hour * 60 >= endMin || (hour + 1) * 60 <= startMin) continue;
+        var s = h.wind_speed_10m[i], d = h.wind_direction_10m[i];
+        if (s == null || d == null) continue;
+        var rad = d * Math.PI / 180;
+        sumSin += s * Math.sin(rad);
+        sumCos += s * Math.cos(rad);
+        sumSpeed += s;
+        n++;
+        hours[hour] = true;
+        var g = h.wind_gusts_10m ? h.wind_gusts_10m[i] : null;
+        if (g != null && g > gust) gust = g;
+      }
+    });
+    if (n === 0) return null;
+    var speed = sumSpeed / n;
+    // Direction means nothing in a dead calm; the caller keeps its own.
+    var dir = speed < 0.5 ? null : (Math.atan2(sumSin, sumCos) * 180 / Math.PI + 360) % 360;
+    return { dirFromDeg: dir, speedKmh: speed, gustKmh: gust, hourCount: Object.keys(hours).length, placeCount: locations.length };
+  }
+  // END forecast-pure
 
   function windEffortStats(lengths, cosphi, vMs, wMs, start, end) {
     var sumWeighted = 0, dist = 0;
@@ -2380,10 +2508,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     state.windFromDeg = ((deg % 360) + 360) % 360;
     windInput.value = degreesToCompass16(state.windFromDeg);
     fileError.classList.remove("show");
+    forecastNote.hidden = true;
     scheduleRender();
   }
 
   windInput.addEventListener("change", function () {
+    forecastNote.hidden = true;
     try {
       state.windFromDeg = parseWindFrom(windInput.value);
       fileError.classList.remove("show");
@@ -2410,6 +2540,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     scheduleRender();
   });
   windSpeedInput.addEventListener("change", function () {
+    forecastNote.hidden = true;
     var v = parseInt(windSpeedInput.value, 10);
     state.windSpeedBeaufort = isFinite(v) ? Math.max(0, Math.min(12, v)) : 4;
     scheduleRender();
@@ -2418,6 +2549,113 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var v = parseFloat(cruiseSpeedInput.value);
     state.cruiseSpeedKmh = isFinite(v) && v > 0 ? v : 25;
     scheduleRender();
+  });
+
+  // ---------------------------------------------------------------------
+  // Wind from a forecast. Open-Meteo is called straight from the page (no
+  // key, CORS open). The request carries only the rounded sample points
+  // from forecastSamplePoints, never the route itself. `timezone=auto`
+  // makes every hourly time local to its own place, which is what lets the
+  // ride window be entered as plain local time anywhere in the world.
+  // ---------------------------------------------------------------------
+  var FORECAST_API = "https://api.open-meteo.com/v1/forecast";
+  var modeManual = document.getElementById("modeManual");
+  var modeForecast = document.getElementById("modeForecast");
+  var forecastPanel = document.getElementById("forecastPanel");
+  var fcDate = document.getElementById("fcDate");
+  var fcStart = document.getElementById("fcStart");
+  var fcEnd = document.getElementById("fcEnd");
+  var fcGetBtn = document.getElementById("fcGetBtn");
+  var forecastNote = document.getElementById("forecastNote");
+  var forecastNoteText = document.getElementById("forecastNoteText");
+  var forecastError = document.getElementById("forecastError");
+
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  var tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
+  fcDate.value = tomorrow.getFullYear() + "-" + pad2(tomorrow.getMonth() + 1) + "-" + pad2(tomorrow.getDate());
+
+  function setWindMode(fromForecast) {
+    forecastPanel.hidden = !fromForecast;
+    modeManual.setAttribute("aria-pressed", String(!fromForecast));
+    modeForecast.setAttribute("aria-pressed", String(fromForecast));
+  }
+  modeManual.addEventListener("click", function () { setWindMode(false); });
+  modeForecast.addEventListener("click", function () { setWindMode(true); });
+
+  function parseClock(v) {
+    var m = /^(\d{2}):(\d{2})$/.exec(v);
+    return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null;
+  }
+
+  function formatUtcOffset(seconds) {
+    var sign = seconds < 0 ? "-" : "+";
+    var mins = Math.round(Math.abs(seconds) / 60);
+    return "UTC" + sign + Math.floor(mins / 60) + (mins % 60 ? ":" + pad2(mins % 60) : "");
+  }
+
+  function fetchForecastWind(points, dateStr, startMin, endMin) {
+    var sample = forecastSamplePoints(points);
+    var url = FORECAST_API +
+      "?latitude=" + sample.map(function (p) { return p.lat.toFixed(1); }).join(",") +
+      "&longitude=" + sample.map(function (p) { return p.lon.toFixed(1); }).join(",") +
+      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=auto" +
+      "&start_date=" + dateStr + "&end_date=" + dateStr;
+    return fetch(url).then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, data: data }; }, function () { return { ok: false, data: {} }; });
+    }, function () {
+      throw new Error("Couldn't reach the forecast service. Check your connection, or set the wind manually.");
+    }).then(function (result) {
+      if (!result.ok || result.data.error) {
+        var range = /from (\d{4}-\d\d-\d\d) to (\d{4}-\d\d-\d\d)/.exec(String(result.data.reason || ""));
+        if (range) throw new Error("There's no forecast for that date. Forecast data covers " + range[1] + " to " + range[2] + " - for other dates, set the wind manually.");
+        throw new Error("The forecast service couldn't answer that request. Try again, or set the wind manually.");
+      }
+      var locations = Array.isArray(result.data) ? result.data : [result.data];
+      var summary = summarizeForecast(locations, dateStr, startMin, endMin);
+      if (!summary) throw new Error("The forecast has no wind data for those hours. Try another time, or set the wind manually.");
+      return { summary: summary, timezone: locations[0].timezone, offsetSeconds: locations[0].utc_offset_seconds };
+    });
+  }
+
+  function showForecastError(err) {
+    forecastError.textContent = err.message || String(err);
+    forecastError.classList.add("show");
+  }
+
+  fcGetBtn.addEventListener("click", function () {
+    forecastError.classList.remove("show");
+    forecastNote.hidden = true;
+    var dateStr = fcDate.value, startMin = parseClock(fcStart.value), endMin = parseClock(fcEnd.value);
+    if (!dateStr) return showForecastError(new Error("Pick the ride date."));
+    if (startMin === null || endMin === null) return showForecastError(new Error("Enter both a start and an end time."));
+    if (endMin <= startMin) return showForecastError(new Error("The end time has to be after the start time. For a ride that crosses midnight, use the part before midnight or set the wind manually."));
+
+    fcGetBtn.disabled = true;
+    fcGetBtn.textContent = "Getting forecast\u2026";
+    fetchForecastWind(state.points, dateStr, startMin, endMin).then(function (r) {
+      var sm = r.summary;
+      var beaufort = kmhToBeaufort(sm.speedKmh);
+      if (sm.dirFromDeg !== null) {
+        state.windFromDeg = sm.dirFromDeg;
+        windInput.value = String(Math.round(sm.dirFromDeg));
+      }
+      state.windSpeedBeaufort = beaufort;
+      windSpeedInput.value = beaufort;
+      fileError.classList.remove("show");
+      scheduleRender();
+
+      var day = new Date(dateStr + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+      var dirText = sm.dirFromDeg === null ? "essentially calm" :
+        "from " + degreesToCompass16(sm.dirFromDeg) + " (" + Math.round(sm.dirFromDeg) + "\u00b0)";
+      forecastNoteText.textContent =
+        "Forecast for " + day + ", " + fcStart.value + "\u2013" + fcEnd.value + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + dirText +
+        ", " + sm.speedKmh.toFixed(0) + " km/h on average with gusts up to " + sm.gustKmh.toFixed(0) + " km/h \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + "). " +
+        "Averaged over " + sm.hourCount + " hour" + (sm.hourCount === 1 ? "" : "s") + " at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
+      forecastNote.hidden = false;
+    }).catch(showForecastError).then(function () {
+      fcGetBtn.disabled = false;
+      fcGetBtn.textContent = "Get forecast";
+    });
   });
 
   dropzone.addEventListener("click", function () { fileInput.click(); });
