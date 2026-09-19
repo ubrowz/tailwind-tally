@@ -89,15 +89,17 @@ its own site plus Strava's login).
 
 ## Screenshots
 
-In `Screenshots/6.7-inch/` and `Screenshots/5.5-inch/` - the Route map card
-and the Wind-direction sweep card, at the exact pixel dimensions App Store
-Connect asks for (1290x2796 and 1242x2208). Captured against the live site
-in its actual mobile layout (device CSS viewport at 3x scale, not just the
-output image resized), using the app's built-in sample route so they show a
-real, computed result rather than an empty state.
+In `Screenshots/6.5-inch-1242x2688/` and `Screenshots/6.7-inch-1284x2778/` -
+the Route map card and the Wind-direction sweep card, at the exact pixel
+dimensions App Store Connect's upload screen asked for (confirmed directly
+against the live form, not guessed - an earlier draft of these used the
+newer iPhone 15/16 Pro Max resolution, 1290x2796, which App Store Connect
+did not actually ask for at this screen; replaced with the sizes it does
+ask for). Captured against the live site in its actual mobile layout
+(device CSS viewport at 3x scale, not just the output image resized), using
+the app's built-in sample route so they show a real, computed result rather
+than an empty state.
 
-These two sizes are the historically stable, safe pair to have covered;
-double check App Store Connect's upload screen for the current exact set it
-wants at submission time; Apple has added new required sizes before as
-device lineups changed; other slots typically accept these same 6.7"
-originals scaled down automatically.
+If App Store Connect asks for a different set of sizes by the time you
+read this (Apple reshuffles required device classes over time), regenerate
+from the live site at whatever exact dimensions it currently shows.
