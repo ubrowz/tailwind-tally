@@ -1,4 +1,3 @@
-import AuthenticationServices
 import Foundation
 import UIKit
 import WebKit
@@ -10,32 +9,39 @@ import WebKit
 ///    page's own `loadGpxText(text, label)` - built for the
 ///    Strava-import path to share code with the file drop-zone, so
 ///    this hand-off needs no changes on the web side at all.
-/// 2. Restricting navigation to known hosts, and routing Strava's login
-///    through ASWebAuthenticationSession (a system browser sheet with a
-///    real address bar and Safari's cookies) instead of letting it load
-///    inside this app's own chrome-less web view, where a user would
-///    have no way to verify they're actually on strava.com before
-///    entering their password. See the security review this came out
-///    of: the previous version just let the page's own
-///    `window.location.href = <strava authorize URL>` navigate this
-///    same WKWebView, same as any other link.
+/// 2. Restricting navigation to known hosts, so a compromised
+///    dependency, an ad, or an open redirect can't take over this
+///    chrome-less web view to show arbitrary content with no address
+///    bar for the user to check.
+///
+/// This originally also routed Strava's login through
+/// ASWebAuthenticationSession instead of this web view, for the same
+/// no-address-bar reason - Strava's OAuth page would otherwise be
+/// indistinguishable from a phishing page. That needs the newer
+/// ASWebAuthenticationSession.Callback.https(host:path:) API, which in
+/// testing failed immediately (ASWebAuthenticationSessionError
+/// .canceledLogin, no UI ever shown) - the leading explanation is that
+/// this callback type expects an Associated Domains / apple-app-site-
+/// association setup at the root of ubrowz.github.io, which isn't
+/// available (that's a separate GitHub Pages site from this project's
+/// repo). Reverted to letting Strava load directly in this web view -
+/// an accepted, deliberate tradeoff (no in-app address bar during
+/// Strava login specifically), not an oversight - while keeping the
+/// general navigation allowlist for everything else.
 final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate {
     @Published var isLoading = true
     @Published var loadError: String?
 
     private weak var webView: WKWebView?
     private var pendingFile: (text: String, label: String)?
-    private var authSession: ASWebAuthenticationSession?
 
-    // The only host this app ever needs to show inside its own web
-    // view. Strava is handled separately, below, via
-    // ASWebAuthenticationSession rather than by navigating here at all;
-    // anything else (map tile-provider attribution links, etc.) is
-    // handed off to the system browser instead of loading untrusted
-    // content in a view with no address bar.
+    // Hosts allowed to navigate inside this app's own web view. Strava
+    // is included deliberately (see the type doc above); anything else
+    // (map tile-provider attribution links, etc.) is handed off to the
+    // system browser instead of loading untrusted content in a view
+    // with no address bar.
     private let allowedHost = "ubrowz.github.io"
     private let stravaHost = "www.strava.com"
-    private let callbackPath = "/tailwind-tally/"
 
     // Plain-text GPX files are small; this is a generous ceiling against
     // a maliciously (or just accidentally) huge shared file being read
@@ -81,63 +87,6 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
         webView.evaluateJavaScript("loadGpxText(\(textJS), \(labelJS));")
     }
 
-    // MARK: - Strava sign-in
-
-    /// Launches the system auth-session browser for Strava's login,
-    /// instead of letting it load in our own web view. Strava's whole
-    /// login/consent flow (any 2FA, "choose account", etc.) happens
-    /// inside that system-managed sheet; this only ever gets called
-    /// back once, with the final redirect to our own https callback
-    /// URL - which we then load into the web view exactly as if the
-    /// page had been redirected there normally, so the page's own
-    /// existing `handleStravaRedirect()` JS picks it up unchanged.
-    private func startStravaSignIn(authorizeURL: URL) {
-        let session = ASWebAuthenticationSession(
-            url: authorizeURL,
-            callback: .https(host: allowedHost, path: callbackPath)
-        ) { [weak self] callbackURL, error in
-            // The session's completion handler isn't documented as
-            // guaranteed-main-thread, and this drives @Published state
-            // plus a WKWebView load - both need the main thread.
-            DispatchQueue.main.async {
-                guard let self, let webView = self.webView else { return }
-                let authError = error as? ASWebAuthenticationSessionError
-                if let callbackURL {
-                    webView.load(URLRequest(url: callbackURL))
-                } else if authError?.code == .canceledLogin {
-                    // The user actually declined - land back on the
-                    // plain page with ?error= set, same as a real
-                    // Strava cancel would produce, so the page's
-                    // existing error handling (not custom code here)
-                    // takes it from there.
-                    var components = URLComponents()
-                    components.scheme = "https"
-                    components.host = self.allowedHost
-                    components.path = self.callbackPath
-                    components.queryItems = [URLQueryItem(name: "error", value: "access_denied")]
-                    if let url = components.url {
-                        webView.load(URLRequest(url: url))
-                    }
-                } else {
-                    // Something else went wrong before the user ever
-                    // saw a login page (e.g. no valid window to present
-                    // on) - surface the real reason instead of a
-                    // generic "cancelled" that hides what happened.
-                    self.loadError = "Couldn't open Strava sign-in: "
-                        + (error?.localizedDescription ?? "unknown error")
-                }
-                self.authSession = nil
-            }
-        }
-        session.presentationContextProvider = self
-        session.prefersEphemeralWebBrowserSession = false
-        authSession = session
-        if !session.start() {
-            loadError = "Couldn't open Strava sign-in (no window to present it on)."
-            authSession = nil
-        }
-    }
-
     // MARK: - WKNavigationDelegate
 
     func webView(
@@ -149,12 +98,7 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
             decisionHandler(.cancel)
             return
         }
-        if host == stravaHost {
-            decisionHandler(.cancel)
-            startStravaSignIn(authorizeURL: url)
-            return
-        }
-        if host == allowedHost {
+        if host == allowedHost || host == stravaHost {
             decisionHandler(.allow)
             return
         }
@@ -184,25 +128,5 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         isLoading = false
         loadError = error.localizedDescription
-    }
-}
-
-// MARK: - ASWebAuthenticationPresentationContextProviding
-
-extension WebViewCoordinator: ASWebAuthenticationPresentationContextProviding {
-    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        // Filtering scenes by activationState == .foregroundActive here
-        // was too strict - it could miss the app's own scene depending
-        // on exactly when the system queries this, silently falling
-        // back to a blank, unattached window that nothing can actually
-        // present on (looked like an instant "cancelled" login with no
-        // UI ever shown). UIWindowScene.keyWindow is the standard,
-        // reliable way to get a presentable anchor for a single-window
-        // app like this one.
-        let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-        if let keyWindow = windowScenes.compactMap({ $0.keyWindow }).first {
-            return keyWindow
-        }
-        return windowScenes.first?.windows.first ?? ASPresentationAnchor()
     }
 }
