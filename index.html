@@ -463,12 +463,9 @@
   .route-slot > .card { flex: 1; min-width: 0; }
 
   /* Narrow: date on its own row, From/To side by side. Wide: all three in one row. */
-  .forecast-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .forecast-grid .field:first-child { grid-column: 1 / -1; }
-  @container (min-width: 460px) {
-    .forecast-grid { grid-template-columns: 1.5fr 1fr 1fr; }
-    .forecast-grid .field:first-child { grid-column: auto; }
-  }
+  .forecast-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+  @container (min-width: 460px) { .forecast-grid { max-width: 420px; } }
+  .ride-timing { font-size: 12.5px; color: var(--ink-secondary); margin: 10px 0 0; }
   .forecast-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
   .forecast-note { font-size: 12.5px; color: var(--ink-secondary); margin-top: 10px; }
   .forecast-note a { color: inherit; }
@@ -1474,19 +1471,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <input type="date" id="fcDate">
         </div>
         <div class="field">
-          <label for="fcStart">From</label>
+          <label for="fcStart">Start time</label>
           <input type="time" id="fcStart" value="10:00">
         </div>
-        <div class="field">
-          <label for="fcEnd">To</label>
-          <input type="time" id="fcEnd" value="14:00">
-        </div>
       </div>
-      <p class="field-hint">Times are local to the route, wherever in the world it is. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature below, and you can still adjust them.</p>
+      <p class="ride-timing" id="rideTiming"></p>
+      <p class="field-hint">Times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: temperature and humidity change from stretch to stretch, while the wind is averaged over the ride. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature below, and you can still adjust them.</p>
       <div class="forecast-actions">
         <button type="button" class="copy-btn" id="fcGetBtn">Get forecast</button>
       </div>
       <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></p>
+      <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, start time or speed after getting the forecast. The temperature and humidity already follow your start time and speed; tap Get forecast again to refresh the wind and to pick up a different date.</p>
       <p class="error-text" id="forecastError"></p>
     </div>
     <p class="field-hint" id="manualHint">Set the wind and the temperature yourself, in the Wind and Temperature tabs below.</p>
@@ -1617,6 +1612,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
         </div>
 <p class="field-hint">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels.</p>
+    <p class="field-hint" id="tempTimelineHint" hidden></p>
     <div class="field" id="humidityField" hidden>
       <label for="humidityInput">Humidity</label>
       <select id="humidityInput">
@@ -1971,25 +1967,56 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return b;
   }
 
+  // Metres along a lat/lon polyline (haversine), cumulative.
+  function cumulativeMeters(points) {
+    var cum = [0], R = 6371000;
+    for (var i = 1; i < points.length; i++) {
+      var p1 = points[i - 1][0] * Math.PI / 180, p2 = points[i][0] * Math.PI / 180;
+      var dp = p2 - p1, dl = (points[i][1] - points[i - 1][1]) * Math.PI / 180;
+      var h = Math.sin(dp / 2) * Math.sin(dp / 2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+      cum.push(cum[i - 1] + 2 * R * Math.asin(Math.min(1, Math.sqrt(h))));
+    }
+    return cum;
+  }
+
   // Start, middle and end of the route, rounded to 0.1 deg (~11 km) and
-  // de-duplicated (a loop's start and end usually collapse into one). That
-  // is finer than the forecast models resolve anyway, and it means the
-  // request never carries the route's exact coordinates.
-  function forecastSamplePoints(points) {
-    var idx = [0, Math.floor((points.length - 1) / 2), points.length - 1];
-    var seen = {}, out = [];
+  // de-duplicated (a loop's start and end usually collapse into one place).
+  // That is finer than the forecast models resolve anyway, and it means the
+  // request never carries the route's exact coordinates. `samples` keeps all
+  // three with how far along the route each sits (0..1, by distance), so a
+  // place that was merged still applies at both ends of a loop.
+  function forecastSamplePlan(points) {
+    var n = points.length, idx = [0, Math.floor((n - 1) / 2), n - 1];
+    var cum = cumulativeMeters(points), total = cum[n - 1];
+    var seen = {}, unique = [], samples = [];
     idx.forEach(function (i) {
       var lat = Math.round(points[i][0] * 10) / 10;
       var lon = Math.round(points[i][1] * 10) / 10;
       var key = lat + "," + lon;
-      if (!seen[key]) { seen[key] = true; out.push({ lat: lat, lon: lon }); }
+      if (!(key in seen)) { seen[key] = unique.length; unique.push({ lat: lat, lon: lon }); }
+      samples.push({ unique: seen[key], frac: total > 0 ? cum[i] / total : 0 });
     });
-    return out;
+    return { unique: unique, samples: samples };
   }
+  function forecastSamplePoints(points) { return forecastSamplePlan(points).unique; }
+
+  // Minutes from 00:00 on dateStr to an Open-Meteo local time "YYYY-MM-DDTHH:MM".
+  // Later days keep counting (1440 per day), so a ride that crosses midnight
+  // has one continuous clock.
+  function forecastMinutes(timeStr, dateStr) {
+    var days = Math.round((Date.UTC(+timeStr.slice(0, 4), +timeStr.slice(5, 7) - 1, +timeStr.slice(8, 10)) -
+                           Date.UTC(+dateStr.slice(0, 4), +dateStr.slice(5, 7) - 1, +dateStr.slice(8, 10))) / 86400000);
+    return days * 1440 + (+timeStr.slice(11, 13)) * 60 + (+timeStr.slice(14, 16) || 0);
+  }
+  function addDaysToDateStr(dateStr, n) {
+    return new Date(Date.UTC(+dateStr.slice(0, 4), +dateStr.slice(5, 7) - 1, +dateStr.slice(8, 10) + n)).toISOString().slice(0, 10);
+  }
+  function rideMinutes(lengthM, speedKmh) { return lengthM / (Math.max(speedKmh, 1) * 1000 / 60); }
 
   // locations: Open-Meteo hourly results, one per sample point, times as
-  // local "YYYY-MM-DDTHH:00" strings. The window is minutes-after-midnight
-  // on dateStr; an hour counts if any part of it falls inside the window.
+  // local "YYYY-MM-DDTHH:00" strings. The window is minutes after 00:00 on
+  // dateStr (it may run past 1440 into the next day); an hour counts if any
+  // part of it falls inside the window.
   // Direction is a speed-weighted VECTOR mean (a plain mean of 350 and 10
   // degrees would say 180); speed is the plain mean of the hourly speeds,
   // because a vector mean shrinks whenever the wind swings around and
@@ -2001,10 +2028,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     locations.forEach(function (loc) {
       var h = loc.hourly;
       for (var i = 0; i < h.time.length; i++) {
-        var t = h.time[i];
-        if (t.slice(0, 10) !== dateStr) continue;
-        var hour = parseInt(t.slice(11, 13), 10);
-        if (hour * 60 >= endMin || (hour + 1) * 60 <= startMin) continue;
+        var hourStart = forecastMinutes(h.time[i], dateStr);
+        if (hourStart >= endMin || hourStart + 60 <= startMin) continue;
         var s = h.wind_speed_10m[i], d = h.wind_direction_10m[i];
         if (s == null || d == null) continue;
         var rad = d * Math.PI / 180;
@@ -2012,7 +2037,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         sumCos += s * Math.cos(rad);
         sumSpeed += s;
         n++;
-        hours[hour] = true;
+        hours[hourStart] = true;
         var g = h.wind_gusts_10m ? h.wind_gusts_10m[i] : null;
         if (g != null && g > gust) gust = g;
         var tc = h.temperature_2m ? h.temperature_2m[i] : null;
@@ -2027,6 +2052,81 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var dir = speed < 0.5 ? null : (Math.atan2(sumSin, sumCos) * 180 / Math.PI + 360) % 360;
     return { dirFromDeg: dir, speedKmh: speed, gustKmh: gust, tempC: nTemp ? sumTemp / nTemp : null, rhPercent: nRh ? sumRh / nRh : null,
              hourCount: Object.keys(hours).length, placeCount: locations.length };
+  }
+
+  // ---- Conditions along the ride ------------------------------------------
+  // One place's hourly values for one field as a minute-stamped series
+  // (missing hours dropped), so a ride can read the forecast at any moment.
+  function forecastSeries(loc, field, dateStr) {
+    var h = loc.hourly, out = { t: [], v: [] };
+    if (!h || !h[field]) return out;
+    for (var i = 0; i < h.time.length; i++) {
+      if (h[field][i] == null) continue;
+      out.t.push(forecastMinutes(h.time[i], dateStr));
+      out.v.push(h[field][i]);
+    }
+    return out;
+  }
+  // Linear in time between the hourly values; held at the first / last value
+  // outside them.
+  function interpSeries(series, t) {
+    var ts = series.t, vs = series.v, n = ts.length;
+    if (!n) return null;
+    if (t <= ts[0]) return vs[0];
+    if (t >= ts[n - 1]) return vs[n - 1];
+    var lo = 0, hi = n - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (ts[mid] <= t) lo = mid; else hi = mid; }
+    return vs[lo] + (t - ts[lo]) / (ts[hi] - ts[lo]) * (vs[hi] - vs[lo]);
+  }
+  // locs: [{ frac, temp: series, rh: series }] in route order. Value at a place
+  // (fraction of the route) and a moment: time first, then linear in distance
+  // between the neighbouring sample places.
+  function valueAtPlace(locs, field, frac, tMin) {
+    var pts = [];
+    locs.forEach(function (l) { var v = interpSeries(l[field], tMin); if (v !== null) pts.push({ f: l.frac, v: v }); });
+    if (!pts.length) return null;
+    if (frac <= pts[0].f) return pts[0].v;
+    for (var i = 1; i < pts.length; i++) {
+      if (frac <= pts[i].f) {
+        var span = pts[i].f - pts[i - 1].f;
+        return span <= 0 ? pts[i].v : pts[i - 1].v + (frac - pts[i - 1].f) / span * (pts[i].v - pts[i - 1].v);
+      }
+    }
+    return pts[pts.length - 1].v;
+  }
+  // Air temperature and humidity on every segment of the route, at the moment
+  // the rider gets there: start time + distance ridden / speed. Riding in
+  // reverse starts at the other end at the same clock time, so the same place
+  // is reached at a different moment.
+  function segmentEnvironment(lengths, locs, startMin, speedKmh, reverse) {
+    var total = 0, i;
+    for (i = 0; i < lengths.length; i++) total += lengths[i];
+    var mPerMin = Math.max(speedKmh, 1) * 1000 / 60, cum = 0, tempC = [], rh = [];
+    for (i = 0; i < lengths.length; i++) {
+      var mid = cum + lengths[i] / 2;
+      cum += lengths[i];
+      var frac = total > 0 ? mid / total : 0;
+      var t = startMin + (reverse ? total - mid : mid) / mPerMin;
+      tempC.push(valueAtPlace(locs, "temp", frac, t));
+      rh.push(valueAtPlace(locs, "rh", frac, t));
+    }
+    return { tempC: tempC, rh: rh };
+  }
+  // Start / end / mean air temperature and mean humidity over a ride as
+  // ridden, on 100 equal steps (cheap, and all the fields need).
+  function rideEnvSummary(lengthM, locs, startMin, speedKmh) {
+    var n = 100, lens = [], i;
+    for (i = 0; i < n; i++) lens.push(lengthM / n);
+    var env = segmentEnvironment(lens, locs, startMin, speedKmh, false);
+    var sumT = 0, nT = 0, sumR = 0, nR = 0;
+    env.tempC.forEach(function (v) { if (v !== null) { sumT += v; nT++; } });
+    env.rh.forEach(function (v) { if (v !== null) { sumR += v; nR++; } });
+    // Start and end read at the exact ends (frac 0 at the start time, frac 1 at
+    // the finish), so a caller's numbers agree with the per-segment ones to
+    // within a few metres of riding.
+    return { startC: valueAtPlace(locs, "temp", 0, startMin),
+             endC: valueAtPlace(locs, "temp", 1, startMin + rideMinutes(lengthM, speedKmh)),
+             meanC: nT ? sumT / nT : null, meanRh: nR ? sumR / nR : null };
   }
   // END forecast-pure
 
@@ -2138,21 +2238,37 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   // Per-segment feels-like from the relative airspeed on that segment (rider
   // speed and wind combined, same geometry as windEffortStats), averaged by
-  // distance. The "coldest / warmest tenth" is the mean over the coldest /
-  // warmest 10% of the distance, not the single most extreme segment: one GPS
-  // wobble that points a 25 m segment backwards would otherwise set the
-  // headline number.
+  // distance. tempC and rhPercent are one number for the whole route, or an
+  // array with one value per segment when the forecast follows the clock. The
+  // "coldest / warmest tenth" is the mean over the coldest / warmest 10% of
+  // the distance, not the single most extreme segment: one GPS wobble that
+  // points a 25 m segment backwards would otherwise set the headline number.
+  // Also returns the air temperature actually used (per segment, mean, first
+  // and last) and the hottest still-air heat index met on the ride: what it
+  // feels like if you stop, or crawl uphill with no breeze there.
   function feelsStats(lengths, cosphi, vMs, wMs, tempC, rhPercent) {
-    var items = [], perSeg = [], dist = 0, sum = 0;
+    var tArr = Array.isArray(tempC), rArr = Array.isArray(rhPercent);
+    var items = [], perSeg = [], airSeg = [], dist = 0, sum = 0, sumAir = 0, sumRh = 0;
+    var stillHiC = -Infinity, stillAirC = null;
     for (var i = 0; i < lengths.length; i++) {
+      var ti = tArr ? tempC[i] : tempC, ri = rArr ? rhPercent[i] : rhPercent;
       var rel2 = vMs * vMs + wMs * wMs - 2 * vMs * wMs * cosphi[i];
-      var c = feelsLikeC(tempC, rhPercent, Math.sqrt(Math.max(0, rel2)) * 3.6);
+      var c = feelsLikeC(ti, ri, Math.sqrt(Math.max(0, rel2)) * 3.6);
       items.push([c, lengths[i]]);
       perSeg.push(c);
+      airSeg.push(ti);
       dist += lengths[i];
       sum += c * lengths[i];
+      sumAir += ti * lengths[i];
+      sumRh += ri * lengths[i];
+      var hi = ti + heatDeltaC(ti, ri);
+      if (hi > stillHiC) { stillHiC = hi; stillAirC = ti; }
     }
-    if (dist <= 0) return { avgFeelsC: tempC, coldestFeelsC: tempC, warmestFeelsC: tempC, perSeg: perSeg };
+    var t0 = tArr ? (tempC.length ? tempC[0] : 0) : tempC;
+    if (dist <= 0) {
+      return { avgFeelsC: t0, coldestFeelsC: t0, warmestFeelsC: t0, avgAirC: t0, avgRh: rArr ? 0 : rhPercent,
+               airStartC: t0, airEndC: t0, stillHiC: t0, stillDeltaC: 0, perSeg: perSeg, airSeg: airSeg };
+    }
     items.sort(function (a, b) { return a[0] - b[0]; });
     var target = 0.1 * dist;
     function tenth(fromEnd) {
@@ -2165,12 +2281,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
       return s2 / target;
     }
-    return { avgFeelsC: sum / dist, coldestFeelsC: tenth(false), warmestFeelsC: tenth(true), perSeg: perSeg };
+    return {
+      avgFeelsC: sum / dist, coldestFeelsC: tenth(false), warmestFeelsC: tenth(true),
+      avgAirC: tArr ? sumAir / dist : tempC, avgRh: rArr ? sumRh / dist : rhPercent,
+      airStartC: airSeg[0], airEndC: airSeg[airSeg.length - 1],
+      stillHiC: stillHiC, stillDeltaC: stillHiC - stillAirC,
+      perSeg: perSeg, airSeg: airSeg
+    };
   }
 
   // Colour classes for the map: fixed steps of (feels-like minus air
-  // temperature), deg C, so the same colour means the same thing on every
-  // route and day (no per-route stretching). Index 0 = strongest chill,
+  // temperature at that moment), deg C, so the same colour means the same thing
+  // on every route and day (no per-route stretching). airC is one number or one
+  // value per segment. Index 0 = strongest chill,
   // 4 = mild chill, 5 = about the same as the air, 6 = mild heat, 9 =
   // strongest heat. More cold steps than hot ones because cold days swing
   // much further from the air temperature.
@@ -2181,7 +2304,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       classes.push({ loC: k === 0 ? -Infinity : FEELS_CLASS_EDGES[k - 1], hiC: k === n - 1 ? Infinity : FEELS_CLASS_EDGES[k], dist: 0 });
     }
     for (i = 0; i < perSeg.length; i++) {
-      var d = perSeg[i] - airC, c = 0;
+      var d = perSeg[i] - (Array.isArray(airC) ? airC[i] : airC), c = 0;
       for (k = 0; k < FEELS_CLASS_EDGES.length; k++) if (d >= FEELS_CLASS_EDGES[k]) c = k + 1;
       cls.push(c);
       classes[c].dist += lengths[i];
@@ -2207,7 +2330,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
   }
 
-  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh) {
+  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh, timeline) {
     var proj = projectToEnu(points);
     var xy = resamplePolyline(proj.xy, resampleM);
     var latLon = enuToLatLon(xy, proj.lat0, proj.lon0, proj.cosLat0);
@@ -2250,16 +2373,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
     // that segment (wind chill when cold, apparent temperature when mild or
     // hot, blended in between; see feelsLikeC). "Standing still" is the NWS
     // heat index, which has no airspeed: still-air heat, for warnings.
+    // With a forecast timeline every segment gets the air temperature and
+    // humidity expected when the rider reaches it (start time + distance /
+    // speed), riding in reverse included; otherwise one value for the route.
+    function environment(reverse, key, fallback) {
+      if (!timeline) return fallback;
+      return segmentEnvironment(lengths, timeline.locations, timeline.startMin, cruiseSpeedKmh, reverse)[key]
+        .map(function (v) { return v === null ? fallback : v; });
+    }
+    var fwdStats = feelsStats(lengths, cosphiFwd, vMs, wMs, environment(false, "tempC", tempC), environment(false, "rh", rh));
+    var revStats = feelsStats(lengths, cosphiRev, vMs, wMs, environment(true, "tempC", tempC), environment(true, "rh", rh));
     var chill = {
-      tempC: tempC,
-      rh: rh,
-      model: tempC <= WIND_CHILL_OFFICIAL_MAX_C ? "windchill" : (tempC < APPARENT_FULL_C ? "blend" : "apparent"),
-      stillHeatC: heatDeltaC(tempC, rh),
-      forward: feelsStats(lengths, cosphiFwd, vMs, wMs, tempC, rh),
-      reverse: feelsStats(lengths, cosphiRev, vMs, wMs, tempC, rh)
+      timeline: !!timeline,
+      tempC: fwdStats.avgAirC,          // the ride's mean air temperature (the plain value when there is no timeline)
+      rh: fwdStats.avgRh,
+      model: fwdStats.avgAirC <= WIND_CHILL_OFFICIAL_MAX_C ? "windchill" : (fwdStats.avgAirC < APPARENT_FULL_C ? "blend" : "apparent"),
+      stillHiC: Math.max(fwdStats.stillHiC, revStats.stillHiC),
+      forward: fwdStats,
+      reverse: revStats
     };
-    chill.classes = feelsClasses(chill.forward.perSeg, lengths, tempC);
-    var feelDelta = chill.forward.avgFeelsC - tempC;
+    chill.stillDeltaC = fwdStats.stillHiC >= revStats.stillHiC ? fwdStats.stillDeltaC : revStats.stillDeltaC;
+    chill.classes = feelsClasses(fwdStats.perSeg, lengths, fwdStats.airSeg);
+    var feelDelta = fwdStats.avgFeelsC - fwdStats.avgAirC;
     chill.tone = feelDelta <= -CHILL_NEGLIGIBLE_C ? "colder" : (feelDelta >= CHILL_NEGLIGIBLE_C ? "hotter" : "even");
 
     // Five-way (full tailwind/tailwind/crosswind/headwind/full headwind)
@@ -2601,7 +2736,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   function tempViewCaption(result) {
     var ch = result.chill;
-    return "Coloured by how much colder (blue) or hotter (red) each stretch feels than the air at " + fmtTemp(ch.tempC) +
+    return "Coloured by how much colder (blue) or hotter (red) each stretch feels than the air " +
+      (ch.timeline ? "at that moment of the ride (the forecast follows the clock; " + fmtTemp1(ch.forward.airStartC) + " at the start, " + fmtTemp1(ch.forward.airEndC) + " at the end)"
+                   : "at " + fmtTemp(ch.tempC)) +
       ", riding it as recorded at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h in a wind from " + degreesToCompass16(result.windFromDeg) +
       ". Darker means a bigger difference; grey means it feels like the air. The scale is fixed, so a colour means the same thing on every route and day.";
   }
@@ -2773,6 +2910,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       caption += "The apparent temperature (Australian Bureau of Meteorology, after Steadman) is a model of how warm it feels to an adult walking outdoors in the shade: wind cools, and humid air, which slows the evaporation of sweat, feels hotter. " +
         "Sun is not included (full sun feels hotter), and above about " + fmtTemp(35) + " in dry air moving air stops helping and can add heat, which this does not capture. ";
     }
+    if (ch.timeline) {
+      caption += "The forecast follows the clock: each stretch gets the air temperature and humidity expected when you would be there, from your start time and cruising speed. ";
+    }
     caption += "It is a guide, not a measure of effort, and what a cyclist feels also depends on clothing and on the person.";
     document.getElementById("chillCaption").innerHTML = caption;
 
@@ -2792,10 +2932,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         '</div>';
     }
 
+    var airA = ch.forward.airStartC, airB = ch.forward.airEndC;
+    var airChanges = ch.timeline && Math.abs(airB - airA) >= 0.5;
     document.getElementById("chillGrid").innerHTML =
-      '<div class="half-card"><div class="half-title">Air temperature</div>' +
-        '<div class="half-multiplier">' + fmtTemp(ch.tempC) + '</div>' +
-        '<div class="half-net">What a thermometer reads.' + (warm ? " Humidity " + Math.round(ch.rh) + "% (" + humidityStep(ch.rh)[1].toLowerCase() + ")." : "") + '</div></div>' +
+      '<div class="half-card"><div class="half-title">Air temperature' + (airChanges ? ", start to end" : "") + '</div>' +
+        '<div class="half-multiplier">' + (airChanges ? fmtTemp1(airA) + " \u2192 " + fmtTemp1(airB) : fmtTemp(ch.tempC)) + '</div>' +
+        '<div class="half-net">What a thermometer reads' + (airChanges ? ", as the forecast changes during the ride" : "") + '.' +
+          (warm ? " Humidity " + Math.round(ch.rh) + "%" + (ch.timeline ? " on average" : "") + " (" + humidityStep(ch.rh)[1].toLowerCase() + ")." : "") + '</div></div>' +
       cell("Feels like, as ridden", ch.forward) +
       cell("Feels like, in reverse", ch.reverse);
 
@@ -2810,9 +2953,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     // Standing still or crawling uphill there is no breeze from riding: the
     // NWS heat index, and its heat-illness warnings, apply to that case.
-    if (ch.stillHeatC >= CHILL_NEGLIGIBLE_C) {
-      var hi = ch.tempC + ch.stillHeatC;
-      verdict += " <b>Standing still</b>, or crawling uphill with no breeze, it feels like <b>" + fmtTemp(hi) + "</b> (the NWS heat index, " + fmtTempDiff(ch.stillHeatC) + " hotter than the air).";
+    if (ch.stillDeltaC >= CHILL_NEGLIGIBLE_C) {
+      var hi = ch.stillHiC;
+      verdict += " <b>Standing still</b>, or crawling uphill with no breeze," + (ch.timeline ? " at the hottest point of the ride" : "") + " it feels like <b>" + fmtTemp(hi) + "</b> (the NWS heat index, " + fmtTempDiff(ch.stillDeltaC) + " hotter than the air).";
       if (hi >= HEAT_STROKE_LIKELY_C) {
         verdict += " According to the National Weather Service, at " + fmtTemp(HEAT_STROKE_LIKELY_C) + " and above heat stroke is highly likely.";
       } else if (hi >= HEAT_ILLNESS_LIKELY_C) {
@@ -2868,6 +3011,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var ch = result.chill;
     lines.push("=== Feels like on the bike ===");
     lines.push("Air temperature: " + fmtTemp(ch.tempC) + (ch.model === "windchill" ? "" : ", relative humidity " + Math.round(ch.rh) + "% (" + (state.rhFromForecast ? "forecast" : "set by hand") + ")"));
+    if (ch.timeline) {
+      lines.push("Forecast follows the clock from the start time (" + fcStart.value + ") at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h: air temperature " +
+        fmtTemp1(ch.forward.airStartC) + " at the start of the ride, " + fmtTemp1(ch.forward.airEndC) + " at the end.");
+    }
     lines.push("Model: " + (ch.model === "windchill" ? "wind chill (Environment Canada / US NWS)"
       : ch.model === "blend" ? "blend of wind chill and apparent temperature (Australian BoM / Steadman)"
       : "apparent temperature (Australian BoM / Steadman: wind and humidity, adult walking in shade, no sun)"));
@@ -2879,7 +3026,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     feelsLine("Forward", ch.forward);
     feelsLine("Reverse", ch.reverse);
-    if (ch.stillHeatC >= CHILL_NEGLIGIBLE_C) lines.push("Standing still (NWS heat index, no breeze): " + fmtTemp(ch.tempC + ch.stillHeatC) + " (" + fmtTempDiff(ch.stillHeatC) + " hotter than the air)");
+    if (ch.stillDeltaC >= CHILL_NEGLIGIBLE_C) lines.push("Standing still (NWS heat index, no breeze)" + (ch.timeline ? ", at the hottest point of the ride" : "") + ": " + fmtTemp(ch.stillHiC) + " (" + fmtTempDiff(ch.stillDeltaC) + " hotter than the air)");
     lines.push("");
     lines.push("=== Conclusion ===");
     lines.push("Forward: " + (result.fwd.easy / 1000).toFixed(2) + " km easy vs " + (result.fwd.hard / 1000).toFixed(2) + " km hard");
@@ -2935,6 +3082,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     // convert to the chosen unit only for display. The unit defaults to
     // Fahrenheit for US locales and Celsius everywhere else.
     view: "wind",                // which tab is showing: "wind" or "temp"
+    timeline: null,               // forecast series along the ride ({locations}); null in manual mode
     rh: 50,                       // relative humidity, %; only matters on hot days
     rhFromForecast: false,
     tempC: 8,
@@ -3037,6 +3185,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   cruiseSpeedInput.addEventListener("change", function () {
     var v = parseFloat(cruiseSpeedInput.value);
     state.cruiseSpeedKmh = isFinite(v) && v > 0 ? v : 25;
+    markForecastStale();
     scheduleRender();
   });
 
@@ -3049,6 +3198,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   showTempInField();
   tempInput.addEventListener("change", function () {
     forecastNote.hidden = true;
+    state.timeline = null;                 // your number replaces the forecast's
+    forecastStale.hidden = true;
     var v = parseFloat(tempInput.value);
     if (isFinite(v)) state.tempC = Math.max(-80, Math.min(60, displayToC(v)));
     showTempInField();
@@ -3076,6 +3227,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   humidityInput.addEventListener("change", function () {
     forecastNote.hidden = true;
+    state.timeline = null;                 // your setting replaces the forecast's
+    forecastStale.hidden = true;
     state.rh = parseFloat(humidityInput.value);
     state.rhFromForecast = false;
     syncHumidityUI();
@@ -3135,7 +3288,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var forecastPanel = document.getElementById("forecastPanel");
   var fcDate = document.getElementById("fcDate");
   var fcStart = document.getElementById("fcStart");
-  var fcEnd = document.getElementById("fcEnd");
+  var rideTiming = document.getElementById("rideTiming");
+  var forecastStale = document.getElementById("forecastStale");
+  var tempTimelineHint = document.getElementById("tempTimelineHint");
   var fcGetBtn = document.getElementById("fcGetBtn");
   var forecastNote = document.getElementById("forecastNote");
   var forecastNoteText = document.getElementById("forecastNoteText");
@@ -3166,13 +3321,59 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return "UTC" + sign + Math.floor(mins / 60) + (mins % 60 ? ":" + pad2(mins % 60) : "");
   }
 
-  function fetchForecastWind(points, dateStr, startMin, endMin) {
-    var sample = forecastSamplePoints(points);
+  // The conditions the ride actually meets, or null in manual mode.
+  function currentTimeline() {
+    if (!state.timeline) return null;
+    var startMin = parseClock(fcStart.value);
+    return { locations: state.timeline.locations, startMin: startMin === null ? state.timeline.startMin : startMin };
+  }
+
+  function fmtClock(min) {
+    var m = Math.round(min), day = Math.floor(m / 1440), r = m - day * 1440;
+    return pad2(Math.floor(r / 60)) + ":" + pad2(r % 60) + (day > 0 ? " the next day" : "");
+  }
+  // A temperature to one decimal with the unit, for the start-to-end range.
+  function fmtTemp1(c) {
+    var t = cToDisplay(c).toFixed(1);
+    if (Number(t) === 0) t = "0.0";                 // no "-0.0"
+    return (t.charAt(0) === "-" ? "\u2212" + t.slice(1) : t) + "\u00b0" + state.tempUnit;
+  }
+
+  // "Riding time: about 1 h 04 min ..." - from the route length and the
+  // cruising speed, so the start time alone fixes the whole ride's clock.
+  function updateRideTiming(result) {
+    var startMin = parseClock(fcStart.value);
+    if (startMin === null) { rideTiming.textContent = ""; return; }
+    var mins = rideMinutes(result.totalLength, state.cruiseSpeedKmh);
+    var h = Math.floor(mins / 60), m = Math.round(mins - h * 60);
+    if (m === 60) { h++; m = 0; }
+    rideTiming.textContent = "Riding time: about " + (h ? h + " h " + pad2(m) + " min" : m + " min") + " for " + (result.totalLength / 1000).toFixed(1) +
+      " km at " + state.cruiseSpeedKmh.toFixed(0) + " km/h. You would finish around " + fmtClock(startMin + mins) + ".";
+  }
+  function updateTimelineHint(result) {
+    var ch = result.chill;
+    if (!state.timeline) { tempTimelineHint.hidden = true; return; }
+    var a = ch.forward.airStartC, b = ch.forward.airEndC;
+    tempTimelineHint.textContent = Math.abs(b - a) >= 0.5
+      ? "From the forecast and changing during the ride: " + fmtTemp1(a) + " at the start, " + fmtTemp1(b) + " at the end. The field shows the average; if you change it, your value replaces the forecast."
+      : "From the forecast; it stays about " + fmtTemp1((a + b) / 2) + " during the ride. If you change it, your value replaces the forecast.";
+    tempTimelineHint.hidden = false;
+  }
+  // Date, start time or speed changed after a forecast was fetched: the
+  // temperature and humidity already follow the new start time and speed
+  // (they are read off the stored hourly series), the wind does not.
+  function markForecastStale() { if (state.timeline) forecastStale.hidden = false; }
+
+  // One request covers the ride's whole day (and the next one if the ride
+  // crosses midnight), so the hourly series can be read at any moment of it.
+  function fetchForecast(points, dateStr, startMin, endMin) {
+    var plan = forecastSamplePlan(points), unique = plan.unique;
+    var endDate = endMin > 1440 ? addDaysToDateStr(dateStr, 1) : dateStr;
     var url = FORECAST_API +
-      "?latitude=" + sample.map(function (p) { return p.lat.toFixed(1); }).join(",") +
-      "&longitude=" + sample.map(function (p) { return p.lon.toFixed(1); }).join(",") +
+      "?latitude=" + unique.map(function (p) { return p.lat.toFixed(1); }).join(",") +
+      "&longitude=" + unique.map(function (p) { return p.lon.toFixed(1); }).join(",") +
       "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
-      "&start_date=" + dateStr + "&end_date=" + dateStr;
+      "&start_date=" + dateStr + "&end_date=" + endDate;
     return fetch(url).then(function (res) {
       return res.json().then(function (data) { return { ok: res.ok, data: data }; }, function () { return { ok: false, data: {} }; });
     }, function () {
@@ -3183,10 +3384,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         if (range) throw new Error("There's no forecast for that date. Forecast data covers " + range[1] + " to " + range[2] + " - for other dates, set the wind manually.");
         throw new Error("The forecast service couldn't answer that request. Try again, or set the wind manually.");
       }
-      var locations = Array.isArray(result.data) ? result.data : [result.data];
-      var summary = summarizeForecast(locations, dateStr, startMin, endMin);
+      var results = Array.isArray(result.data) ? result.data : [result.data];
+      var summary = summarizeForecast(results, dateStr, startMin, endMin);
       if (!summary) throw new Error("The forecast has no wind data for those hours. Try another time, or set the wind manually.");
-      return { summary: summary, timezone: locations[0].timezone, offsetSeconds: locations[0].utc_offset_seconds };
+      return { summary: summary, results: results, plan: plan, timezone: results[0].timezone, offsetSeconds: results[0].utc_offset_seconds };
     });
   }
 
@@ -3198,14 +3399,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
   fcGetBtn.addEventListener("click", function () {
     forecastError.classList.remove("show");
     forecastNote.hidden = true;
-    var dateStr = fcDate.value, startMin = parseClock(fcStart.value), endMin = parseClock(fcEnd.value);
+    forecastStale.hidden = true;
+    var dateStr = fcDate.value, startMin = parseClock(fcStart.value);
     if (!dateStr) return showForecastError(new Error("Pick the ride date."));
-    if (startMin === null || endMin === null) return showForecastError(new Error("Enter both a start and an end time."));
-    if (endMin <= startMin) return showForecastError(new Error("The end time has to be after the start time. For a ride that crosses midnight, use the part before midnight or set the wind manually."));
+    if (startMin === null) return showForecastError(new Error("Enter the time you start."));
+
+    // The ride lasts as long as the route takes at the cruising speed; the
+    // wind is averaged over exactly that, not over a window typed in.
+    var lengthM = lastResult ? lastResult.totalLength : 0;
+    var rideMin = Math.max(1, rideMinutes(lengthM, state.cruiseSpeedKmh));
+    var endMin = startMin + rideMin;
 
     fcGetBtn.disabled = true;
     fcGetBtn.textContent = "Getting forecast\u2026";
-    fetchForecastWind(state.points, dateStr, startMin, endMin).then(function (r) {
+    fetchForecast(state.points, dateStr, startMin, endMin).then(function (r) {
       var sm = r.summary;
       var beaufort = kmhToBeaufort(sm.speedKmh);
       if (sm.dirFromDeg !== null) {
@@ -3214,26 +3421,49 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
       state.windSpeedBeaufort = beaufort;
       windSpeedInput.value = beaufort;
-      if (sm.tempC !== null) { state.tempC = sm.tempC; showTempInField(); }
-      if (sm.rhPercent !== null) { state.rh = sm.rhPercent; state.rhFromForecast = true; }
+
+      // Temperature and humidity follow the clock and the place.
+      var locations = r.plan.samples.map(function (smp) {
+        var res = r.results[smp.unique];
+        return { frac: smp.frac, temp: forecastSeries(res, "temperature_2m", dateStr), rh: forecastSeries(res, "relative_humidity_2m", dateStr) };
+      });
+      var haveTemp = locations.every(function (l) { return l.temp.t.length > 0; });
+      var env = null;
+      if (haveTemp) {
+        state.timeline = { locations: locations, startMin: startMin };
+        env = rideEnvSummary(lengthM, locations, startMin, state.cruiseSpeedKmh);
+        state.tempC = env.meanC;
+        showTempInField();
+        if (env.meanRh !== null) { state.rh = env.meanRh; state.rhFromForecast = true; }
+      } else {
+        state.timeline = null;
+      }
       fileError.classList.remove("show");
       scheduleRender();
 
       var day = new Date(dateStr + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
       var dirText = sm.dirFromDeg === null ? "essentially calm" :
         "from " + degreesToCompass16(sm.dirFromDeg) + " (" + Math.round(sm.dirFromDeg) + "\u00b0)";
+      var tempText = "";
+      if (env) {
+        tempText = Math.abs(env.endC - env.startC) >= 0.5
+          ? ", air temperature " + fmtTemp1(env.startC) + " \u2192 " + fmtTemp1(env.endC) + " over the ride"
+          : ", air temperature about " + fmtTemp1(env.meanC);
+        if (env.meanC >= HUMIDITY_SHOW_C && env.meanRh !== null) tempText += ", humidity about " + Math.round(env.meanRh) + "%";
+      }
       forecastNoteText.textContent =
-        "Forecast for " + day + ", " + fcStart.value + "\u2013" + fcEnd.value + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + dirText +
+        "Forecast for " + day + ", riding " + fcStart.value + "\u2013" + fmtClock(startMin + rideMin) + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + dirText +
         ", " + sm.speedKmh.toFixed(0) + " km/h on average with gusts up to " + sm.gustKmh.toFixed(0) + " km/h \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + ")" +
-        (sm.tempC !== null ? ", air temperature " + fmtTemp(sm.tempC) : "") +
-        (sm.tempC !== null && sm.rhPercent !== null && sm.tempC >= HUMIDITY_SHOW_C ? ", humidity " + Math.round(sm.rhPercent) + "%" : "") + ". " +
-        "Averaged over " + sm.hourCount + " hour" + (sm.hourCount === 1 ? "" : "s") + " at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
+        tempText + ". Wind averaged over the ride; temperature and humidity follow the clock, at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
       forecastNote.hidden = false;
     }).catch(showForecastError).then(function () {
       fcGetBtn.disabled = false;
       fcGetBtn.textContent = "Get forecast";
     });
   });
+  fcStart.addEventListener("change", function () { markForecastStale(); scheduleRender(); });
+  fcStart.addEventListener("input", function () { scheduleRender(); });
+  fcDate.addEventListener("change", markForecastStale);
 
   dropzone.addEventListener("click", function () { fileInput.click(); });
   dropzone.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
@@ -3261,6 +3491,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     state.points = pts;
     state.fileLabel = label;
     state.isExample = false;
+    state.timeline = null;                 // the forecast was for the previous route
+    forecastNote.hidden = true;
+    forecastStale.hidden = true;
     fileError.classList.remove("show");
     scheduleRender();
   }
@@ -3461,7 +3694,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var result;
     try {
-      result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC, state.rh);
+      result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC, state.rh, currentTimeline());
     } catch (e) {
       fileError.textContent = e.message;
       fileError.classList.add("show");
@@ -3517,6 +3750,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     renderLastHalf(result);
     renderChill(result);
+    updateRideTiming(result);
+    updateTimelineHint(result);
 
     document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
     lastResult = result;
