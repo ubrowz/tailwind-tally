@@ -1,8 +1,7 @@
 # Xcode
 build/
 DerivedData/
-*.xcodeproj/xcuserdata/
-*.xcworkspace/xcuserdata/
+**/xcuserdata/
 .DS_Store
 
 # CocoaPods / SPM local state (not used yet, but harmless to exclude)

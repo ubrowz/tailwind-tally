@@ -31,6 +31,12 @@ No API keys or secrets live in this project - it's a pure web-view shell
 pointed at the public site, which itself calls the existing Render backend
 for map tiles and Strava.
 
+Note: setting a signing team in Xcode writes your Apple Developer **Team
+ID** into `project.pbxproj` (a `DEVELOPMENT_TEAM = ...` line under both
+build configurations). It's not a secret, but it is personal account
+info and this repo is public - check `git diff` before committing after
+a Signing & Capabilities change, and drop that line if it's there.
+
 ## Project layout
 
 - `Sources/` - the three Swift files: app entry point, the `WKWebView`

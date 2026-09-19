@@ -13,7 +13,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		829DEA7DB578AA8CE9AB07A2 /* TailwindTally.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TailwindTally.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		829DEA7DB578AA8CE9AB07A2 /* Tailwind Tally.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Tailwind Tally.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BFFB9939C1A7C2F8A141C685 /* WebViewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewCoordinator.swift; sourceTree = "<group>"; };
 		C959175A31390C7A938C7B02 /* TailwindTallyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TailwindTallyApp.swift; sourceTree = "<group>"; };
 		FD7DFAF787DB9F1A4388AF3F /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
@@ -41,7 +41,7 @@
 		F0671CC58C71CA6DB200F2B4 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				829DEA7DB578AA8CE9AB07A2 /* TailwindTally.app */,
+				829DEA7DB578AA8CE9AB07A2 /* Tailwind Tally.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,7 +63,7 @@
 			packageProductDependencies = (
 			);
 			productName = TailwindTally;
-			productReference = 829DEA7DB578AA8CE9AB07A2 /* TailwindTally.app */;
+			productReference = 829DEA7DB578AA8CE9AB07A2 /* Tailwind Tally.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
