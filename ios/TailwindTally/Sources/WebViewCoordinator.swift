@@ -101,11 +101,12 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
             // plus a WKWebView load - both need the main thread.
             DispatchQueue.main.async {
                 guard let self, let webView = self.webView else { return }
+                let authError = error as? ASWebAuthenticationSessionError
                 if let callbackURL {
                     webView.load(URLRequest(url: callbackURL))
-                } else {
-                    // User cancelled, or the session failed - land back
-                    // on the plain page with ?error= set, same as a real
+                } else if authError?.code == .canceledLogin {
+                    // The user actually declined - land back on the
+                    // plain page with ?error= set, same as a real
                     // Strava cancel would produce, so the page's
                     // existing error handling (not custom code here)
                     // takes it from there.
@@ -117,6 +118,13 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
                     if let url = components.url {
                         webView.load(URLRequest(url: url))
                     }
+                } else {
+                    // Something else went wrong before the user ever
+                    // saw a login page (e.g. no valid window to present
+                    // on) - surface the real reason instead of a
+                    // generic "cancelled" that hides what happened.
+                    self.loadError = "Couldn't open Strava sign-in: "
+                        + (error?.localizedDescription ?? "unknown error")
                 }
                 self.authSession = nil
             }
@@ -124,7 +132,10 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
         session.presentationContextProvider = self
         session.prefersEphemeralWebBrowserSession = false
         authSession = session
-        session.start()
+        if !session.start() {
+            loadError = "Couldn't open Strava sign-in (no window to present it on)."
+            authSession = nil
+        }
     }
 
     // MARK: - WKNavigationDelegate
@@ -180,9 +191,18 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
 
 extension WebViewCoordinator: ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        let scene = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }
-        return scene?.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
+        // Filtering scenes by activationState == .foregroundActive here
+        // was too strict - it could miss the app's own scene depending
+        // on exactly when the system queries this, silently falling
+        // back to a blank, unattached window that nothing can actually
+        // present on (looked like an instant "cancelled" login with no
+        // UI ever shown). UIWindowScene.keyWindow is the standard,
+        // reliable way to get a presentable anchor for a single-window
+        // app like this one.
+        let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        if let keyWindow = windowScenes.compactMap({ $0.keyWindow }).first {
+            return keyWindow
+        }
+        return windowScenes.first?.windows.first ?? ASPresentationAnchor()
     }
 }
