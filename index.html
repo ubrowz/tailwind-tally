@@ -478,6 +478,24 @@
   .how-toc li { font-size: 14px; margin-bottom: 3px; }
   .how-refs li { font-size: 14px; }
 
+  /* Climbs tab */
+  .climb-summary { font-size: 13.5px; color: var(--ink-secondary); margin: 10px 0 0; }
+  .climb-summary b { color: var(--ink); }
+  .climb-table-wrap { overflow-x: auto; margin: 10px 0 4px; }
+  .climb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .climb-table th, .climb-table td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  @media (max-width: 480px) { .climb-table { font-size: 12px; } .climb-table th, .climb-table td { padding: 6px 4px; } }
+  .climb-table th:first-child, .climb-table td:first-child { text-align: left; }
+  .climb-table th { font-family: var(--font-display); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; }
+  .climb-table td { color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+  .climb-swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; }
+  #climbLegend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-secondary); margin: 6px 0 4px; }
+  .elev-svg { width: 100%; height: auto; display: block; }
+  .elev-svg text { font-family: var(--font-display); font-size: 11px; fill: var(--ink-muted); }
+  .elev-svg .elev-grid { stroke: var(--grid); stroke-width: 1; }
+  .elev-svg .elev-line { fill: none; stroke: var(--ink-secondary); stroke-width: 1.6; stroke-linejoin: round; }
+  .elev-svg .elev-base { fill: var(--grid); opacity: 0.55; }
+
   /* Wind / Temperature tabs. The panels are flex columns with the same gap
      as .page so the cards inside keep their normal spacing; the [hidden]
      rule is needed because display:flex would otherwise beat the attribute. */
@@ -495,7 +513,7 @@
     cursor: pointer;
   }
   .tabbar button { white-space: nowrap; }
-  @media (max-width: 480px) { .tabbar button { padding: 10px 12px; } .tabbar { overflow-x: auto; } }
+  @media (max-width: 480px) { .tabbar button { padding: 10px 8px; font-size: 12.5px; } .tabbar { overflow-x: auto; } }
   .tabbar button:hover { color: var(--ink); }
   .tabbar button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
   .tabbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
@@ -1533,6 +1551,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="tabbar" role="tablist" aria-label="What to look at">
     <button type="button" role="tab" id="tabWind" aria-selected="true" aria-controls="panelWind">Wind</button>
     <button type="button" role="tab" id="tabTemp" aria-selected="false" aria-controls="panelTemp" tabindex="-1">Temperature</button>
+    <button type="button" role="tab" id="tabClimbs" aria-selected="false" aria-controls="panelClimbs" tabindex="-1">Climbs</button>
     <button type="button" role="tab" id="tabHow" aria-selected="false" aria-controls="panelHow" tabindex="-1">How it works</button>
   </div>
 
@@ -1703,6 +1722,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
 
+  <div class="tabpanel" id="panelClimbs" role="tabpanel" aria-labelledby="tabClimbs" hidden>
+    <div class="card">
+      <h2>Climbs</h2>
+      <div class="mode-toggle" role="group" aria-label="Direction">
+        <button type="button" id="climbDirFwd" aria-pressed="true">As recorded</button>
+        <button type="button" id="climbDirRev" aria-pressed="false">In reverse</button>
+      </div>
+      <div class="two-col-grid">
+        <div class="field">
+          <label for="climbMinGain">Minimum climb (m)</label>
+          <input type="number" id="climbMinGain" value="25" min="5" max="500" step="5">
+        </div>
+        <div class="field">
+          <label for="climbMinAvg">Minimum average slope (%)</label>
+          <input type="number" id="climbMinAvg" value="2" min="0" max="15" step="0.5">
+        </div>
+      </div>
+      <p class="field-hint">A climb is a rise of at least this much, at least this steep on average, in the smoothed elevation of your route. The average slope keeps long, gentle rises from counting.</p>
+      <p class="climb-summary" id="climbSummary"></p>
+    </div>
+    <div class="chart-grid">
+      <div class="route-slot" id="routeSlotClimbs"></div>
+      <div class="card chart-card" id="climbListCard">
+        <h2>Climbs, in the order you ride them</h2>
+        <div id="climbLegend"></div>
+        <div class="climb-table-wrap"><table class="climb-table" id="climbTable"></table></div>
+        <p class="chart-caption" id="climbNote"></p>
+      </div>
+    </div>
+    <div class="card chart-card" id="elevCard">
+      <h2>Elevation profile</h2>
+      <p class="chart-caption" id="elevCaption"></p>
+      <svg id="elevSvg" class="elev-svg" viewBox="0 0 800 250" role="img" aria-label="Elevation profile of the route with the climbs shaded by their steepest slope"></svg>
+    </div>
+  </div>
+
   <div class="tabpanel" id="panelHow" role="tabpanel" aria-labelledby="tabHow" hidden>
     <div class="card how-card">
       <article class="how-article">
@@ -1718,6 +1773,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <li><a href="#how-classes">Tailwind, headwind and effort</a></li>
           <li><a href="#how-changing">A wind that changes during the ride</a></li>
           <li><a href="#how-power">Riding at steady power</a></li>
+          <li><a href="#how-climbs">Climbs</a></li>
           <li><a href="#how-cold">Cold: wind chill</a></li>
           <li><a href="#how-warm">Mild and hot: apparent temperature</a></li>
           <li><a href="#how-blend">Putting the two together</a></li>
@@ -1808,20 +1864,47 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </ul>
         <h3>Limits</h3>
         <ul>
-          <li><strong>Flat road only.</strong> On real routes hills dominate speed, and a rider holding constant power slows far more on a climb than in any wind. Elevation is not used yet, so this shows what the wind does, not the whole ride.</li>
+          <li><strong>Flat road only.</strong> On real routes hills dominate speed, and a rider holding constant power slows far more on a climb than in any wind. Elevation is not used in this calculation (the Climbs tab, section 7, shows the hills but does not feed the speed), so this shows what the wind does, not the whole ride.</li>
           <li><strong>Constant power is an idealisation.</strong> Many riders hold a perceived effort and vary it with terrain, traffic and fatigue.</li>
           <li><strong>Not modelled:</strong> drafting, cornering, braking, coasting downhill, a changing drag area with position or wind angle, and a changing efficiency. Air density ignores humidity and altitude, which change it by a few per cent.</li>
           <li>The result depends on the rider parameters. The defaults are typical, not yours.</li>
         </ul>
 
-        <h2 id="how-cold">7. Cold: wind chill</h2>
+        <h2 id="how-climbs">7. Climbs</h2>
+        <p>The Climbs tab finds the hills in your route and colours them by how steep they get. It is separate from the wind and temperature calculations: it uses only the route&rsquo;s own elevation and does not change any speed, time or temperature.</p>
+        <h3>Where the elevation comes from</h3>
+        <p>Only from the <code>&lt;ele&gt;</code> values in your GPX file. If fewer than 90&nbsp;% of the points have one, or the values are constant or absurd, the tab says so and shows nothing rather than guess. Files recorded on a bike computer or phone usually have elevation. Routes drawn on a map often have none.</p>
+        <h3>Why it needs smoothing</h3>
+        <p>Elevation in GPX files is noisy: it is typically a barometer or a coarse terrain model, and it wobbles by metres from point to point. Added up naively, that wobble looks like climbing. On one 78&nbsp;km ride that stayed within a 29&nbsp;m range, the raw points summed to 167&nbsp;m of ascent. So the profile is treated before anything is measured:</p>
+        <ol>
+          <li>The profile is put on an even grid of one point per 25&nbsp;m of route, by interpolation.</li>
+          <li>A median of three points removes single spikes, and a moving average over about 150&nbsp;m smooths the rest.</li>
+          <li>Highs and lows are then found with a <strong>3&nbsp;m dead-band</strong>: a rise or fall counts only once it exceeds 3&nbsp;m from the last extreme. The total ascent and descent shown use the same rule.</li>
+        </ol>
+        <h3>What counts as a climb</h3>
+        <p>A climb runs from a low to the next high. Two climbs separated by a short dip (less than a quarter of the gain, within 400&nbsp;m) are merged into one, as riders experience them. Each climb ends at the first point within 1&nbsp;m of its top and starts at the last point within 1&nbsp;m of its bottom, so a flat top does not stretch it. Then two thresholds, both adjustable, decide what is shown:</p>
+        <ul>
+          <li><strong>Minimum gain</strong>, 25&nbsp;m by default. Raise it to see only the big ones.</li>
+          <li><strong>Minimum average slope</strong>, 2&nbsp;% by default. This keeps long, barely rising stretches, which are mostly noise or false flats, from being reported as climbs.</li>
+        </ul>
+        <h3>The colours</h3>
+        <p>Each climb is coloured by its <strong>maximum slope</strong>: the steepest 100&nbsp;m stretch of the smoothed profile. There are five classes: under 5&nbsp;%, 5&ndash;8&nbsp;%, 8&ndash;12&nbsp;%, 12&ndash;16&nbsp;% and 16&nbsp;% and up. It is one violet hue in five steps, standing out more the steeper the climb, with the rest of the route drawn thin and grey. The choice of forward or reverse works by running the same detection on the reversed profile, so a climb ridden one way is a descent the other way.</p>
+        <h3>Limits</h3>
+        <ul>
+          <li><strong>The maximum slope depends on the smoothing.</strong> A short, sharp ramp of 100&nbsp;m or less is flattened by smoothing over 150&nbsp;m, so the steepest figure is a lower bound for such ramps. That is why the average is shown next to it: the average is much less sensitive.</li>
+          <li><strong>The thresholds are conventions.</strong> There is no official definition of a climb. Change them if a hill you know is missing or a minor one is shown.</li>
+          <li><strong>Accuracy is the file&rsquo;s.</strong> The app cannot know whether the elevation in your file is good. A route with poor elevation shows poor climbs.</li>
+          <li><strong>Not used elsewhere.</strong> Hills do not change the wind classes, the ride time at steady power or the feels-like temperature.</li>
+        </ul>
+
+        <h2 id="how-cold">8. Cold: wind chill</h2>
           <p>For cold weather the app uses the standard wind chill formula that Environment Canada and the US National Weather Service have used since 2001. It comes from Osczevski and Bluestein (2005), who based it on a model of heat flow from the upwind side of a head-sized cylinder moving at walking speed into the wind. With <code>T</code> in &deg;C and <code>V</code> the airspeed in km/h:</p>
           <div class="how-formula">wind chill  =  13.12  +  0.6215 T  &minus;  11.37 V<sup>0.16</sup>  +  0.3965 T V<sup>0.16</sup></div>
           <p>It is officially defined only for <strong>T &le; 10&nbsp;&deg;C</strong> and <strong>V &gt; 4.8&nbsp;km/h</strong> (the 3&nbsp;mph limit in the US version). Below 4.8&nbsp;km/h of airspeed there is no wind chill, which is why a tailwind that matches your speed brings no cooling at all.</p>
           <p><strong>Example.</strong> At &minus;10&nbsp;&deg;C it feels like &minus;15.3&nbsp;&deg;C at 10&nbsp;km/h of airspeed, &minus;18.8&nbsp;&deg;C at 25&nbsp;km/h and &minus;21.3&nbsp;&deg;C at 45&nbsp;km/h.</p>
           <p><strong>Caveats.</strong> The formula describes how fast exposed skin on the face cools, in steady conditions, for someone walking. Using a cyclist&rsquo;s airspeed is the usual approximation and not what it was calibrated for. The authors themselves point out the steady-state character of the concept.</p>
         
-          <h2 id="how-warm">8. Mild and hot: apparent temperature</h2>
+          <h2 id="how-warm">9. Mild and hot: apparent temperature</h2>
           <p>Wind chill is not defined for mild weather, and it ignores humidity. From 20&nbsp;&deg;C up the app uses the <strong>apparent temperature</strong> of Robert Steadman, in the form used by the Australian Bureau of Meteorology. It combines temperature, humidity and wind. With <code>T</code> in &deg;C, <code>RH</code> the relative humidity in % and <code>v</code> the wind in metres per second:</p>
           <div class="how-formula">apparent temperature  =  T  +  0.33 &middot; e  &minus;  0.70 &middot; v  &minus;  4.00
         
@@ -1841,7 +1924,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
           <p>Steadman&rsquo;s own analysis found that, for normal midday climates in the US, humidity, wind and sun move the apparent temperature by between &minus;5 and +7&nbsp;K from the dry-bulb temperature. That is the scale of effect to expect.</p>
         
-          <h2 id="how-blend">9. Putting the two together</h2>
+          <h2 id="how-blend">10. Putting the two together</h2>
           <p>The two models are not the same physics, and they disagree by a few degrees in the middle, so switching between them at a single temperature would make the result jump. Instead the app fades from one to the other between <strong>10&nbsp;&deg;C</strong> (where the official wind chill ends) and <strong>20&nbsp;&deg;C</strong>:</p>
           <div class="how-formula">x  =  (T &minus; 10) / 10                     (limited to 0 &hellip; 1)
         weight  =  3x&sup2; &minus; 2x&sup3;                      (a smooth S-curve)
@@ -1858,13 +1941,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p>Note the small dip in the cooling between 10 and 20&nbsp;&deg;C. It is the seam between the two models, not a real effect. The absolute feels-like temperature still rises steadily with the air temperature.</p>
           <p><strong>A known limit.</strong> In the fade zone, in very dry air (20&nbsp;% humidity or less) at high airspeed (40&nbsp;km/h or more), a slightly warmer air temperature can feel up to 1&nbsp;&deg;C colder, and up to about 3&nbsp;&deg;C in the extreme corner of bone-dry air at 60&nbsp;km/h. It never happens up to 25&nbsp;km/h of airspeed or in humid air.</p>
         
-          <h2 id="how-still">10. Standing still: the heat index</h2>
+          <h2 id="how-still">11. Standing still: the heat index</h2>
           <p>The apparent temperature includes the cooling from riding. If you stop, or crawl up a steep hill with no breeze, that cooling disappears. For that case the app shows the <strong>heat index</strong> of the US National Weather Service, which uses only temperature and humidity. It comes from Steadman&rsquo;s work and Rothfusz&rsquo;s regression fit (1990): a simple formula for milder conditions, and a longer regression once the result reaches 80&nbsp;&deg;F (about 27&nbsp;&deg;C), with two extra adjustments for very dry or very humid air. The regression is published at the National Weather Service; the page linked under Sources lists every coefficient.</p>
           <p>The published algorithm has small <strong>steps</strong> where it switches between its parts (up to about 1.3&nbsp;&deg;C in humid air), the same kind of jump the wind chill cutoff would cause. The app smooths them: it blends the simple formula into the regression over 78&ndash;82&nbsp;&deg;F, fades the two humidity adjustments in over 78&ndash;80&nbsp;&deg;F, and ramps the whole effect in between 22 and 26&nbsp;&deg;C. From about 29&nbsp;&deg;C upwards the result is exactly the published value.</p>
           <p><strong>Example.</strong> At 32&nbsp;&deg;C and 70&nbsp;% humidity the heat index is 40.4&nbsp;&deg;C, 8.4&nbsp;&deg;C above the air temperature and far above the 34.1&nbsp;&deg;C you would feel riding at 25&nbsp;km/h.</p>
           <p>The heat index assumes shade, and the National Weather Service notes that direct sunlight can add up to 15&nbsp;&deg;F (about 8&nbsp;&deg;C). It also carries the Weather Service&rsquo;s heat-illness categories, which the app quotes when the standing-still value is high: from 103&nbsp;&deg;F (39&nbsp;&deg;C) heat cramps or heat exhaustion are likely and heat stroke is possible, and from 125&nbsp;&deg;F (52&nbsp;&deg;C) heat stroke is highly likely.</p>
         
-          <h2 id="how-colours">11. From numbers to colours</h2>
+          <h2 id="how-colours">12. From numbers to colours</h2>
           <p>The map on the Temperature tab colours each stretch by <strong>feels like minus air temperature</strong> at that moment on that stretch. The steps are fixed, so a colour means the same thing on every route and every day:</p>
           <div class="how-table-wrap">
             <table>
@@ -1886,7 +1969,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p>Each colour arm is one hue running from light to dark, so a stronger effect is always more intense: darker in the light theme, lighter in the dark theme, so it always stands out against the map. The swatches below follow your current theme. Colours are compared with the air temperature <em>at that moment</em>, so a morning that warms up does not read as chill. In Fahrenheit the same steps are used and shown converted.</p>
           <p>The &ldquo;coldest tenth&rdquo; and &ldquo;hottest tenth&rdquo; figures are the average feels-like over the coldest or hottest 10&nbsp;% of the <em>distance</em>, not the single most extreme stretch, so one stray GPS point cannot set the headline number.</p>
         
-          <h2 id="how-limits">12. What this is not</h2>
+          <h2 id="how-limits">13. What this is not</h2>
           <ul>
             <li><strong>Not a measurement.</strong> It is a model of an average person. Individuals differ a lot, and what a cyclist feels is subjective.</li>
             <li><strong>No sun.</strong> Neither formula includes solar radiation. Full sun feels hotter (the heat index notes up to about 8&nbsp;&deg;C).</li>
@@ -1898,11 +1981,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li><strong>Not medical or safety advice.</strong> The heat-illness categories quoted are the National Weather Service&rsquo;s for the standing-still heat index. Use your own judgement and local guidance.</li>
           </ul>
         
-          <h2 id="how-check">13. How it is checked</h2>
-          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
+          <h2 id="how-check">14. How it is checked</h2>
+          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, reverse riding, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
           <p>If you find a case where a number looks wrong, please say so on the <a href="https://github.com/ubrowz/tailwind-tally/issues" target="_blank" rel="noopener">issue tracker</a> with the temperature, humidity, speed and wind you used.</p>
         
-          <h2 id="how-sources">14. Sources</h2>
+          <h2 id="how-sources">15. Sources</h2>
           <ul class="how-refs">
             <li>Osczevski, R. and Bluestein, M. (2005). The new wind chill equivalent temperature chart. <em>Bulletin of the American Meteorological Society</em>, 86(10), 1453&ndash;1458. <a href="https://journals.ametsoc.org/view/journals/bams/86/10/bams-86-10-1453.xml" target="_blank" rel="noopener">journals.ametsoc.org</a></li>
             <li>US National Weather Service. Wind chill: formula, validity range and chart. <a href="https://www.weather.gov/safety/cold-wind-chill-chart" target="_blank" rel="noopener">weather.gov/safety/cold-wind-chill-chart</a></li>
@@ -1978,6 +2061,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // ---------------------------------------------------------------------
   // GPX parsing
   // ---------------------------------------------------------------------
+  // [lat, lon, elevation-or-null]. Everything else only reads the first two, so
+  // the elevation just rides along until the Climbs tab uses it.
+  function gpxPoint(p) {
+    var ele = p.querySelector("ele"), e = ele ? parseFloat(ele.textContent) : NaN;
+    return [parseFloat(p.getAttribute("lat")), parseFloat(p.getAttribute("lon")), isFinite(e) ? e : null];
+  }
   function parseGpxPoints(xmlText) {
     var doc = new DOMParser().parseFromString(xmlText, "application/xml");
     if (doc.querySelector("parsererror")) {
@@ -1987,13 +2076,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
     doc.querySelectorAll("trk").forEach(function (trk) {
       trk.querySelectorAll("trkseg").forEach(function (seg) {
         seg.querySelectorAll("trkpt").forEach(function (p) {
-          points.push([parseFloat(p.getAttribute("lat")), parseFloat(p.getAttribute("lon"))]);
+          points.push(gpxPoint(p));
         });
       });
     });
     doc.querySelectorAll("rte").forEach(function (rte) {
       rte.querySelectorAll("rtept").forEach(function (p) {
-        points.push([parseFloat(p.getAttribute("lat")), parseFloat(p.getAttribute("lon"))]);
+        points.push(gpxPoint(p));
       });
     });
     points = points.filter(function (p) { return isFinite(p[0]) && isFinite(p[1]); });
@@ -2778,6 +2867,161 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return out;
   }
   // END power-pure
+  // ---------------------------------------------------------------------
+  // Climbs: where the route goes up. Descriptive only - no rider model.
+  // ---------------------------------------------------------------------
+  // BEGIN climb-pure
+  // A climb is a stretch of the elevation profile that rises by at least
+  // minGainM overall, at an average slope of at least minAvgPct (so a long,
+  // gentle rise of 17 m over 20 km does not count). The profile is smoothed
+  // first, and a turn only counts when it is bigger than deadbandM, so
+  // measurement noise cannot start or end a climb. Two climbs separated by a
+  // small dip are one climb. "Max slope" is the steepest slopeWindowM of the
+  // smoothed profile: it depends on the smoothing (a sharp ramp looks gentler
+  // the more the profile is smoothed), so it is shown next to the average.
+  var CLIMB_DEFAULTS = { minGainM: 25, minAvgPct: 2, deadbandM: 3, mergeDipFrac: 0.25, mergeGapM: 400, smoothWindowM: 150, slopeWindowM: 100, endTrimM: 1, stepM: 25 };
+  var CLIMB_SLOPE_EDGES = [5, 8, 12, 16];            // max slope, %: classes 0..4 = under 5, 5-8, 8-12, 12-16, 16 and up
+  function climbSlopeClass(maxPct) {
+    var c = 0;
+    while (c < CLIMB_SLOPE_EDGES.length && maxPct >= CLIMB_SLOPE_EDGES[c]) c++;
+    return c;
+  }
+  function climbOpts(o) {
+    var out = {}, k;
+    for (k in CLIMB_DEFAULTS) out[k] = o && o[k] !== undefined ? o[k] : CLIMB_DEFAULTS[k];
+    return out;
+  }
+  function median3(z) {
+    var out = z.slice();
+    for (var i = 1; i < z.length - 1; i++) {
+      var a = z[i - 1], b = z[i], c = z[i + 1];
+      out[i] = Math.max(Math.min(a, b), Math.min(Math.max(a, b), c));
+    }
+    return out;
+  }
+  // Moving average over 2k+1 points (fewer at the ends).
+  function smoothMean(z, k) {
+    if (k < 1) return z.slice();
+    var out = [];
+    for (var i = 0; i < z.length; i++) {
+      var lo = Math.max(0, i - k), hi = Math.min(z.length - 1, i + k), sum = 0;
+      for (var j = lo; j <= hi; j++) sum += z[j];
+      out.push(sum / (hi - lo + 1));
+    }
+    return out;
+  }
+  // Elevation on a uniform grid along the route (one value per stepM), from the
+  // raw track points: sRaw = distance along the track at each point (m),
+  // eleRaw = elevation there or null. Returns { available: false, reason } when
+  // there is not enough usable elevation, so nothing is ever invented.
+  function elevationProfile(sRaw, eleRaw, stepM) {
+    var n = sRaw.length, known = [], i;
+    for (i = 0; i < n; i++) if (typeof eleRaw[i] === "number" && isFinite(eleRaw[i])) known.push(i);
+    var coverage = n ? known.length / n : 0;
+    if (n < 2 || sRaw[n - 1] <= 0) return { available: false, coverage: coverage, reason: "The route is too short to have a profile." };
+    if (!known.length) return { available: false, coverage: 0, reason: "This route has no elevation data." };
+    if (coverage < 0.9) return { available: false, coverage: coverage, reason: "Only " + Math.round(100 * coverage) + "% of the points have elevation, which is too few to trust." };
+    var zmin = Infinity, zmax = -Infinity;
+    for (i = 0; i < known.length; i++) { var e = eleRaw[known[i]]; zmin = Math.min(zmin, e); zmax = Math.max(zmax, e); }
+    if (zmin < -500 || zmax > 9000) return { available: false, coverage: coverage, reason: "The elevation values look implausible." };
+    if (zmax - zmin < 0.5) return { available: false, coverage: coverage, reason: "The elevation is constant, so the file has none of use." };
+    var total = sRaw[n - 1], N = Math.floor(total / stepM) + 1, z = [], k = 0;
+    for (var g = 0; g < N; g++) {
+      var s = g * stepM;
+      while (k < known.length - 2 && sRaw[known[k + 1]] < s) k++;
+      var a = known[k], b = known[Math.min(k + 1, known.length - 1)];
+      var t = b === a ? 0 : Math.max(0, Math.min(1, (s - sRaw[a]) / (sRaw[b] - sRaw[a])));
+      z.push(eleRaw[a] + t * (eleRaw[b] - eleRaw[a]));
+    }
+    return { available: true, coverage: coverage, stepM: stepM, gridM: (N - 1) * stepM, z: median3(z) };
+  }
+  // Alternating valleys ("v") and peaks ("p") of a profile, where a reversal only
+  // counts if it exceeds deadband. A peak is the FIRST point that reaches the top
+  // (where the climb ends); a valley is the LAST point of a flat bottom (where it
+  // starts).
+  function profileExtremes(z, deadband) {
+    var ext = [], dir = 0, lo = 0, hi = 0;
+    for (var i = 1; i < z.length; i++) {
+      if (dir >= 0 && z[i] > z[hi]) hi = i;
+      if (dir <= 0 && z[i] <= z[lo]) lo = i;          // on a flat minimum the valley is its LAST point, where the rise really starts
+      if (dir <= 0 && z[i] - z[lo] > deadband) { ext.push({ t: "v", i: lo }); dir = 1; hi = i; }
+      else if (dir >= 0 && z[hi] - z[i] > deadband) { ext.push({ t: "p", i: hi }); dir = -1; lo = i; }
+    }
+    if (z.length) ext.push(dir >= 0 ? { t: "p", i: hi } : { t: "v", i: lo });
+    return ext;
+  }
+  // Total climbing and descending of a profile, counting only real (beyond the
+  // dead-band) rises and falls.
+  function profileAscentDescent(z, deadband) {
+    var ext = profileExtremes(z, deadband), up = 0, down = 0;
+    for (var k = 1; k < ext.length; k++) {
+      var d = z[ext[k].i] - z[ext[k - 1].i];
+      if (d > 0) up += d; else down -= d;
+    }
+    return { ascentM: up, descentM: down };
+  }
+  // Climbs of an already smoothed profile z (one value per opts.stepM).
+  function detectClimbs(z, options) {
+    var o = climbOpts(options), step = o.stepM, ext = profileExtremes(z, o.deadbandM), raw = [], k;
+    for (k = 0; k + 1 < ext.length; k++) if (ext[k].t === "v" && ext[k + 1].t === "p" && ext[k + 1].i > ext[k].i) raw.push([ext[k].i, ext[k + 1].i]);
+    var merged = [];
+    raw.forEach(function (c) {
+      if (merged.length) {
+        var p = merged[merged.length - 1], dip = z[p[1]] - z[c[0]];
+        var g1 = z[p[1]] - z[p[0]], g2 = z[c[1]] - z[c[0]];
+        if (dip >= 0 && dip < o.mergeDipFrac * Math.max(g1, g2) && (c[0] - p[1]) * step < o.mergeGapM) { p[1] = c[1]; return; }
+      }
+      merged.push([c[0], c[1]]);
+    });
+    var gw = Math.max(1, Math.round(o.slopeWindowM / step)), out = [];
+    merged.forEach(function (c) {
+      // The highest point of a noisy plateau can lie kilometres beyond the real
+      // top (and the lowest of a noisy flat far before the real foot), which
+      // would stretch the climb and flatten its average slope. So a climb ends at
+      // the FIRST point within endTrimM of its top and starts at the LAST point
+      // within endTrimM of its bottom.
+      var a = c[0], b = c[1], i;
+      for (i = b; i >= c[0]; i--) if (z[i] <= z[c[0]] + o.endTrimM) { a = i; break; }
+      for (i = c[0]; i <= b; i++) if (z[i] >= z[c[1]] - o.endTrimM) { b = i; break; }
+      if (b <= a) return;
+      var gain = z[b] - z[a], len = (b - a) * step;
+      if (gain < o.minGainM || 100 * gain / len < o.minAvgPct) return;
+      var maxPct;
+      if (b - a <= gw) maxPct = 100 * gain / len;
+      else { maxPct = -Infinity; for (var i = a; i + gw <= b; i++) maxPct = Math.max(maxPct, 100 * (z[i + gw] - z[i]) / (gw * step)); }
+      out.push({ a: a, b: b, startM: a * step, endM: b * step, lengthM: len, gainM: gain, avgPct: 100 * gain / len, maxPct: maxPct,
+                 cls: climbSlopeClass(maxPct), zStart: z[a], zEnd: z[b] });
+    });
+    return out;
+  }
+  // The whole thing for a route: profile, smoothing, climbs as recorded and in
+  // reverse (riding it backwards turns the recorded descents into climbs), and
+  // the dead-banded totals. Distances of "rev" climbs are measured from the far
+  // end, i.e. in the order they are ridden.
+  function analyzeTerrain(sRaw, eleRaw, options) {
+    var o = climbOpts(options), prof = elevationProfile(sRaw, eleRaw, o.stepM);
+    if (!prof.available) return { available: false, reason: prof.reason, coverage: prof.coverage };
+    var z = smoothMean(prof.z, Math.round(o.smoothWindowM / o.stepM / 2)), ad = profileAscentDescent(z, o.deadbandM);
+    var zmin = Infinity, zmax = -Infinity;
+    z.forEach(function (v) { zmin = Math.min(zmin, v); zmax = Math.max(zmax, v); });
+    return { available: true, coverage: prof.coverage, stepM: o.stepM, gridM: prof.gridM, z: z, zMin: zmin, zMax: zmax,
+             ascentM: ad.ascentM, descentM: ad.descentM, fwd: detectClimbs(z, o), rev: detectClimbs(z.slice().reverse(), o), options: o };
+  }
+  // For each route segment (lengths, m): the slope class of the climb it belongs
+  // to, or -1. dir is "fwd" or "rev"; gridM is the length of the profile grid.
+  function climbSegmentClasses(climbs, dir, gridM, lengths) {
+    var total = 0, i;
+    for (i = 0; i < lengths.length; i++) total += lengths[i];
+    var scale = gridM > 0 ? total / gridM : 1, out = new Array(lengths.length), mid = [], run = 0;
+    for (i = 0; i < lengths.length; i++) { mid.push(run + lengths[i] / 2); run += lengths[i]; out[i] = -1; }
+    climbs.forEach(function (c) {
+      var r0 = (dir === "fwd" ? c.startM : gridM - c.endM) * scale, r1 = (dir === "fwd" ? c.endM : gridM - c.startM) * scale;
+      for (var j = 0; j < lengths.length; j++) if (mid[j] >= r0 && mid[j] <= r1) out[j] = c.cls;
+    });
+    return out;
+  }
+  // END climb-pure
+
 
 
   function windEffortStats(lengths, cosphi, vMs, wMs, start, end) {
@@ -2804,7 +3048,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
   }
 
-  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh, timeline, windTimeline, ride) {
+  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh, timeline, windTimeline, ride, terrainOpts) {
     var proj = projectToEnu(points);
     var xy = resamplePolyline(proj.xy, resampleM);
     var latLon = enuToLatLon(xy, proj.lat0, proj.lon0, proj.cosLat0);
@@ -2814,6 +3058,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     for (var i = 0; i < lengths.length; i++) totalLength += lengths[i];
     var last = xy[xy.length - 1], first = xy[0];
     var closureGap = Math.hypot(last[0] - first[0], last[1] - first[1]);
+    // Where the route climbs: from the elevation in the file, if it has usable
+    // elevation (see analyzeTerrain). Distances along the raw track are what the
+    // elevation is tied to; climbs are mapped back onto the 25 m route segments.
+    var sRaw = [0], eleRaw = points.map(function (pt) { return pt.length > 2 ? pt[2] : null; });
+    for (var q = 1; q < proj.xy.length; q++) sRaw.push(sRaw[q - 1] + Math.hypot(proj.xy[q][0] - proj.xy[q - 1][0], proj.xy[q][1] - proj.xy[q - 1][1]));
+    var terrain = analyzeTerrain(sRaw, eleRaw, terrainOpts);
+    if (terrain.available) {
+      terrain.segClass = { fwd: climbSegmentClasses(terrain.fwd, "fwd", terrain.gridM, lengths), rev: climbSegmentClasses(terrain.rev, "rev", terrain.gridM, lengths) };
+    }
     var windVec = windFromToTowardVector(windFromDeg);
     // One steady wind, or (windTimeline) the wind expected when the rider reaches
     // each segment. With a steady wind riding in reverse is the mirror image
@@ -2985,6 +3238,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       windFromDeg: windFromDeg, resampleM: resampleM, neutralDeg: neutralDeg, veryDeg: veryDeg,
       steadyWind: steadyWind,
       ride: rideInfo,
+      terrain: terrain,
       windRide: steadyWind ? null : rideWindSummary(totalLength, windTimeline.locations, windTimeline.startMin,
         powerMode && rideInfo.forward.avgKmh > 0 ? rideInfo.forward.avgKmh : cruiseSpeedKmh),
       fwd: fwd, rev: rev, identityGap: identityGap, identityOk: identityOk,
@@ -3175,6 +3429,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var FEELS_HOT_LIGHT = ["#ff8c85", "#e84f4d", "#bb1e27", "#830112"];
   var FEELS_HOT_DARK = ["#a7031a", "#cb3235", "#ee5451", "#ff847d"];
   var FEELS_NEUTRAL = "#898781";
+  // Climbs: one violet hue, light to dark = gentler to steeper max slope (the
+  // same construction and validation as the blue/red arms above, at the
+  // palette's violet hue). Flipped on a dark surface, so steeper always stands
+  // out more. Stretches that are not part of a climb stay a quiet grey.
+  var CLIMB_LIGHT = ["#a9a8fc", "#8a82f8", "#6f65d8", "#5648b8", "#3f2a99"];
+  var CLIMB_DARK = ["#4a39a8", "#6256c8", "#7c74e8", "#9995fe", "#b9bafd"];
+  var CLIMB_CLASS_LABELS = ["Under 5%", "5\u20138%", "8\u201312%", "12\u201316%", "16% and up"];
+  function climbClassColors() { return prefersDarkTheme() ? CLIMB_DARK : CLIMB_LIGHT; }
   function feelsClassColors() {
     var dark = prefersDarkTheme();
     var cold = (dark ? FEELS_COLD_DARK : FEELS_COLD_LIGHT).slice().reverse();      // index 0 = strongest
@@ -3214,8 +3476,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     leafletTileLayer._proxiedUrl = url;
 
     leafletRouteLayer.clearLayers();
-    var latLon = result.latLon, cats, colorFor;
-    if (state.view === "temp") {
+    var latLon = result.latLon, cats, colorFor, weightFor = function () { return 4; };
+    if (state.view === "climbs") {
+      // Climbs are thick and coloured by their steepest slope; everything else is a thin grey line.
+      colorFor = { "-1": FEELS_NEUTRAL };
+      climbClassColors().forEach(function (c, k) { colorFor[k] = c; });
+      weightFor = function (c) { return c >= 0 ? 6 : 3; };
+      cats = result.terrain.available ? result.terrain.segClass[state.climbDir] : result.fiveWay.categories.map(function () { return -1; });
+    } else if (state.view === "temp") {
       // Same runs-of-one-colour drawing as the wind view, but the "category"
       // of each segment is its feels-like class.
       cats = result.chill.classes.cls;
@@ -3232,12 +3500,85 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var cat = cats[i], j = i;
       var pts = [latLon[i]];
       while (j < cats.length && cats[j] === cat) { pts.push(latLon[j + 1]); j++; }
-      L.polyline(pts, { color: colorFor[cat], weight: 4, opacity: 0.9, interactive: false }).addTo(leafletRouteLayer);
+      L.polyline(pts, { color: colorFor[cat], weight: weightFor(cat), opacity: 0.9, interactive: false }).addTo(leafletRouteLayer);
       i = j;
     }
     L.circleMarker(latLon[0], { radius: 6, color: "var(--panel)", weight: 2, fillColor: "var(--accent)", fillOpacity: 1, interactive: false }).addTo(leafletRouteLayer);
     leafletMap.invalidateSize();
     leafletMap.fitBounds(L.latLngBounds(latLon), { padding: [20, 20] });
+  }
+
+  // ---- Climbs tab ------------------------------------------------------
+  function fmtLen(m) { return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m"; }
+  function niceStep(range, target) {
+    var raw = range / target, mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), f = raw / mag;
+    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag;
+  }
+  function drawElevation(svg, tr, dir) {
+    var NS = "http://www.w3.org/2000/svg", ml = 46, mr = 12, mt = 12, mb = 28;
+    // Drawn at the width it really has (a scaled-down 800-wide chart would shrink its
+    // labels to nothing on a phone); a hidden panel has no width yet, so fall back.
+    var W = Math.max(280, Math.round(svg.getBoundingClientRect().width)) || 800, H = W < 520 ? 210 : 250;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var z = dir === "fwd" ? tr.z : tr.z.slice().reverse(), n = z.length, km = tr.gridM / 1000;
+    var pad = Math.max(5, 0.1 * (tr.zMax - tr.zMin)), y0 = tr.zMin - pad, y1 = tr.zMax + pad;
+    var sx = function (i) { return ml + (n > 1 ? i / (n - 1) : 0) * (W - ml - mr); };
+    var sy = function (v) { return H - mb - (v - y0) / (y1 - y0) * (H - mt - mb); };
+    function el(tag, attrs, text) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; svg.appendChild(e); return e; }
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var ystep = niceStep(y1 - y0, 4), t;
+    for (t = Math.ceil(y0 / ystep) * ystep; t <= y1; t += ystep) {
+      el("line", { "class": "elev-grid", x1: ml, x2: W - mr, y1: sy(t).toFixed(1), y2: sy(t).toFixed(1) });
+      el("text", { x: ml - 6, y: (sy(t) + 4).toFixed(1), "text-anchor": "end" }, String(Math.round(t)));
+    }
+    var xstep = niceStep(km, Math.max(3, Math.round(W / 130)));
+    for (t = 0; t <= km + 1e-9; t += xstep) {
+      var x = ml + (t / km) * (W - ml - mr);
+      el("line", { "class": "elev-grid", x1: x.toFixed(1), x2: x.toFixed(1), y1: mt, y2: H - mb });
+      el("text", { x: x.toFixed(1), y: H - 9, "text-anchor": "middle" }, (Math.round(t * 10) / 10) + (t === 0 ? " km" : ""));
+    }
+    el("text", { x: 4, y: 11 }, "m");
+    var pts = z.map(function (v, i) { return sx(i).toFixed(1) + "," + sy(v).toFixed(1); });
+    el("polygon", { "class": "elev-base", points: pts.join(" ") + " " + sx(n - 1).toFixed(1) + "," + sy(y0).toFixed(1) + " " + sx(0).toFixed(1) + "," + sy(y0).toFixed(1) });
+    var colors = climbClassColors();
+    tr[dir].forEach(function (c) {
+      var seg = pts.slice(c.a, c.b + 1);
+      el("polygon", { points: seg.join(" ") + " " + sx(c.b).toFixed(1) + "," + sy(y0).toFixed(1) + " " + sx(c.a).toFixed(1) + "," + sy(y0).toFixed(1), fill: colors[c.cls], opacity: 0.9 });
+    });
+    el("polyline", { "class": "elev-line", points: pts.join(" ") });
+  }
+
+  function renderClimbs(result) {
+    var tr = result.terrain, dir = state.climbDir;
+    var summary = document.getElementById("climbSummary"), table = document.getElementById("climbTable");
+    var listCard = document.getElementById("climbListCard"), elevCard = document.getElementById("elevCard");
+    if (!tr.available) {
+      summary.innerHTML = "<b>No elevation to show.</b> " + tr.reason + " Files recorded by GPS devices and apps usually include elevation; some route planners leave it out.";
+      listCard.hidden = true; elevCard.hidden = true;
+      return;
+    }
+    listCard.hidden = false; elevCard.hidden = false;
+    var climbs = tr[dir], up = dir === "fwd" ? tr.ascentM : tr.descentM, down = dir === "fwd" ? tr.descentM : tr.ascentM, total = 0;
+    climbs.forEach(function (c) { total += c.gainM; });
+    summary.innerHTML = "Elevation from your file (" + Math.round(100 * tr.coverage) + "% of the points), smoothed over about " + tr.options.smoothWindowM + " m. " +
+      "<b>Ascent " + Math.round(up) + " m, descent " + Math.round(down) + " m</b> (rises and falls under " + tr.options.deadbandM + " m are ignored). " +
+      "<b>" + climbs.length + " climb" + (climbs.length === 1 ? "" : "s") + "</b> of at least " + state.climbMinGain + " m" + (climbs.length ? ", " + Math.round(total) + " m of climbing in them." : ".");
+
+    var colors = climbClassColors();
+    document.getElementById("climbLegend").innerHTML = "<span>Steepest 100 m:</span>" + CLIMB_CLASS_LABELS.map(function (l, k) {
+      return '<span><span class="climb-swatch" style="background-color:' + colors[k] + '"></span>' + l + "</span>";
+    }).join("");
+    var head = '<thead><tr><th>Climb</th><th>From</th><th>Length</th><th>Gain</th><th title="Average slope">Avg</th><th title="Steepest 100 m of the smoothed profile">Max</th></tr></thead>';
+    var rows = climbs.map(function (c, i) {
+      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[c.cls] + '"></span>' + (i + 1) + "</td><td>km " + (c.startM / 1000).toFixed(1) + "</td><td>" + fmtLen(c.lengthM) +
+        "</td><td>" + Math.round(c.gainM) + " m</td><td>" + c.avgPct.toFixed(1) + "%</td><td>" + c.maxPct.toFixed(1) + "%</td></tr>";
+    }).join("");
+    if (!climbs.length) rows = '<tr><td colspan="6" style="text-align:left">No climbs of at least ' + state.climbMinGain + " m at an average of " + state.climbMinAvg + "% or more" +
+      (up < state.climbMinGain ? " (the whole route only climbs " + Math.round(up) + " m)" : ": its rises are longer and gentler than that, so lower the minimum average slope to count them") + ".</td></tr>";
+    table.innerHTML = head + "<tbody>" + rows + "</tbody>";
+    document.getElementById("climbNote").textContent = "Max is the steepest 100 m of the smoothed profile. The more a profile is smoothed the gentler a short, sharp ramp looks, so read it together with the average. GPS elevation is noisy and the smoothing removes most of it, but it also flattens very short ramps.";
+    document.getElementById("elevCaption").textContent = "Distance is measured in the direction you ride (" + (dir === "fwd" ? "as recorded" : "in reverse") + "). The shaded areas are the climbs, coloured by their steepest slope.";
+    drawElevation(document.getElementById("elevSvg"), tr, dir);
   }
 
   // A temperature DIFFERENCE as a bare number in the chosen unit (9/5 only,
@@ -3664,6 +4005,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
     feelsLine("Reverse", ch.reverse);
     if (ch.stillDeltaC >= CHILL_NEGLIGIBLE_C) lines.push("Standing still (NWS heat index, no breeze)" + (ch.timeline ? ", at the hottest point of the ride" : "") + ": " + fmtTemp(ch.stillHiC) + " (" + fmtTempDiff(ch.stillDeltaC) + " hotter than the air)");
     lines.push("");
+    lines.push("=== Climbs ===");
+    var tr = result.terrain;
+    if (!tr.available) {
+      lines.push("No elevation to analyse: " + tr.reason);
+    } else {
+      [["As recorded", "fwd"], ["In reverse", "rev"]].forEach(function (d) {
+        var cl = tr[d[1]], gain = 0;
+        cl.forEach(function (c) { gain += c.gainM; });
+        lines.push(d[0] + ": " + cl.length + " climb" + (cl.length === 1 ? "" : "s") + " of at least " + state.climbMinGain + " m (average " + state.climbMinAvg + "% or steeper), " + Math.round(gain) + " m of climbing in them" +
+          (cl.length ? ":" : "."));
+        cl.forEach(function (c, i) {
+          lines.push("  " + (i + 1) + ". from km " + (c.startM / 1000).toFixed(1) + ", " + fmtLen(c.lengthM) + ", +" + Math.round(c.gainM) + " m, average " + c.avgPct.toFixed(1) + "%, max (100 m) " + c.maxPct.toFixed(1) + "%");
+        });
+      });
+      lines.push("Ascent " + Math.round(tr.ascentM) + " m, descent " + Math.round(tr.descentM) + " m as recorded (rises and falls under " + tr.options.deadbandM + " m ignored; elevation smoothed over about " + tr.options.smoothWindowM + " m).");
+    }
+    lines.push("");
     lines.push("=== Conclusion ===");
     lines.push("Forward: " + (result.fwd.easy / 1000).toFixed(2) + " km easy vs " + (result.fwd.hard / 1000).toFixed(2) + " km hard");
     lines.push("Reverse: " + (result.rev.easy / 1000).toFixed(2) + " km easy vs " + (result.rev.hard / 1000).toFixed(2) + " km hard");
@@ -3720,6 +4078,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     view: "wind",                // which DATA view colours the map: "wind" or "temp"
     showHow: false,              // the "How it works" tab is showing (it keeps the last data view underneath)
     timeline: null,               // forecast series along the ride ({locations}); null in manual mode
+    climbMinGain: 25,             // Climbs tab: smallest rise that counts as a climb (m)
+    climbMinAvg: 2,               // ... and its smallest average slope (%)
+    climbDir: "fwd",               // "fwd" (as recorded) or "rev" (in reverse)
     rideStyle: "speed",           // "speed" (constant speed) or "power" (constant power, flat road)
     rider: { massKg: 85, cda: 0.32, crr: 0.005, eta: 0.975 },   // used by steady power
     windTimeline: null,           // the forecast WIND along the ride ({locations}); null when the wind is set by hand
@@ -3913,7 +4274,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var tabWind = document.getElementById("tabWind"), tabTemp = document.getElementById("tabTemp");
   var panelWind = document.getElementById("panelWind"), panelTemp = document.getElementById("panelTemp");
   var routeCard = document.getElementById("routeCard");
-  var routeSlotWind = document.getElementById("routeSlotWind"), routeSlotTemp = document.getElementById("routeSlotTemp");
+  var routeSlotWind = document.getElementById("routeSlotWind"), routeSlotTemp = document.getElementById("routeSlotTemp"), routeSlotClimbs = document.getElementById("routeSlotClimbs");
+  var tabClimbs = document.getElementById("tabClimbs"), panelClimbs = document.getElementById("panelClimbs");
   var saveRouteBtnEl = document.getElementById("saveRouteBtn");
 
   // The "How it works" tab is web-only. Inside the iOS app's embedded web view
@@ -3941,29 +4303,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // underneath, so coming back to Wind or Temperature is exactly as it was.
   function setView(view, focusTab) {
     var how = view === "how" && !embeddedIos;
-    if (!how) state.view = view === "temp" ? "temp" : "wind";
+    if (!how) state.view = view === "temp" ? "temp" : view === "climbs" ? "climbs" : "wind";
     state.showHow = how;
-    var temp = state.view === "temp";
-    panelWind.hidden = how || temp;
-    panelTemp.hidden = how || !temp;
+    var v = state.view;
+    panelWind.hidden = how || v !== "wind";
+    panelTemp.hidden = how || v !== "temp";
+    panelClimbs.hidden = how || v !== "climbs";
     panelHow.hidden = !how;
-    [[tabWind, !how && !temp], [tabTemp, !how && temp], [tabHow, how]].forEach(function (pair) {
+    [[tabWind, !how && v === "wind"], [tabTemp, !how && v === "temp"], [tabClimbs, !how && v === "climbs"], [tabHow, how]].forEach(function (pair) {
       pair[0].setAttribute("aria-selected", String(pair[1]));
       pair[0].tabIndex = pair[1] ? 0 : -1;
     });
     if (!how) {
-      (temp ? routeSlotTemp : routeSlotWind).appendChild(routeCard);
+      (v === "temp" ? routeSlotTemp : v === "climbs" ? routeSlotClimbs : routeSlotWind).appendChild(routeCard);
       // The image export is built around the wind colours and wind statistics,
       // so it only makes sense on the wind view.
-      saveRouteBtnEl.hidden = temp;
+      saveRouteBtnEl.hidden = v !== "wind";
     } else {
       paintHowSwatches();
     }
     try { history.replaceState(null, "", how ? "#how-it-works" : window.location.pathname + window.location.search); } catch (e) { /* e.g. some file:// contexts */ }
-    if (focusTab) (how ? tabHow : (temp ? tabTemp : tabWind)).focus();
+    if (focusTab) (how ? tabHow : (v === "temp" ? tabTemp : v === "climbs" ? tabClimbs : tabWind)).focus();
     scheduleRender();
   }
-  var TAB_VIEWS = [[tabWind, "wind"], [tabTemp, "temp"], [tabHow, "how"]];
+  var TAB_VIEWS = [[tabWind, "wind"], [tabTemp, "temp"], [tabClimbs, "climbs"], [tabHow, "how"]];
   TAB_VIEWS.forEach(function (pair) {
     pair[0].addEventListener("click", function () { setView(pair[1]); });
     pair[0].addEventListener("keydown", function (e) {
@@ -4454,7 +4817,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var result;
     try {
       result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC, state.rh, currentTimeline(), currentWindTimeline(),
-        { mode: state.rideStyle, rider: state.rider });
+        { mode: state.rideStyle, rider: state.rider }, { minGainM: state.climbMinGain, minAvgPct: state.climbMinAvg });
     } catch (e) {
       fileError.textContent = e.message;
       fileError.classList.add("show");
@@ -4490,14 +4853,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       banner.innerHTML = checkSvg + "Roughly symmetric for this wind &mdash; neither direction has a clear advantage.";
     }
 
-    document.getElementById("planCaption").textContent = state.view === "temp"
+    document.getElementById("planCaption").textContent = state.view === "climbs"
+      ? "Climbs of at least " + state.climbMinGain + " m (average " + state.climbMinAvg + "% or steeper), " + (state.climbDir === "fwd" ? "as recorded" : "ridden in reverse") +
+        ", coloured by their steepest 100 m; the rest of the route is grey." + (result.terrain.available ? "" : " This route has no elevation, so nothing is coloured.")
+      : state.view === "temp"
       ? tempViewCaption(result)
       : (result.steadyWind
           ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°)."
           : "Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there (as recorded from the start time).");
     renderPolarSweep(result);
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
-    if (state.view === "temp") renderTempLegend(result); else renderRouteStats(result);
+    if (state.view === "temp") renderTempLegend(result); else if (state.view === "climbs") document.getElementById("routeStats").innerHTML = ""; else renderRouteStats(result);
+    renderClimbs(result);
     buildSweepTable(result);
 
     var bestFwdDeg = 0;
@@ -4850,6 +5217,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
+  });
+
+  window.addEventListener("resize", function () { if (lastResult && !panelClimbs.hidden) renderClimbs(lastResult); });
+
+  // Climbs tab controls: direction and the two detection thresholds.
+  var climbDirFwd = document.getElementById("climbDirFwd"), climbDirRev = document.getElementById("climbDirRev");
+  function setClimbDir(d) {
+    state.climbDir = d;
+    climbDirFwd.setAttribute("aria-pressed", String(d === "fwd"));
+    climbDirRev.setAttribute("aria-pressed", String(d === "rev"));
+    scheduleRender();
+  }
+  climbDirFwd.addEventListener("click", function () { setClimbDir("fwd"); });
+  climbDirRev.addEventListener("click", function () { setClimbDir("rev"); });
+  [["climbMinGain", "climbMinGain", 5, 500, 25], ["climbMinAvg", "climbMinAvg", 0, 15, 2]].forEach(function (f) {
+    var input = document.getElementById(f[0]);
+    input.addEventListener("change", function () {
+      var v = parseFloat(input.value);
+      state[f[1]] = isFinite(v) ? Math.max(f[2], Math.min(f[3], v)) : f[4];
+      input.value = String(state[f[1]]);
+      scheduleRender();
+    });
   });
 
   // Opening the app at ...#how-it-works shows that tab straight away.
