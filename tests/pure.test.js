@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, despike, DEM_DEADBAND_M, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
   new Function(grab("forecast-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, despike, DEM_DEADBAND_M, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -826,35 +826,6 @@ t("climbMidSegment: the segment half way along a climb, forward and reverse, and
   assert.strictEqual(climbMidSegment(c, "rev", gridM, lengths), 70);                          // ridden backwards it is 1750 m from the recorded start
   assert.strictEqual(climbMidSegment({ startM: 2400, endM: 2500 }, "fwd", gridM, lengths), 98);
   assert.strictEqual(climbMidSegment({ startM: 2500, endM: 2500 }, "fwd", gridM, lengths), 99);
-});
-
-// a surface model reads treetops and roofs: patches of +5..10 m on flat ground must not become climbs or ascent
-const canopy = (ground, seed) => {   // random patches of +6..10 m, 2 to 6 samples wide, about one in 20 samples, plus +7 m spikes and 1 m noise
-  const r = rng(seed); let left = 0, h = 0;
-  return ground.map((g) => { if (left === 0 && r() < 0.05) { left = 2 + Math.floor(r() * 5); h = 6 + Math.round(r() * 4); } const c = left > 0 ? h : 0; if (left > 0) left--; return g + c + (r() < 0.05 ? 7 : 0) + Math.round((r() - 0.5) * 3); });
-};
-t("despike: a single-sample spike goes, a two-sample step and a ramp stay, missing values leave the data untouched", () => {
-  assert.deepStrictEqual(despike([10, 10, 18, 10, 10]), [10, 10, 10, 10, 10]);
-  assert.deepStrictEqual(despike([10, 10, 18, 18, 10, 10]), [10, 10, 18, 18, 10, 10]);
-  assert.deepStrictEqual(despike([1, 2, 3, 4, 5]), [1, 2, 3, 4, 5]);
-  const withNull = [10, null, 18, 10]; assert.strictEqual(despike(withNull), withNull);
-});
-const LOOKUP = { deadbandM: DEM_DEADBAND_M, endTrimM: DEM_DEADBAND_M };   // what the app uses for looked-up elevation
-const grid195 = Array.from({ length: 400 }, (_, i) => i * 195);
-t("flat ground under patchy canopy (+6..10 m patches, +7 m spikes, 1 m noise), 20 random cases: no climbs and little ascent with the lookup settings", () => {
-  for (let sd = 1; sd <= 20; sd++) {
-    const a = analyzeTerrain(grid195, despike(canopy(Array(400).fill(30), sd)), LOOKUP);
-    assert.strictEqual(a.fwd.length, 0, "seed " + sd); assert(a.ascentM < 70, `seed ${sd}: ascent ${a.ascentM}`);
-  }
-  assert(analyzeTerrain(grid195, canopy(Array(400).fill(30), 1)).ascentM > 250, "with the file settings the same data gives several times more ascent");
-});
-t("a real 60 m climb of 1.2 km under the same canopy: found in nearly every case, with about the right gain (small climbs are not reliable on such data)", () => {
-  let found = 0;
-  for (let sd = 1; sd <= 20; sd++) {
-    const g = grid195.map((_, k) => 30 + (k < 150 ? 0 : k < 156 ? 10 * (k - 150) : 60)), a = analyzeTerrain(grid195, despike(canopy(g, sd)), LOOKUP);
-    if (a.fwd.length === 1 && Math.abs(a.fwd[0].gainM - 60) < 20 && Math.abs(a.fwd[0].startM - 150 * 195) < 2500) found++;
-  }
-  assert(found >= 17, found + " of 20");
 });
 
 console.log(`\n${n} tests passed`);

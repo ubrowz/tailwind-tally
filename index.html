@@ -1893,18 +1893,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <ul>
           <li>A 90&nbsp;m model flattens ramps shorter than about 100&nbsp;m.</li>
           <li>It shows the land as mapped, not the road: bridges, tunnels, viaducts and cuttings are not in it, and in forest or built-up areas it may show the treetops or roofs.</li>
-          <li>Where a climb is close to a threshold, small differences in the data decide whether it is listed. On a test route (a straight line through South Limburg) the untreated model shows six climbs of 35 to 56&nbsp;m; with the treatment above four remain, each about 10&nbsp;m smaller, and the short steep ramp is gone.</li>
+          <li>Where a climb is close to the average-slope threshold, small differences in the data can decide whether it is listed. On a test route (a straight line through South Limburg) the lookup gave five of the six climbs found from a file made from the same model, and the sixth sat at 1.99&nbsp;% against the 2&nbsp;% limit.</li>
         </ul>
         <h3>Why it needs smoothing</h3>
-        <p>The terrain model is a <em>surface</em> model: it includes treetops and roofs. A road through a wood or a town therefore reads several metres too high, in patches, and the profile looks jagged. Added up naively, that looks like climbing. On a flat 78&nbsp;km ride (a range of 28&nbsp;m in Strava&rsquo;s own elevation, 76&nbsp;m of ascent) the lookup gave 307&nbsp;m of ascent, in bumps of 5 to 10&nbsp;m. So the profile is treated before anything is measured:</p>
+        <p>Elevation in GPX files is noisy: it is typically a barometer or a coarse terrain model, and it wobbles by metres from point to point. Added up naively, that wobble looks like climbing. On one 78&nbsp;km ride that stayed within a 29&nbsp;m range, the raw points summed to 167&nbsp;m of ascent. So the profile is treated before anything is measured:</p>
         <ol>
-          <li>A median of three neighbouring values removes single-value spikes.</li>
-          <li>The profile is put on an even grid of one point per 25&nbsp;m of route, by interpolation, and smoothed with a moving average over about 150&nbsp;m.</li>
-          <li>Highs and lows are then found with a <strong>10&nbsp;m dead-band</strong>: a rise or fall counts only once it exceeds 10&nbsp;m from the last extreme. The total ascent and descent shown use the same rule. On that flat ride this gives 85&nbsp;m of ascent and no climbs.</li>
+          <li>The profile is put on an even grid of one point per 25&nbsp;m of route, by interpolation.</li>
+          <li>A median of three points removes single spikes, and a moving average over about 150&nbsp;m smooths the rest.</li>
+          <li>Highs and lows are then found with a <strong>3&nbsp;m dead-band</strong>: a rise or fall counts only once it exceeds 3&nbsp;m from the last extreme. The total ascent and descent shown use the same rule.</li>
         </ol>
-        <p>The price is that real rises and falls below about 10&nbsp;m disappear, and that the gain of a climb reads up to about 10&nbsp;m low. Smaller climbs are also less reliable on such data: in a simulation with canopy patches, a 60&nbsp;m climb was found nearly every time, a 30&nbsp;m one rarely.</p>
         <h3>What counts as a climb</h3>
-        <p>A climb runs from a low to the next high. Two climbs separated by a short dip (less than a quarter of the gain, within 400&nbsp;m) are merged into one, as riders experience them. Each climb ends at the first point within 10&nbsp;m of its top and starts at the last point within 10&nbsp;m of its bottom, so a flat top or a patch of trees beside it does not stretch it. Then two thresholds, both adjustable, decide what is shown:</p>
+        <p>A climb runs from a low to the next high. Two climbs separated by a short dip (less than a quarter of the gain, within 400&nbsp;m) are merged into one, as riders experience them. Each climb ends at the first point within 1&nbsp;m of its top and starts at the last point within 1&nbsp;m of its bottom, so a flat top does not stretch it. Then two thresholds, both adjustable, decide what is shown:</p>
         <ul>
           <li><strong>Minimum gain</strong>, 25&nbsp;m by default. Raise it to see only the big ones.</li>
           <li><strong>Minimum average slope</strong>, 2&nbsp;% by default. This keeps long, barely rising stretches, which are mostly noise or false flats, from being reported as climbs.</li>
@@ -1915,7 +1914,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <ul>
           <li><strong>The maximum slope depends on the smoothing.</strong> A short, sharp ramp of 100&nbsp;m or less is flattened by smoothing over 150&nbsp;m, so the steepest figure is a lower bound for such ramps. That is why the average is shown next to it: the average is much less sensitive.</li>
           <li><strong>The thresholds are conventions.</strong> There is no official definition of a climb. Change them if a hill you know is missing or a minor one is shown.</li>
-          <li><strong>Accuracy is the terrain model&rsquo;s.</strong> The app cannot see the road itself, only the land as mapped at 90&nbsp;m, trees and buildings included. Expect the profile to look rougher than the one in Strava or on your bike computer, which use ground elevation and smooth it more.</li>
+          <li><strong>Accuracy is the terrain model&rsquo;s.</strong> The app cannot see the road itself, only the land as mapped at 90&nbsp;m.</li>
           <li><strong>Not used elsewhere.</strong> Hills do not change the wind classes, the ride time at steady power or the feels-like temperature.</li>
         </ul>
 
@@ -2004,7 +2003,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </ul>
         
           <h2 id="how-check">14. How it is checked</h2>
-          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, reverse riding, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: flat ground under random patches of canopy gives no climbs and little ascent in 20 out of 20 cases, a 60&nbsp;m climb under the same canopy is still found nearly every time, the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared once with the live service on the South Limburg route, and on a flat 78&nbsp;km ride with Strava&rsquo;s own elevation. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
+          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, reverse riding, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared once with the live service on the South Limburg route. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
           <p>If you find a case where a number looks wrong, please say so on the <a href="https://github.com/ubrowz/tailwind-tally/issues" target="_blank" rel="noopener">issue tracker</a> with the temperature, humidity, speed and wind you used.</p>
         
           <h2 id="how-sources">15. Sources</h2>
@@ -3043,17 +3042,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return out;
   }
   // ---- Looking the elevation up (Open-Meteo, Copernicus 90 m) ----
-  // The terrain model is a SURFACE model: it includes treetops and roofs, so a road through a
-  // wood or a town reads several metres too high, in patches (on a flat 78 km ride the model gave
-  // 307 m of ascent against Strava's 76 m, in bumps of 5 to 10 m). Single-sample spikes are removed
-  // with a median of three, and rises and falls smaller than DEM_DEADBAND_M are ignored.
-  // The same size is used to trim the flat lead-in and lead-out of a climb (else a patch of canopy
-  // next to a climb stretches it until its average slope drops below the minimum).
-  var DEM_DEADBAND_M = 10;
-  function despike(ele) {
-    for (var i = 0; i < ele.length; i++) if (typeof ele[i] !== "number" || !isFinite(ele[i])) return ele;
-    return median3(ele);
-  }
   // Distances along a projected track (m), one per point.
   function cumulativeDistances(xy) {
     var s = [0];
@@ -3138,7 +3126,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     // elevation is tied to; climbs are mapped back onto the 25 m route segments.
     // Elevation is only what the rider had looked up (Copernicus 90 m via Open-Meteo), never the
     // file's own, so every route is measured the same way. Until then there is no terrain.
-    var terrain = demProfile ? analyzeTerrain(demProfile.s, despike(demProfile.ele), terrainOpts)
+    var terrain = demProfile ? analyzeTerrain(demProfile.s, demProfile.ele, terrainOpts)
                              : { available: false, notLookedUp: true, reason: "The elevation of this route has not been looked up yet." };
     if (terrain.available) terrain.spacingM = demProfile.spacingM;
     if (terrain.available) {
@@ -4983,7 +4971,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var result;
     try {
       result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC, state.rh, currentTimeline(), currentWindTimeline(),
-        { mode: state.rideStyle, rider: state.rider }, { minGainM: state.climbMinGain, minAvgPct: state.climbMinAvg, deadbandM: DEM_DEADBAND_M, endTrimM: DEM_DEADBAND_M },
+        { mode: state.rideStyle, rider: state.rider }, { minGainM: state.climbMinGain, minAvgPct: state.climbMinAvg },
         state.dem && state.dem.points === state.points ? state.dem : null);
     } catch (e) {
       fileError.textContent = e.message;
