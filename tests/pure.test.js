@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
-  new Function(grab("forecast-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("series-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -826,6 +826,25 @@ t("climbMidSegment: the segment half way along a climb, forward and reverse, and
   assert.strictEqual(climbMidSegment(c, "rev", gridM, lengths), 70);                          // ridden backwards it is 1750 m from the recorded start
   assert.strictEqual(climbMidSegment({ startM: 2400, endM: 2500 }, "fwd", gridM, lengths), 98);
   assert.strictEqual(climbMidSegment({ startM: 2500, endM: 2500 }, "fwd", gridM, lengths), 99);
+});
+
+// the "During the ride" series
+t("buildRideSeries: ride order, the clock ascends both ways, km counted along the ride, thinned evenly, ends included", () => {
+  const lengths = Array(100).fill(25), tt = lengths.map((_, i) => 600 + i * 0.5), tr = lengths.map((_, i) => 600 + (99 - i) * 0.5);
+  const f = buildRideSeries({ lengths, reverse: false, t: tt, windKmh: lengths.map((_, i) => i), windDir: null, airC: null, feelsC: null, maxPoints: 10 });
+  assert.strictEqual(f.length, 10); assert.strictEqual(f[0].i, 0); assert.strictEqual(f[9].i, 99);
+  assert(near(f[0].km, 0.0125, 1e-12) && near(f[9].km, 2.4875, 1e-12)); for (let k = 1; k < 10; k++) assert(f[k].t > f[k - 1].t && f[k].km > f[k - 1].km);
+  const r = buildRideSeries({ lengths, reverse: true, t: tr, windKmh: lengths.map((_, i) => i), windDir: null, airC: null, feelsC: null, maxPoints: 10 });
+  assert.strictEqual(r[0].i, 99); assert.strictEqual(r[9].i, 0); assert(near(r[0].km, 0.0125, 1e-12), "km restarts at the far end");
+  for (let k = 1; k < 10; k++) assert(r[k].t > r[k - 1].t && r[k].km > r[k - 1].km);
+  assert.strictEqual(r[0].windKmh, 99); assert.strictEqual(f[0].windDir, null);
+  assert.strictEqual(buildRideSeries({ lengths: [25], reverse: false, t: [1], windKmh: null, windDir: null, airC: [3], feelsC: [1], maxPoints: 140 }).length, 1);
+  assert.strictEqual(buildRideSeries({ lengths, reverse: false, t: tt, windKmh: null, windDir: null, airC: null, feelsC: null }).length, 100, "default keeps up to 140");
+});
+t("seriesIndexAtTime: nearest point, clamped at both ends", () => {
+  const pts = [10, 20, 30, 50].map((tm) => ({ t: tm }));
+  assert.deepStrictEqual([0, 10, 14, 16, 20, 29, 39, 41, 50, 99].map((x) => seriesIndexAtTime(pts, x)), [0, 0, 0, 1, 1, 2, 2, 3, 3, 3]);
+  assert.strictEqual(seriesIndexAtTime([], 5), -1);
 });
 
 console.log(`\n${n} tests passed`);

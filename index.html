@@ -483,6 +483,16 @@
   .climb-summary b { color: var(--ink); }
   .climb-summary a { color: inherit; }
   #rideCard .two-col-grid { align-items: end; }
+  .ride-chart { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .ride-chart h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 6px; }
+  .ride-svg { width: 100%; height: auto; display: block; touch-action: pan-y; cursor: crosshair; }
+  .ride-svg text { font-family: var(--font-display); font-size: 11px; fill: var(--ink-muted); }
+  .ride-svg .rc-grid { stroke: var(--grid); stroke-width: 1; }
+  .ride-svg .rc-cursor { stroke: var(--ink-secondary); stroke-width: 1; }
+  .ride-readout { font-size: 12.5px; color: var(--ink-secondary); margin: 6px 0 0; min-height: 2.8em; }
+  .ride-readout b { color: var(--ink); }
+  .ride-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ink-secondary); margin-top: 6px; }
+  .ride-legend span { display: inline-flex; align-items: center; gap: 6px; }
   .dem-offer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
   .dem-offer p { font-size: 13px; color: var(--ink-secondary); margin: 0 0 10px; }
   .dem-offer a { color: inherit; }
@@ -1639,6 +1649,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </details>
       </div>
     </div>
+    <div class="ride-chart" id="windRideChart" hidden>
+      <h3>Wind during the ride</h3>
+      <p class="chart-caption">Arrows show where the wind blows toward, with its speed below, at each time of day. The two directions meet different places at the same time, so they differ.</p>
+      <svg class="ride-svg" id="windRideSvg" role="img" aria-label="Wind direction and speed during the ride, as recorded and in reverse"></svg>
+      <p class="ride-readout" id="windRideReadout" aria-live="polite"></p>
+      <div class="ride-legend" id="windRideLegend"></div>
+    </div>
   </div>
 
   <div class="stat-row" id="statRow"></div>
@@ -1720,6 +1737,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <option value="90">Very humid (about 90%)</option>
       </select>
       <p class="field-hint" id="humidityHint"></p>
+    </div>
+    <div class="ride-chart" id="tempRideChart" hidden>
+      <h3>Temperature during the ride</h3>
+      <p class="chart-caption">The air temperature and how it feels on the bike at each time of day. The shading is the difference between them, for the route as recorded.</p>
+      <svg class="ride-svg" id="tempRideSvg" role="img" aria-label="Air temperature and feels-like temperature during the ride, as recorded and in reverse"></svg>
+      <p class="ride-readout" id="tempRideReadout" aria-live="polite"></p>
+      <div class="ride-legend" id="tempRideLegend"></div>
     </div>
   </div>
 
@@ -1859,6 +1883,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p>In forecast mode the wind follows the clock and the place exactly as the temperature does (section 2). Each stretch is judged against the wind expected when you would be there, and riding in reverse meets the same places at other moments. Between the hourly values, wind speed changes in a straight line and wind direction turns along the <strong>shortest arc</strong>: 350&deg; to 10&deg; passes through north, not through south. (Interpolating the east and north components instead would make the wind seem to weaken whenever it turns.) Between the places along the route the same rule applies.</p>
         <p><strong>What follows from it.</strong> The tailwind and headwind classes, the effort estimate and the feels-like temperature all use the wind on each stretch. What stops applying is the mirror image: with a changing wind, riding in reverse is not simply forward with the signs flipped, because it meets the wind at other moments. The identity and balance checks of section 4 assume one steady wind, so the app shows them as not applicable. Forward and reverse are calculated separately, each with its own timeline.</p>
         <p><strong>The average.</strong> The compass and the Beaufort field show the ride&rsquo;s average: the mean speed, and a speed-weighted vector mean direction. If the wind changes so much that the average cancels itself out (west for an hour, then east), no single direction describes the ride, and the app says so instead of showing an invented one. Typing or clicking a wind by hand replaces the forecast wind with your steady value.</p>
+        <p><strong>Seeing it.</strong> In forecast mode the Wind and Temperature cards each show a <strong>During the ride</strong> chart. The horizontal axis is the time of day; the solid line is the route as recorded and the dashed line is the route ridden in reverse. The wind chart has a row of arrows per direction, pointing where the wind blows toward (so a north wind points down), above the wind speed. The temperature chart shows the air temperature and the feels-like temperature, with the gap shaded for the route as recorded. Both directions are drawn on the same clock because they leave at the same time and then meet different places. Moving the pointer over a chart, or touching it, shows the values at that moment and puts a marker for each direction on the route map: a filled dot for as recorded and a ring for reverse. With steady power the horizontal axis follows your real speed, so the two directions can finish at different times. The charts appear only when the wind or temperature comes from the forecast; a value you type is the same all ride, so there is nothing to chart.</p>
         <p><strong>How much it matters.</strong> Real forecasts vary. For a Dutch location over 65 days in summer, the wind direction turned by more than 30&deg; during a four-hour window on 28&nbsp;% of days and by more than 45&deg; on 14&nbsp;%, though the biggest turns tended to come at light winds. On the 25.7&nbsp;km sample loop, on a typical day with the wind turning 8&deg; an hour, the time-aware answer differs from a single average wind by no more than about 2 percentage points of tailwind. When a front passes (wind turning 35&deg; an hour, ridden at 10&nbsp;km/h for 2.6 hours), the difference is 6 to 14 points, enough to change the advice: one average wind says riding in reverse is easier by 4.8 points, while the wind at the moment says riding forward is easier by 3.7. So it is a modest refinement on most days and a real one on days when the weather changes, and on long rides.</p>
 
         <h2 id="how-power">6. Riding at steady power</h2>
@@ -2021,7 +2046,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </ul>
         
           <h2 id="how-check">14. How it is checked</h2>
-          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, reverse riding, the number of a climb landing on the right stretch of the route, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared with the live service on the South Limburg route and on two long rides (one flat, one hilly); the flat one showed the treetop effect described in section 7. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
+          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, reverse riding, the number of a climb landing on the right stretch of the route, the points of the ride charts being in ride order with a clock that only increases in both directions, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared with the live service on the South Limburg route and on two long rides (one flat, one hilly); the flat one showed the treetop effect described in section 7. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
           <p>If you find a case where a number looks wrong, please say so on the <a href="https://github.com/ubrowz/tailwind-tally/issues" target="_blank" rel="noopener">issue tracker</a> with the temperature, humidity, speed and wind you used.</p>
         
           <h2 id="how-sources">15. Sources</h2>
@@ -2636,6 +2661,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
              meanC: nT ? sumT / nT : null, meanRh: nR ? sumR / nR : null };
   }
   // END forecast-pure
+
+  // ---- Wind and temperature over the ride, for the "During the ride" charts ----
+  // BEGIN series-pure
+  // A ride's conditions as a list of points in RIDE order (so the clock only ever
+  // increases), thinned to at most maxPoints. Every array is indexed by route segment
+  // in the order the route was recorded; riding in reverse walks it backwards.
+  // o: { lengths, reverse, t (clock minutes), windKmh, windDir (from, deg), airC, feelsC, maxPoints }
+  // windKmh, windDir, airC and feelsC may be null when not known.
+  function buildRideSeries(o) {
+    var n = o.lengths.length, km = [], run = 0, k;
+    for (k = 0; k < n; k++) {
+      var i = o.reverse ? n - 1 - k : k;
+      km.push((run + o.lengths[i] / 2) / 1000);
+      run += o.lengths[i];
+    }
+    var count = Math.max(1, Math.min(n, o.maxPoints || 140)), out = [];
+    function at(a, i) { return a ? a[i] : null; }
+    for (var j = 0; j < count; j++) {
+      k = count === 1 ? 0 : Math.round(j * (n - 1) / (count - 1));
+      var idx = o.reverse ? n - 1 - k : k;
+      out.push({ i: idx, t: o.t[idx], km: km[k], windKmh: at(o.windKmh, idx), windDir: at(o.windDir, idx), airC: at(o.airC, idx), feelsC: at(o.feelsC, idx) });
+    }
+    return out;
+  }
+  // The point of a series (ascending in t) nearest to a clock time.
+  function seriesIndexAtTime(pts, t) {
+    var lo = 0, hi = pts.length - 1;
+    if (hi < 0) return -1;
+    if (t <= pts[0].t) return 0;
+    if (t >= pts[hi].t) return hi;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (pts[mid].t <= t) lo = mid; else hi = mid; }
+    return t - pts[lo].t <= pts[hi].t - t ? lo : hi;
+  }
+  // END series-pure
 
   // ---------------------------------------------------------------------
   // Wind chill ("feels like") for a moving rider. Pure maths again.
@@ -3277,6 +3336,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     var fwdStats = feelsStats(lengths, cosphiFwd, vF, wFwd, environment(false, "tempC", tempC), environment(false, "rh", rh));
     var revStats = feelsStats(lengths, cosphiRev, vR, wRev, environment(true, "tempC", tempC), environment(true, "rh", rh));
+    // Wind and temperature as the rider meets them, for the charts (forecast mode only).
+    var rideSeries = null;
+    if (timeline || windTimeline) {
+      var seriesStart = windTimeline ? windTimeline.startMin : timeline.startMin;
+      var seriesFor = function (reverse) {
+        var t, wKmh = null, wDir = null;
+        if (powerMode) {
+          var pr = reverse ? profR : profF;
+          t = pr.tMid; wKmh = pr.windKmh; wDir = pr.windDir;
+        } else {
+          t = segmentClock(lengths, seriesStart, cruiseSpeedKmh, reverse).t;
+          if (windTimeline) {
+            wKmh = (reverse ? windRevMs : windFwdMs).map(function (m) { return m * 3.6; });
+            wDir = (reverse ? wr : wf).dirFromDeg.map(function (d) { return d === null ? windFromDeg : d; });
+          }
+        }
+        var st = reverse ? revStats : fwdStats;
+        return buildRideSeries({ lengths: lengths, reverse: reverse, t: t, windKmh: wKmh, windDir: wDir, airC: st.airSeg, feelsC: st.perSeg, maxPoints: 140 });
+      };
+      rideSeries = { fwd: seriesFor(false), rev: seriesFor(true), hasWind: !!windTimeline, hasTemp: !!timeline };
+    }
     var chill = {
       timeline: !!timeline,
       tempC: fwdStats.avgAirC,          // the ride's mean air temperature (the plain value when there is no timeline)
@@ -3322,6 +3402,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       steadyWind: steadyWind,
       ride: rideInfo,
       terrain: terrain,
+      rideSeries: rideSeries,
       windRide: steadyWind ? null : rideWindSummary(totalLength, windTimeline.locations, windTimeline.startMin,
         powerMode && rideInfo.forward.avgKmh > 0 ? rideInfo.forward.avgKmh : cruiseSpeedKmh),
       fwd: fwd, rev: rev, identityGap: identityGap, identityOk: identityOk,
@@ -3644,6 +3725,158 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("climbNote").textContent = "Max is the steepest 100 m of the smoothed profile. The more a profile is smoothed the gentler a short, sharp ramp looks, so read it together with the average. " +
       "A 90 m terrain model shows the land as mapped, not the road: bridges, tunnels and cuttings are not in it, and steep ramps shorter than about 100 m are flattened.";
   }
+
+  // ---- "During the ride" charts (Wind and Temperature cards) ----------------
+  // Time of day on the x axis, both directions on it: solid = as recorded, dashed = in
+  // reverse. Moving over a chart (or touching it) shows the values and puts a marker for
+  // each direction on the route map. The data comes from result.rideSeries.
+  function niceStep(range, target) {
+    var raw = range / target, mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), f = raw / mag;
+    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag;
+  }
+  function fmtHM(min) {
+    var m = Math.round(min) % 1440;
+    if (m < 0) m += 1440;
+    return pad2(Math.floor(m / 60)) + ":" + pad2(m % 60);
+  }
+  var RIDE_SERIES_COLORS = { fwd: "var(--accent)", rev: "var(--series-reverse)" };
+  var leafletRideLayer = null;
+  function clearRideMarkers() { if (leafletRideLayer) leafletRideLayer.clearLayers(); }
+  function showRideMarkers(result, items) {
+    if (typeof L === "undefined" || !leafletMap) return;
+    if (!leafletRideLayer) leafletRideLayer = L.layerGroup().addTo(leafletMap);
+    leafletRideLayer.clearLayers();
+    items.forEach(function (it) {
+      var a = result.latLon[it.pt.i], b = result.latLon[it.pt.i + 1] || a;
+      L.circleMarker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], { radius: 8, weight: 3, interactive: false,
+        color: it.reverse ? RIDE_SERIES_COLORS.rev : "var(--panel)", fillColor: it.reverse ? "var(--panel)" : RIDE_SERIES_COLORS.fwd, fillOpacity: 1 }).addTo(leafletRideLayer);
+    });
+  }
+  function rideLegendHTML(items) {
+    return items.map(function (it) {
+      return '<span><svg width="24" height="8" aria-hidden="true"><line x1="1" x2="23" y1="4" y2="4" stroke="' + it.color + '" stroke-width="' + (it.w || 2) + '"' +
+        (it.dash ? ' stroke-dasharray="' + it.dash + '"' : "") + ' stroke-linecap="round"/></svg>' + it.label + "</span>";
+    }).join("");
+  }
+
+  function drawRideChart(kind, result) {
+    var box = document.getElementById(kind + "RideChart"), svg = document.getElementById(kind + "RideSvg");
+    var rs = result.rideSeries, readout = document.getElementById(kind + "RideReadout");
+    if (!rs || !(kind === "wind" ? rs.hasWind : rs.hasTemp) || !rs.fwd.length) { box.hidden = true; clearRideMarkers(); return; }
+    box.hidden = false;
+    var NS = "http://www.w3.org/2000/svg", ml = 64, mr = 12, mt = 8, mb = 24;
+    var W = Math.max(280, Math.round(svg.getBoundingClientRect().width)) || 320, plotW = W - ml - mr;
+    var S = [{ key: "fwd", pts: rs.fwd, color: RIDE_SERIES_COLORS.fwd, dash: null, name: "As recorded" },
+             { key: "rev", pts: rs.rev, color: RIDE_SERIES_COLORS.rev, dash: "5 4", name: "In reverse" }];
+    var t0 = Math.min(rs.fwd[0].t, rs.rev[0].t), t1 = Math.max(rs.fwd[rs.fwd.length - 1].t, rs.rev[rs.rev.length - 1].t);
+    if (!(t1 > t0)) t1 = t0 + 1;
+    var sx = function (t) { return ml + (t - t0) / (t1 - t0) * plotW; };
+    function el(tag, attrs, text, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; (parent || svg).appendChild(e); return e; }
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    var H, panelTop, panelH = 88, valueOf, yMin, yMax, unitLabel, ticks = [], t;
+    if (kind === "wind") {
+      var rowH = 22, rows = 2 * rowH;
+      panelTop = mt + rows + 10; H = panelTop + panelH + mb;
+      valueOf = function (p) { return p.windKmh; };
+      yMin = 0; yMax = 0;
+      S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.windKmh !== null) yMax = Math.max(yMax, p.windKmh); }); });
+      yMax = Math.max(yMax * 1.1, 5);
+      unitLabel = "km/h";
+    } else {
+      panelTop = mt + 4; H = panelTop + panelH + 28 + mb;
+      panelH = panelH + 28;
+      valueOf = function (p) { return p.feelsC === null ? null : cToDisplay(p.feelsC); };
+      yMin = Infinity; yMax = -Infinity;
+      S.forEach(function (ser) { ser.pts.forEach(function (p) { [p.airC, p.feelsC].forEach(function (c) { if (c !== null) { var v = cToDisplay(c); yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); } }); }); });
+      var padV = Math.max(1, 0.12 * (yMax - yMin));
+      yMin -= padV; yMax += padV;
+      unitLabel = "°" + state.tempUnit;
+    }
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var sy = function (v) { return panelTop + panelH - (v - yMin) / (yMax - yMin) * panelH; };
+    // y grid + labels
+    var ystep = niceStep(yMax - yMin, 4);
+    for (t = Math.ceil(yMin / ystep) * ystep; t <= yMax + 1e-9; t += ystep) {
+      el("line", { "class": "rc-grid", x1: ml, x2: W - mr, y1: sy(t).toFixed(1), y2: sy(t).toFixed(1) });
+      el("text", { x: ml - 6, y: (sy(t) + 4).toFixed(1), "text-anchor": "end" }, String(Math.round(t * 10) / 10));
+    }
+    el("text", { x: ml - 6, y: panelTop - 1, "text-anchor": "end" }, unitLabel);
+    // x grid + clock labels
+    var steps = [5, 10, 15, 20, 30, 60, 120, 180, 360], tstep = steps[steps.length - 1];
+    for (var q = 0; q < steps.length; q++) if ((t1 - t0) / steps[q] <= Math.max(3, plotW / 64)) { tstep = steps[q]; break; }
+    for (t = Math.ceil(t0 / tstep) * tstep; t <= t1 + 1e-9; t += tstep) {
+      el("line", { "class": "rc-grid", x1: sx(t).toFixed(1), x2: sx(t).toFixed(1), y1: panelTop, y2: panelTop + panelH });
+      el("text", { x: sx(t).toFixed(1), y: H - 7, "text-anchor": "middle" }, fmtHM(t));
+    }
+    function linePoints(pts, fn) {
+      var out = [];
+      pts.forEach(function (p) { var v = fn(p); if (v !== null) out.push(sx(p.t).toFixed(1) + "," + sy(v).toFixed(1)); });
+      return out.join(" ");
+    }
+    if (kind === "wind") {
+      // one row of arrows per direction: where the wind blows TOWARD (a north wind points down)
+      var nArrows = Math.max(4, Math.floor(plotW / 30));
+      S.forEach(function (ser, r) {
+        var cy = mt + rowH * r + rowH / 2, sT0 = ser.pts[0].t, sT1 = ser.pts[ser.pts.length - 1].t;
+        el("text", { x: ml - 6, y: cy + 4, "text-anchor": "end" }, ser.key === "fwd" ? "Recorded" : "Reverse");
+        for (var a = 0; a < nArrows; a++) {
+          var ta = t0 + (a + 0.5) / nArrows * (t1 - t0);
+          if (ta < sT0 - 1 || ta > sT1 + 1) continue;
+          var pa = ser.pts[seriesIndexAtTime(ser.pts, ta)];
+          if (pa.windDir === null) continue;
+          var g = el("g", { transform: "translate(" + sx(ta).toFixed(1) + "," + cy + ") rotate(" + ((pa.windDir + 180) % 360).toFixed(0) + ")" });
+          el("path", { d: "M0,-8 L0,7 M-4,-3.5 L0,-8 L4,-3.5", fill: "none", stroke: ser.color, "stroke-width": 1.7, "stroke-linecap": "round", "stroke-linejoin": "round" }, undefined, g);
+        }
+      });
+      S.forEach(function (ser) {
+        el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
+      });
+    } else {
+      // shading: the gap between air and feels-like, as recorded
+      var up = [], dn = [];
+      rs.fwd.forEach(function (p) { if (p.airC !== null && p.feelsC !== null) { up.push(sx(p.t).toFixed(1) + "," + sy(cToDisplay(p.airC)).toFixed(1)); dn.push(sx(p.t).toFixed(1) + "," + sy(cToDisplay(p.feelsC)).toFixed(1)); } });
+      if (up.length > 1) el("polygon", { points: up.join(" ") + " " + dn.reverse().join(" "), fill: RIDE_SERIES_COLORS.fwd, opacity: 0.15 });
+      S.forEach(function (ser) {
+        el("polyline", { points: linePoints(ser.pts, function (p) { return p.airC === null ? null : cToDisplay(p.airC); }), fill: "none", stroke: "var(--ink-muted)", "stroke-width": 1.3, "stroke-dasharray": ser.dash ? "2 3" : "none" });
+      });
+      S.forEach(function (ser) {
+        el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
+      });
+    }
+    var cursor = el("line", { "class": "rc-cursor", x1: 0, x2: 0, y1: kind === "wind" ? mt : panelTop, y2: panelTop + panelH, visibility: "hidden" });
+
+    document.getElementById(kind + "RideLegend").innerHTML = kind === "wind"
+      ? rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "As recorded" }, { color: RIDE_SERIES_COLORS.rev, dash: "5 4", label: "In reverse" }])
+      : rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "Feels like, as recorded" }, { color: RIDE_SERIES_COLORS.rev, dash: "5 4", label: "Feels like, in reverse" }, { color: "var(--ink-muted)", w: 1.3, label: "Air temperature" }]);
+
+    var idleText = "Move over the chart, or touch it, to see the values and where you would be on the map.";
+    readout.textContent = idleText;
+    function describe(ser, ta) {
+      if (ta < ser.pts[0].t - 1) return ser.name + ": not started yet";
+      if (ta > ser.pts[ser.pts.length - 1].t + 1) return ser.name + ": finished";
+      var p = ser.pts[seriesIndexAtTime(ser.pts, ta)];
+      if (kind === "wind") return ser.name + ": km " + p.km.toFixed(1) + ", " + Math.round(p.windKmh) + " km/h from " + degreesToCompass16(p.windDir);
+      return ser.name + ": km " + p.km.toFixed(1) + ", air " + fmtTemp(p.airC) + ", feels like " + fmtTemp(p.feelsC);
+    }
+    function showAt(ta) {
+      var x = sx(ta).toFixed(1);
+      cursor.setAttribute("x1", x); cursor.setAttribute("x2", x); cursor.setAttribute("visibility", "visible");
+      readout.innerHTML = "<b>" + fmtHM(ta) + "</b> &middot; " + S.map(function (ser) { return describe(ser, ta); }).join(" &middot; ");
+      showRideMarkers(result, S.filter(function (ser) { return ta >= ser.pts[0].t - 1 && ta <= ser.pts[ser.pts.length - 1].t + 1; })
+        .map(function (ser) { return { pt: ser.pts[seriesIndexAtTime(ser.pts, ta)], reverse: ser.key === "rev" }; }));
+    }
+    function hide() { cursor.setAttribute("visibility", "hidden"); readout.textContent = idleText; clearRideMarkers(); }
+    function move(e) {
+      var r = svg.getBoundingClientRect();
+      showAt(Math.min(t1, Math.max(t0, t0 + (e.clientX - r.left - ml) / plotW * (t1 - t0))));
+    }
+    svg.onpointerdown = move;
+    svg.onpointermove = move;
+    svg.onpointerleave = function (e) { if (e.pointerType === "mouse") hide(); };
+  }
+  function renderRideCharts(result) { drawRideChart("wind", result); drawRideChart("temp", result); }
+  window.addEventListener("resize", function () { if (lastResult) renderRideCharts(lastResult); });
 
   // A temperature DIFFERENCE as a bare number in the chosen unit (9/5 only,
   // no +32), for ranges like "3 to 5" with the unit written once at the end.
@@ -5007,6 +5240,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     renderLastHalf(result);
     renderChill(result);
+    renderRideCharts(result);
     updateRideTiming(result);
     updateTimelineHint(result);
     updateWindTimelineHint(result);
