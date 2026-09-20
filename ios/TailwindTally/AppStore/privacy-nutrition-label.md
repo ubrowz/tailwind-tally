@@ -17,8 +17,9 @@ used for tracking? purpose?).
 | **Other User Content** (route/GPS track data) | Yes | No | No | App Functionality |
 | **Product Interaction** (under Usage Data — GoatCounter page views) | Yes | No | No | Analytics |
 | **Coarse Location** (rounded route points sent to Open-Meteo for the wind forecast) | Yes | No | No | App Functionality |
+| **Precise Location** (route points, ~10 m, sent to Open-Meteo only if the rider taps "Look up elevation online") | Yes | No | No | App Functionality |
 
-Everything else in Apple's list — Precise Location, Contacts, Health & Fitness,
+Everything else in Apple's list — Contacts, Health & Fitness,
 Financial Info, Browsing History, Search History, Photos/Videos, Purchases,
 Diagnostics — should be left **unselected**.
 
@@ -48,6 +49,17 @@ Diagnostics — should be left **unselected**.
   applies to a build that contains the forecast feature** - do not add it
   to the label while the shipped build lacks it, and do add it before or with
   the release that has it.
+- **Precise Location** (added with the Climbs tab's optional elevation lookup):
+  when a GPX file has no elevation and the rider taps "Look up elevation
+  online", up to 400 points along the route (about 100 m apart, coordinates
+  rounded to 4 decimals, ~10 m) go to Open-Meteo, a third party. That is
+  the route's shape at close to full precision, so unlike the forecast it does
+  not fit "Coarse". As with the forecast it is a route the user supplied, not
+  where the user is, so declaring it is the conservative reading, and it costs
+  nothing. Not linked to identity, not used for tracking, nothing stored on
+  our side. **Only applies to a build/site version that contains the lookup.**
+  Since the app shows the live site, the label must be updated BEFORE the
+  release that ships it goes live.
 - **Product Interaction** (GoatCounter): page-view counts only. GoatCounter
   explicitly avoids persistent identifiers (daily-rotating salt, no raw IP
   storage), so not linked to identity, not used for tracking.

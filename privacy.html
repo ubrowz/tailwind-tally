@@ -99,7 +99,7 @@
   </header>
 
   <h2>The short version</h2>
-  <p>Tailwind Tally doesn't have accounts, doesn't set its own tracking cookies, and doesn't store anything server-side beyond map tiles and Strava data it briefly relays on your behalf. Your GPX route data is processed entirely on your own device, with one optional exception: if you ask for a wind forecast, three rounded locations from your route are sent to a weather service (see "Wind forecast" below). The sections below explain exactly what does happen, and why.</p>
+  <p>Tailwind Tally doesn't have accounts, doesn't set its own tracking cookies, and doesn't store anything server-side beyond map tiles and Strava data it briefly relays on your behalf. Your GPX route data is processed entirely on your own device, with one optional exception: if you ask for a wind forecast, three rounded locations from your route are sent to a weather service (see "Wind forecast" below), and if you ask for your route's elevation to be looked up, points along the route are sent to the same service (see "Elevation lookup" below). The sections below explain exactly what does happen, and why.</p>
 
   <h2>Route files (GPX)</h2>
   <p>Whether you drop a file in the browser, share one from another app on your phone, or load one from Strava, the route data is parsed and analyzed <strong>entirely on your device</strong> &mdash; in your browser's own JavaScript, or inside the iOS app. It is never uploaded to, or stored on, any server we operate.</p>
@@ -121,6 +121,10 @@
   <h2>Wind forecast (optional)</h2>
   <p>If you choose "From forecast" and tap "Get forecast," the app asks <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, a free weather service, what the wind, temperature and humidity are expected to be on the date you picked. To answer, Open-Meteo receives up to three places from your route (its start, middle and end), each <strong>rounded to about 11 km</strong>, and that date. It does not receive your route file, your exact coordinates, or anything about who you are. Like any web request, it also sees your IP address.</p>
   <p>The request goes from your device straight to Open-Meteo, not through our backend, and we don't keep a copy. Nothing is sent unless you tap "Get forecast"; setting the wind by hand never contacts any weather service. Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>; see <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">Open-Meteo's terms</a>.</p>
+
+  <h2>Elevation lookup (optional)</h2>
+  <p>The Climbs tab uses the elevation recorded in your GPX file, which never leaves your device. If your file has none, the tab offers a button, "Look up elevation online." Only if you tap it, the app sends points along your route to <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> and gets back the ground height at each. This one is <strong>more precise than the forecast</strong>: the points are about 100 m apart (at most 400 of them, spread wider on a very long route) and their coordinates are rounded to four decimals, about 10 m. In other words, Open-Meteo receives the shape of your route, although not your file, its name, the times in it or anything about who you are. Like any web request, it also sees your IP address.</p>
+  <p>The request goes from your device straight to Open-Meteo, not through our backend, and we don't keep a copy. Nothing is sent unless you tap the button. Elevation data: Copernicus DEM GLO-90, &copy; DLR e.V. 2010-2014 and &copy; Airbus Defence and Space GmbH 2014-2018, provided under COPERNICUS by the European Union and ESA, all rights reserved, served by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>.</p>
 
   <h2>Analytics</h2>
   <p>We use <a href="https://www.goatcounter.com/" target="_blank" rel="noopener">GoatCounter</a> to count page visits. It sets no cookies and collects no personally identifying information - see <a href="https://www.goatcounter.com/privacy" target="_blank" rel="noopener">GoatCounter's privacy policy</a>.</p>
@@ -147,7 +151,7 @@
       <tr><td>Render</td><td>Hosts the small backend that proxies map tiles and Strava API calls.</td></tr>
       <tr><td>Strava</td><td>Provides route data you explicitly connect and authorize.</td></tr>
       <tr><td>MapTiler</td><td>Provides map tile imagery.</td></tr>
-      <tr><td>Open-Meteo</td><td>Provides the wind forecast, only if you use "From forecast."</td></tr>
+      <tr><td>Open-Meteo</td><td>Provides the wind forecast, only if you use "From forecast," and the elevation of a route that has none, only if you tap "Look up elevation online."</td></tr>
       <tr><td>GoatCounter</td><td>Cookieless page-visit analytics.</td></tr>
       <tr><td>Google Fonts</td><td>Serves the page's typefaces.</td></tr>
     </tbody>
