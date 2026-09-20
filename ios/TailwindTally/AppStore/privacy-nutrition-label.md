@@ -50,8 +50,9 @@ Diagnostics — should be left **unselected**.
   to the label while the shipped build lacks it, and do add it before or with
   the release that has it.
 - **Precise Location** (added with the Climbs tab's optional elevation lookup):
-  when a GPX file has no elevation and the rider taps "Look up elevation
-  online", up to 400 points along the route (about 100 m apart, coordinates
+  when the rider uses the Climbs tab and taps "Look up elevation
+  online" (elevation recorded in a GPX file is not used, so every route that
+  uses the Climbs tab goes through this), up to 400 points along the route (about 100 m apart, coordinates
   rounded to 4 decimals, ~10 m) go to Open-Meteo, a third party. That is
   the route's shape at close to full precision, so unlike the forecast it does
   not fit "Coarse". As with the forecast it is a route the user supplied, not
