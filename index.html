@@ -1519,12 +1519,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
       </div>
       <p class="ride-timing" id="rideTiming"></p>
-      <p class="field-hint">Times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: temperature and humidity change from stretch to stretch, while the wind is averaged over the ride. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature below, and you can still adjust them.</p>
+      <p class="field-hint">Times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: temperature, humidity and wind change from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature below, and you can still adjust them.</p>
       <div class="forecast-actions">
         <button type="button" class="copy-btn" id="fcGetBtn">Get forecast</button>
       </div>
       <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></p>
-      <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, start time or speed after getting the forecast. The temperature and humidity already follow your start time and speed; tap Get forecast again to refresh the wind and to pick up a different date.</p>
+      <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, or the ride now runs past the hours that were fetched. The temperature, humidity and wind follow a changed start time and speed on their own; tap Get forecast again to pick up a different date or later hours.</p>
       <p class="error-text" id="forecastError"></p>
     </div>
     <p class="field-hint" id="manualHint">Set the wind and the temperature yourself, in the Wind and Temperature tabs below.</p>
@@ -1552,6 +1552,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <label for="windInput">Wind from</label>
           <input type="text" id="windInput" value="SW" autocomplete="off" spellcheck="false">
           <p class="field-hint">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</p>
+          <p class="field-hint" id="windTimelineHint" hidden></p>
         </div>
         <div class="two-col-grid">
           <div class="field">
@@ -1686,22 +1687,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <article class="how-article">
 <header class="how-head">
             <h2 class="how-title">How it works</h2>
-            <p>The science behind the &ldquo;feels like&rdquo; temperature, and where the numbers come from. Last updated September 20, 2026. The explanation of the wind analysis itself (tailwind and headwind classes, the effort estimate) will be added here later.</p>
+            <p>The science behind the wind analysis and the &ldquo;feels like&rdquo; temperature, and where the numbers come from. Last updated September 20, 2026.</p>
             <nav class="how-toc" aria-label="Contents of How it works">
               <strong>Contents</strong>
               <ol>
-                <li><a href="#how-short">The short version</a></li>
-                <li><a href="#how-inputs">What goes in</a></li>
-                <li><a href="#how-airspeed">The wind on you</a></li>
-                <li><a href="#how-cold">Cold: wind chill</a></li>
-                <li><a href="#how-warm">Mild and hot: apparent temperature</a></li>
-                <li><a href="#how-blend">Putting the two together</a></li>
-                <li><a href="#how-still">Standing still: the heat index</a></li>
-                <li><a href="#how-colours">From numbers to colours</a></li>
-                <li><a href="#how-limits">What this is not</a></li>
-                <li><a href="#how-check">How it is checked</a></li>
-                <li><a href="#how-sources">Sources</a></li>
-              </ol>
+          <li><a href="#how-short">The short version</a></li>
+          <li><a href="#how-inputs">What goes in</a></li>
+          <li><a href="#how-airspeed">The wind on you</a></li>
+          <li><a href="#how-classes">Tailwind, headwind and effort</a></li>
+          <li><a href="#how-changing">A wind that changes during the ride</a></li>
+          <li><a href="#how-cold">Cold: wind chill</a></li>
+          <li><a href="#how-warm">Mild and hot: apparent temperature</a></li>
+          <li><a href="#how-blend">Putting the two together</a></li>
+          <li><a href="#how-still">Standing still: the heat index</a></li>
+          <li><a href="#how-colours">From numbers to colours</a></li>
+          <li><a href="#how-limits">What this is not</a></li>
+          <li><a href="#how-check">How it is checked</a></li>
+          <li><a href="#how-sources">Sources</a></li>
+        </ol>
             </nav>
           </header>
         
@@ -1729,7 +1732,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p>In forecast mode the app asks <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> for hourly values, for the date you pick. It sends up to three places from your route (the start, the middle and the end), each rounded to 0.1&deg; (about 11&nbsp;km), never the route itself. You give only a <strong>start time</strong>. The ride then lasts as long as the route takes at your cruising speed, and each stretch gets its own clock time:</p>
           <div class="how-formula">time at a stretch  =  start time  +  distance ridden so far / your speed</div>
           <p>Temperature and humidity are read from the hourly forecast at that moment (linearly between the hours), and between the three places (linearly by distance along the route). Riding the route in reverse starts at the other end at the same clock time, so the same place is reached at a different moment and the two directions can differ.</p>
-          <p>The <strong>wind is different</strong>: it is one value, averaged over the whole ride. Its direction is a speed-weighted vector mean (a plain average of 350&deg; and 10&deg; would wrongly give 180&deg;), its speed is the mean of the hourly speeds, and it is then filed under the nearest Beaufort force. A wind that changes direction during the ride is not modelled yet. The forecast wind is the standard 10&nbsp;metre wind, which is also how the Beaufort scale is defined, so manual and forecast wind are directly comparable.</p>
+          <p>The <strong>wind</strong> follows the clock and the place in the same way (section 5). The forecast wind is the standard 10&nbsp;metre wind, which is also how the Beaufort scale is defined, so manual and forecast wind are directly comparable. If you type the wind yourself it is one steady value for the whole ride.</p>
         
           <h2 id="how-airspeed">3. The wind on you</h2>
           <p>What cools or heats you is not the wind alone but the <strong>air moving past you</strong>, which is your own motion combined with the wind. On each 25&nbsp;metre stretch, with <code>v</code> your speed, <code>w</code> the wind speed and &phi; the angle between the direction you ride and the direction the wind blows toward:</p>
@@ -1740,14 +1743,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
         cos &phi; = &minus;1   pure headwind   airspeed = v + w</div>
           <p><strong>Example.</strong> You ride at 25&nbsp;km/h in a Beaufort&nbsp;4 wind (24&nbsp;km/h). Straight into it the air passes you at 49&nbsp;km/h, across it at about 35&nbsp;km/h, and with it at just 1&nbsp;km/h. That difference is why the same route feels so different from one stretch to the next.</p>
         
-          <h2 id="how-cold">4. Cold: wind chill</h2>
+          <h2 id="how-classes">4. Tailwind, headwind and effort</h2>
+        <p>With the wind on each stretch known (section 3), the app answers two questions: how much of the route is with you or against you, and how much harder the wind makes the ride.</p>
+        <h3>Tailwind, headwind, crosswind</h3>
+        <p>Each stretch is classified by the angle between your heading and the direction the wind blows toward. If the wind pushes along your direction of travel (cos&nbsp;&phi; &gt; 0) the stretch is <strong>easy</strong>; if it pushes against you (cos&nbsp;&phi; &lt; 0) it is <strong>hard</strong>. A narrow band around exact crosswind, 10&deg; wide by default, counts as neither (<strong>neutral</strong>). The route map splits the two sides once more: stretches within 20&deg; of dead-on (a 40&deg; band by default) count as <em>full</em> tailwind or headwind. These are plain distance counts: a metre of gentle tailwind counts the same as a metre of gale.</p>
+        <h3>Effort</h3>
+        <p>Air resistance grows with the <em>square</em> of the airspeed, not in proportion to the wind. On a stretch the drag effort is proportional to the airspeed squared (the formula in section 3). The effort estimate is the distance-weighted average of that over the route, divided by the value for riding the same route at the same speed on a calm day. So 1.0&times; means the same as a calm day and 1.6&times; means 60&nbsp;% more aerodynamic effort.</p>
+        <p>Because of the square, a headwind costs more than an equal tailwind saves. At 25&nbsp;km/h in a 20&nbsp;km/h wind, the airspeed is 45&nbsp;km/h against (3.24&times; the calm effort) and 5&nbsp;km/h with (0.04&times;). A route that is half headwind and half tailwind therefore averages 1.64&times;, more than a calm day. The estimate counts drag only: not rolling resistance, gradient or changes of speed, and it assumes you hold your cruising speed whatever the wind.</p>
+        <h3>Forward, reverse and the last half</h3>
+        <p>The app shows the route as recorded and ridden in reverse. The last 50&nbsp;% by distance is shown separately, since it is often the part that decides how a ride feels. With one steady wind, riding in reverse is the exact mirror image (every cos&nbsp;&phi; changes sign), so the app can check its own arithmetic: the tailwind kilometres one way must equal the headwind kilometres the other way (apart from the neutral band). The wind-direction sweep chart tries every steady wind direction from 0&deg; to 359&deg; and shows the tailwind share for each; it is a what-if for a steady wind and does not use the forecast.</p>
+
+        <h2 id="how-changing">5. A wind that changes during the ride</h2>
+        <p>In forecast mode the wind follows the clock and the place exactly as the temperature does (section 2). Each stretch is judged against the wind expected when you would be there, and riding in reverse meets the same places at other moments. Between the hourly values, wind speed changes in a straight line and wind direction turns along the <strong>shortest arc</strong>: 350&deg; to 10&deg; passes through north, not through south. (Interpolating the east and north components instead would make the wind seem to weaken whenever it turns.) Between the places along the route the same rule applies.</p>
+        <p><strong>What follows from it.</strong> The tailwind and headwind classes, the effort estimate and the feels-like temperature all use the wind on each stretch. What stops applying is the mirror image: with a changing wind, riding in reverse is not simply forward with the signs flipped, because it meets the wind at other moments. The identity and balance checks of section 4 assume one steady wind, so the app shows them as not applicable. Forward and reverse are calculated separately, each with its own timeline.</p>
+        <p><strong>The average.</strong> The compass and the Beaufort field show the ride&rsquo;s average: the mean speed, and a speed-weighted vector mean direction. If the wind changes so much that the average cancels itself out (west for an hour, then east), no single direction describes the ride, and the app says so instead of showing an invented one. Typing or clicking a wind by hand replaces the forecast wind with your steady value.</p>
+        <p><strong>How much it matters.</strong> Real forecasts vary. For a Dutch location over 65 days in summer, the wind direction turned by more than 30&deg; during a four-hour window on 28&nbsp;% of days and by more than 45&deg; on 14&nbsp;%, though the biggest turns tended to come at light winds. On the 25.7&nbsp;km sample loop, on a typical day with the wind turning 8&deg; an hour, the time-aware answer differs from a single average wind by no more than about 2 percentage points of tailwind. When a front passes (wind turning 35&deg; an hour, ridden at 10&nbsp;km/h for 2.6 hours), the difference is 6 to 14 points, enough to change the advice: one average wind says riding in reverse is easier by 4.8 points, while the wind at the moment says riding forward is easier by 3.7. So it is a modest refinement on most days and a real one on days when the weather changes, and on long rides.</p>
+
+        <h2 id="how-cold">6. Cold: wind chill</h2>
           <p>For cold weather the app uses the standard wind chill formula that Environment Canada and the US National Weather Service have used since 2001. It comes from Osczevski and Bluestein (2005), who based it on a model of heat flow from the upwind side of a head-sized cylinder moving at walking speed into the wind. With <code>T</code> in &deg;C and <code>V</code> the airspeed in km/h:</p>
           <div class="how-formula">wind chill  =  13.12  +  0.6215 T  &minus;  11.37 V<sup>0.16</sup>  +  0.3965 T V<sup>0.16</sup></div>
           <p>It is officially defined only for <strong>T &le; 10&nbsp;&deg;C</strong> and <strong>V &gt; 4.8&nbsp;km/h</strong> (the 3&nbsp;mph limit in the US version). Below 4.8&nbsp;km/h of airspeed there is no wind chill, which is why a tailwind that matches your speed brings no cooling at all.</p>
           <p><strong>Example.</strong> At &minus;10&nbsp;&deg;C it feels like &minus;15.3&nbsp;&deg;C at 10&nbsp;km/h of airspeed, &minus;18.8&nbsp;&deg;C at 25&nbsp;km/h and &minus;21.3&nbsp;&deg;C at 45&nbsp;km/h.</p>
           <p><strong>Caveats.</strong> The formula describes how fast exposed skin on the face cools, in steady conditions, for someone walking. Using a cyclist&rsquo;s airspeed is the usual approximation and not what it was calibrated for. The authors themselves point out the steady-state character of the concept.</p>
         
-          <h2 id="how-warm">5. Mild and hot: apparent temperature</h2>
+          <h2 id="how-warm">7. Mild and hot: apparent temperature</h2>
           <p>Wind chill is not defined for mild weather, and it ignores humidity. From 20&nbsp;&deg;C up the app uses the <strong>apparent temperature</strong> of Robert Steadman, in the form used by the Australian Bureau of Meteorology. It combines temperature, humidity and wind. With <code>T</code> in &deg;C, <code>RH</code> the relative humidity in % and <code>v</code> the wind in metres per second:</p>
           <div class="how-formula">apparent temperature  =  T  +  0.33 &middot; e  &minus;  0.70 &middot; v  &minus;  4.00
         
@@ -1767,7 +1786,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
           <p>Steadman&rsquo;s own analysis found that, for normal midday climates in the US, humidity, wind and sun move the apparent temperature by between &minus;5 and +7&nbsp;K from the dry-bulb temperature. That is the scale of effect to expect.</p>
         
-          <h2 id="how-blend">6. Putting the two together</h2>
+          <h2 id="how-blend">8. Putting the two together</h2>
           <p>The two models are not the same physics, and they disagree by a few degrees in the middle, so switching between them at a single temperature would make the result jump. Instead the app fades from one to the other between <strong>10&nbsp;&deg;C</strong> (where the official wind chill ends) and <strong>20&nbsp;&deg;C</strong>:</p>
           <div class="how-formula">x  =  (T &minus; 10) / 10                     (limited to 0 &hellip; 1)
         weight  =  3x&sup2; &minus; 2x&sup3;                      (a smooth S-curve)
@@ -1784,13 +1803,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p>Note the small dip in the cooling between 10 and 20&nbsp;&deg;C. It is the seam between the two models, not a real effect. The absolute feels-like temperature still rises steadily with the air temperature.</p>
           <p><strong>A known limit.</strong> In the fade zone, in very dry air (20&nbsp;% humidity or less) at high airspeed (40&nbsp;km/h or more), a slightly warmer air temperature can feel up to 1&nbsp;&deg;C colder, and up to about 3&nbsp;&deg;C in the extreme corner of bone-dry air at 60&nbsp;km/h. It never happens up to 25&nbsp;km/h of airspeed or in humid air.</p>
         
-          <h2 id="how-still">7. Standing still: the heat index</h2>
+          <h2 id="how-still">9. Standing still: the heat index</h2>
           <p>The apparent temperature includes the cooling from riding. If you stop, or crawl up a steep hill with no breeze, that cooling disappears. For that case the app shows the <strong>heat index</strong> of the US National Weather Service, which uses only temperature and humidity. It comes from Steadman&rsquo;s work and Rothfusz&rsquo;s regression fit (1990): a simple formula for milder conditions, and a longer regression once the result reaches 80&nbsp;&deg;F (about 27&nbsp;&deg;C), with two extra adjustments for very dry or very humid air. The regression is published at the National Weather Service; the page linked under Sources lists every coefficient.</p>
           <p>The published algorithm has small <strong>steps</strong> where it switches between its parts (up to about 1.3&nbsp;&deg;C in humid air), the same kind of jump the wind chill cutoff would cause. The app smooths them: it blends the simple formula into the regression over 78&ndash;82&nbsp;&deg;F, fades the two humidity adjustments in over 78&ndash;80&nbsp;&deg;F, and ramps the whole effect in between 22 and 26&nbsp;&deg;C. From about 29&nbsp;&deg;C upwards the result is exactly the published value.</p>
           <p><strong>Example.</strong> At 32&nbsp;&deg;C and 70&nbsp;% humidity the heat index is 40.4&nbsp;&deg;C, 8.4&nbsp;&deg;C above the air temperature and far above the 34.1&nbsp;&deg;C you would feel riding at 25&nbsp;km/h.</p>
           <p>The heat index assumes shade, and the National Weather Service notes that direct sunlight can add up to 15&nbsp;&deg;F (about 8&nbsp;&deg;C). It also carries the Weather Service&rsquo;s heat-illness categories, which the app quotes when the standing-still value is high: from 103&nbsp;&deg;F (39&nbsp;&deg;C) heat cramps or heat exhaustion are likely and heat stroke is possible, and from 125&nbsp;&deg;F (52&nbsp;&deg;C) heat stroke is highly likely.</p>
         
-          <h2 id="how-colours">8. From numbers to colours</h2>
+          <h2 id="how-colours">10. From numbers to colours</h2>
           <p>The map on the Temperature tab colours each stretch by <strong>feels like minus air temperature</strong> at that moment on that stretch. The steps are fixed, so a colour means the same thing on every route and every day:</p>
           <div class="how-table-wrap">
             <table>
@@ -1812,23 +1831,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p>Each colour arm is one hue running from light to dark, so a stronger effect is always more intense: darker in the light theme, lighter in the dark theme, so it always stands out against the map. The swatches below follow your current theme. Colours are compared with the air temperature <em>at that moment</em>, so a morning that warms up does not read as chill. In Fahrenheit the same steps are used and shown converted.</p>
           <p>The &ldquo;coldest tenth&rdquo; and &ldquo;hottest tenth&rdquo; figures are the average feels-like over the coldest or hottest 10&nbsp;% of the <em>distance</em>, not the single most extreme stretch, so one stray GPS point cannot set the headline number.</p>
         
-          <h2 id="how-limits">9. What this is not</h2>
+          <h2 id="how-limits">11. What this is not</h2>
           <ul>
             <li><strong>Not a measurement.</strong> It is a model of an average person. Individuals differ a lot, and what a cyclist feels is subjective.</li>
             <li><strong>No sun.</strong> Neither formula includes solar radiation. Full sun feels hotter (the heat index notes up to about 8&nbsp;&deg;C).</li>
             <li><strong>No clothing, no effort.</strong> The models do not know what you wear or how hard you work. Riding hard generates heat the models do not count.</li>
             <li><strong>Constant speed.</strong> The clock and the airspeed use your cruising speed. Climbs, descents, stops and sprints are not modelled, so timing is approximate. The forecast is hourly, so that is usually accurate enough.</li>
-            <li><strong>One wind for the whole ride.</strong> Temperature and humidity follow the clock and the place; the wind does not (yet).</li>
+            <li><strong>Wind at 10 metres, hourly.</strong> The forecast wind is the standard 10&nbsp;metre wind, and the wind at a rider&rsquo;s height is lower, especially among trees and buildings. Gusts are not modelled. Between the hourly values the wind is interpolated, so a sudden shift within an hour is smoothed.</li>
             <li><strong>Forecast resolution.</strong> Weather models resolve places a few kilometres apart at best, and three sample places are used. Local effects such as valleys, coasts, buildings and tree cover are not captured.</li>
             <li><strong>Very hot, dry air.</strong> Above about 35&nbsp;&deg;C in dry air, moving air stops helping and can add heat. The apparent temperature formula does not capture that.</li>
             <li><strong>Not medical or safety advice.</strong> The heat-illness categories quoted are the National Weather Service&rsquo;s for the standing-still heat index. Use your own judgement and local guidance.</li>
           </ul>
         
-          <h2 id="how-check">10. How it is checked</h2>
-          <p>The maths is covered by automated tests that run against the code in this app. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
+          <h2 id="how-check">12. How it is checked</h2>
+          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
           <p>If you find a case where a number looks wrong, please say so on the <a href="https://github.com/ubrowz/tailwind-tally/issues" target="_blank" rel="noopener">issue tracker</a> with the temperature, humidity, speed and wind you used.</p>
         
-          <h2 id="how-sources">11. Sources</h2>
+          <h2 id="how-sources">13. Sources</h2>
           <ul class="how-refs">
             <li>Osczevski, R. and Bluestein, M. (2005). The new wind chill equivalent temperature chart. <em>Bulletin of the American Meteorological Society</em>, 86(10), 1453&ndash;1458. <a href="https://journals.ametsoc.org/view/journals/bams/86/10/bams-86-10-1453.xml" target="_blank" rel="noopener">journals.ametsoc.org</a></li>
             <li>US National Weather Service. Wind chill: formula, validity range and chart. <a href="https://www.weather.gov/safety/cold-wind-chill-chart" target="_blank" rel="noopener">weather.gov/safety/cold-wind-chill-chart</a></li>
@@ -2300,21 +2319,120 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     return pts[pts.length - 1].v;
   }
+  // When (minutes on the ride's clock) and where (fraction of the route) each
+  // segment is met: start time + distance ridden / speed. Riding in reverse
+  // starts at the other end at the same clock time, so the same place is
+  // reached at a different moment.
+  function segmentClock(lengths, startMin, speedKmh, reverse) {
+    var total = 0, i;
+    for (i = 0; i < lengths.length; i++) total += lengths[i];
+    var mPerMin = Math.max(speedKmh, 1) * 1000 / 60, cum = 0, frac = [], t = [];
+    for (i = 0; i < lengths.length; i++) {
+      var mid = cum + lengths[i] / 2;
+      cum += lengths[i];
+      frac.push(total > 0 ? mid / total : 0);
+      t.push(startMin + (reverse ? total - mid : mid) / mPerMin);
+    }
+    return { frac: frac, t: t };
+  }
+
+  // ---- Wind along the ride --------------------------------------------------
+  // One place's hourly wind (10 m, km/h and the direction it blows FROM) as a
+  // minute-stamped series; hours with a missing value are dropped.
+  function forecastWindSeries(loc, dateStr) {
+    var h = loc.hourly, out = { t: [], sp: [], dir: [] };
+    if (!h || !h.wind_speed_10m || !h.wind_direction_10m) return out;
+    for (var i = 0; i < h.time.length; i++) {
+      if (h.wind_speed_10m[i] == null || h.wind_direction_10m[i] == null) continue;
+      out.t.push(forecastMinutes(h.time[i], dateStr));
+      out.sp.push(h.wind_speed_10m[i]);
+      out.dir.push(h.wind_direction_10m[i]);
+    }
+    return out;
+  }
+  // A compass direction a fraction f of the way from a to b along the SHORTEST
+  // arc, so 350 deg to 10 deg passes through north, not through south. (Exactly
+  // opposite directions have no shortest arc; it turns the same way each time.)
+  function lerpAngleDeg(a, b, f) {
+    var d = ((b - a + 540) % 360) - 180;
+    return (a + d * f + 360) % 360;
+  }
+  // Wind at a moment: speed linear between the hourly values, direction along
+  // the shortest arc. Interpolating the east/north components instead would
+  // dip the speed halfway whenever the wind turns; this keeps it.
+  function interpWindSeries(series, t) {
+    var ts = series.t, n = ts.length;
+    if (!n) return null;
+    if (t <= ts[0]) return { sp: series.sp[0], dir: series.dir[0] };
+    if (t >= ts[n - 1]) return { sp: series.sp[n - 1], dir: series.dir[n - 1] };
+    var lo = 0, hi = n - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (ts[mid] <= t) lo = mid; else hi = mid; }
+    var f = (t - ts[lo]) / (ts[hi] - ts[lo]);
+    return { sp: series.sp[lo] + f * (series.sp[hi] - series.sp[lo]), dir: lerpAngleDeg(series.dir[lo], series.dir[hi], f) };
+  }
+  // locs: [{ frac, wind: series }] in route order. Wind at a place (fraction of
+  // the route) and a moment: time first, then between the neighbouring places.
+  function windAtPlace(locs, frac, tMin) {
+    var pts = [];
+    locs.forEach(function (l) { var w = l.wind ? interpWindSeries(l.wind, tMin) : null; if (w) pts.push({ f: l.frac, sp: w.sp, dir: w.dir }); });
+    if (!pts.length) return null;
+    if (frac <= pts[0].f) return { sp: pts[0].sp, dir: pts[0].dir };
+    for (var i = 1; i < pts.length; i++) {
+      if (frac <= pts[i].f) {
+        var span = pts[i].f - pts[i - 1].f;
+        if (span <= 0) return { sp: pts[i].sp, dir: pts[i].dir };
+        var f = (frac - pts[i - 1].f) / span;
+        return { sp: pts[i - 1].sp + f * (pts[i].sp - pts[i - 1].sp), dir: lerpAngleDeg(pts[i - 1].dir, pts[i].dir, f) };
+      }
+    }
+    return { sp: pts[pts.length - 1].sp, dir: pts[pts.length - 1].dir };
+  }
+  // The wind on every segment at the moment the rider gets there (null where
+  // the forecast has no wind data).
+  function segmentWind(lengths, locs, startMin, speedKmh, reverse) {
+    var clock = segmentClock(lengths, startMin, speedKmh, reverse), speedKmhArr = [], dirFromDeg = [];
+    for (var i = 0; i < lengths.length; i++) {
+      var w = windAtPlace(locs, clock.frac[i], clock.t[i]);
+      speedKmhArr.push(w ? w.sp : null);
+      dirFromDeg.push(w ? w.dir : null);
+    }
+    return { speedKmh: speedKmhArr, dirFromDeg: dirFromDeg };
+  }
+  // Wind at the start and the end of the ride (exact ends, as for the air
+  // temperature) and its average over the ride: mean speed, and a speed-weighted
+  // VECTOR mean direction (a plain mean of 350 and 10 deg would say 180).
+  function rideWindSummary(lengthM, locs, startMin, speedKmh) {
+    var n = 100, lens = [], i;
+    for (i = 0; i < n; i++) lens.push(lengthM / n);
+    var w = segmentWind(lens, locs, startMin, speedKmh, false), sumSp = 0, sumSin = 0, sumCos = 0, k = 0;
+    for (i = 0; i < n; i++) {
+      if (w.speedKmh[i] === null) continue;
+      var rad = w.dirFromDeg[i] * Math.PI / 180;
+      sumSp += w.speedKmh[i]; sumSin += w.speedKmh[i] * Math.sin(rad); sumCos += w.speedKmh[i] * Math.cos(rad); k++;
+    }
+    var meanSp = k ? sumSp / k : null;
+    // How much of the wind's push survives averaging: 1 = it never changes
+    // direction, 0 = it cancels out completely (west for an hour, then east).
+    // Below 0.3 no single direction describes the ride, so none is given.
+    var consistency = sumSp > 0 ? Math.hypot(sumSin, sumCos) / sumSp : 0;
+    return {
+      start: windAtPlace(locs, 0, startMin),
+      end: windAtPlace(locs, 1, startMin + rideMinutes(lengthM, speedKmh)),
+      meanSp: meanSp,
+      consistency: consistency,
+      meanDir: k && meanSp >= 0.5 && consistency >= 0.3 ? (Math.atan2(sumSin, sumCos) * 180 / Math.PI + 360) % 360 : null
+    };
+  }
+
   // Air temperature and humidity on every segment of the route, at the moment
   // the rider gets there: start time + distance ridden / speed. Riding in
   // reverse starts at the other end at the same clock time, so the same place
   // is reached at a different moment.
   function segmentEnvironment(lengths, locs, startMin, speedKmh, reverse) {
-    var total = 0, i;
-    for (i = 0; i < lengths.length; i++) total += lengths[i];
-    var mPerMin = Math.max(speedKmh, 1) * 1000 / 60, cum = 0, tempC = [], rh = [];
-    for (i = 0; i < lengths.length; i++) {
-      var mid = cum + lengths[i] / 2;
-      cum += lengths[i];
-      var frac = total > 0 ? mid / total : 0;
-      var t = startMin + (reverse ? total - mid : mid) / mPerMin;
-      tempC.push(valueAtPlace(locs, "temp", frac, t));
-      rh.push(valueAtPlace(locs, "rh", frac, t));
+    var clock = segmentClock(lengths, startMin, speedKmh, reverse), tempC = [], rh = [];
+    for (var i = 0; i < lengths.length; i++) {
+      tempC.push(valueAtPlace(locs, "temp", clock.frac[i], clock.t[i]));
+      rh.push(valueAtPlace(locs, "rh", clock.frac[i], clock.t[i]));
     }
     return { tempC: tempC, rh: rh };
   }
@@ -2444,8 +2562,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   // Per-segment feels-like from the relative airspeed on that segment (rider
   // speed and wind combined, same geometry as windEffortStats), averaged by
-  // distance. tempC and rhPercent are one number for the whole route, or an
-  // array with one value per segment when the forecast follows the clock. The
+  // distance. tempC, rhPercent and wMs (wind, m/s) are one number for the whole
+  // route, or an array with one value per segment when the forecast follows the
+  // clock. The
   // "coldest / warmest tenth" is the mean over the coldest / warmest 10% of
   // the distance, not the single most extreme segment: one GPS wobble that
   // points a 25 m segment backwards would otherwise set the headline number.
@@ -2453,12 +2572,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // and last) and the hottest still-air heat index met on the ride: what it
   // feels like if you stop, or crawl uphill with no breeze there.
   function feelsStats(lengths, cosphi, vMs, wMs, tempC, rhPercent) {
-    var tArr = Array.isArray(tempC), rArr = Array.isArray(rhPercent);
+    var tArr = Array.isArray(tempC), rArr = Array.isArray(rhPercent), wArr = Array.isArray(wMs);
     var items = [], perSeg = [], airSeg = [], dist = 0, sum = 0, sumAir = 0, sumRh = 0;
     var stillHiC = -Infinity, stillAirC = null;
     for (var i = 0; i < lengths.length; i++) {
-      var ti = tArr ? tempC[i] : tempC, ri = rArr ? rhPercent[i] : rhPercent;
-      var rel2 = vMs * vMs + wMs * wMs - 2 * vMs * wMs * cosphi[i];
+      var ti = tArr ? tempC[i] : tempC, ri = rArr ? rhPercent[i] : rhPercent, wi = wArr ? wMs[i] : wMs;
+      var rel2 = vMs * vMs + wi * wi - 2 * vMs * wi * cosphi[i];
       var c = feelsLikeC(ti, ri, Math.sqrt(Math.max(0, rel2)) * 3.6);
       items.push([c, lengths[i]]);
       perSeg.push(c);
@@ -2520,9 +2639,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // END chill-pure
 
   function windEffortStats(lengths, cosphi, vMs, wMs, start, end) {
-    var sumWeighted = 0, dist = 0;
+    var sumWeighted = 0, dist = 0, wArr = Array.isArray(wMs);
     for (var i = start; i < end; i++) {
-      var rel2 = vMs * vMs + wMs * wMs - 2 * vMs * wMs * cosphi[i];
+      var wi = wArr ? wMs[i] : wMs;                 // one wind for the route, or one per segment
+      var rel2 = vMs * vMs + wi * wi - 2 * vMs * wi * cosphi[i];
       sumWeighted += Math.max(0, rel2) * lengths[i];
       dist += lengths[i];
     }
@@ -2536,7 +2656,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
   }
 
-  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh, timeline) {
+  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh, timeline, windTimeline) {
     var proj = projectToEnu(points);
     var xy = resamplePolyline(proj.xy, resampleM);
     var latLon = enuToLatLon(xy, proj.lat0, proj.lon0, proj.cosLat0);
@@ -2547,31 +2667,58 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var last = xy[xy.length - 1], first = xy[0];
     var closureGap = Math.hypot(last[0] - first[0], last[1] - first[1]);
     var windVec = windFromToTowardVector(windFromDeg);
-    var cosphiFwd = headings.map(function (h) { return h[0] * windVec[0] + h[1] * windVec[1]; });
+    // One steady wind, or (windTimeline) the wind expected when the rider reaches
+    // each segment. With a steady wind riding in reverse is the mirror image
+    // (cos phi flips sign). With a changing wind it is not: reverse meets the
+    // same places at other moments, so it has its own wind on every segment.
+    var steadyWind = !windTimeline;
+    var cosphiFwd, cosphiRev, windFwdMs = null, windRevMs = null, windSpeedKmh;
+    if (steadyWind) {
+      cosphiFwd = headings.map(function (h) { return h[0] * windVec[0] + h[1] * windVec[1]; });
+      cosphiRev = cosphiFwd.map(function (c) { return -c; });
+      windSpeedKmh = beaufortToKmh(windSpeedBeaufort);
+    } else {
+      var wf = segmentWind(lengths, windTimeline.locations, windTimeline.startMin, cruiseSpeedKmh, false);
+      var wr = segmentWind(lengths, windTimeline.locations, windTimeline.startMin, cruiseSpeedKmh, true);
+      var fallbackKmh = beaufortToKmh(windSpeedBeaufort);                 // where the forecast has no wind data
+      function segWind(w) {
+        var vecs = w.dirFromDeg.map(function (d) { return windFromToTowardVector(d === null ? windFromDeg : d); });
+        return { vecs: vecs, ms: w.speedKmh.map(function (k) { return (k === null ? fallbackKmh : k) / 3.6; }) };
+      }
+      var sf = segWind(wf), sr = segWind(wr);
+      cosphiFwd = headings.map(function (h, i) { return h[0] * sf.vecs[i][0] + h[1] * sf.vecs[i][1]; });
+      cosphiRev = headings.map(function (h, i) { return -(h[0] * sr.vecs[i][0] + h[1] * sr.vecs[i][1]); });
+      windFwdMs = sf.ms; windRevMs = sr.ms;
+      var sumW = 0;
+      for (i = 0; i < lengths.length; i++) sumW += windFwdMs[i] * lengths[i];
+      windSpeedKmh = totalLength > 0 ? sumW / totalLength * 3.6 : 0;      // distance-weighted mean, as ridden
+    }
     var fwd = directionStats(lengths, cosphiFwd, neutralDeg);
-    var cosphiRev = cosphiFwd.map(function (c) { return -c; });
     var rev = directionStats(lengths, cosphiRev, neutralDeg);
-    var identityGap = Math.abs(rev.easy - (totalLength - fwd.easy));
-    var identityOk = identityGap <= fwd.neutral + 1e-6;
-    var balance = balanceCheck(lengths, headings, windVec, xy);
+    // Both self-checks assume ONE steady wind (reverse = mirror image; the
+    // wind's push sums to the closure gap). With a changing wind neither holds,
+    // so they are not applicable.
+    var identityGap = steadyWind ? Math.abs(rev.easy - (totalLength - fwd.easy)) : null;
+    var identityOk = steadyWind ? identityGap <= fwd.neutral + 1e-6 : null;
+    var balance = steadyWind ? balanceCheck(lengths, headings, windVec, xy) : null;
     var sweep = sweepWindDirections(lengths, headings, neutralDeg);
     var split = splitIndexByDistance(lengths);
     var lastHalf = lastHalfStats(lengths, cosphiFwd, cosphiRev, neutralDeg, split);
 
-    var windSpeedKmh = beaufortToKmh(windSpeedBeaufort);
     var vMs = cruiseSpeedKmh / 3.6, wMs = windSpeedKmh / 3.6;
+    var wFwd = steadyWind ? wMs : windFwdMs, wRev = steadyWind ? wMs : windRevMs;
     var effort = {
       windSpeedBeaufort: windSpeedBeaufort, windSpeedKmh: windSpeedKmh, cruiseSpeedKmh: cruiseSpeedKmh,
       full: {
-        forward: windEffortStats(lengths, cosphiFwd, vMs, wMs, 0, lengths.length),
-        reverse: windEffortStats(lengths, cosphiRev, vMs, wMs, 0, lengths.length)
+        forward: windEffortStats(lengths, cosphiFwd, vMs, wFwd, 0, lengths.length),
+        reverse: windEffortStats(lengths, cosphiRev, vMs, wRev, 0, lengths.length)
       },
       lastHalf: {
-        forward: windEffortStats(lengths, cosphiFwd, vMs, wMs, split.idx, lengths.length),
-        reverse: windEffortStats(lengths, cosphiRev, vMs, wMs, 0, split.idx)
+        forward: windEffortStats(lengths, cosphiFwd, vMs, wFwd, split.idx, lengths.length),
+        reverse: windEffortStats(lengths, cosphiRev, vMs, wRev, 0, split.idx)
       },
       firstHalf: {
-        forward: windEffortStats(lengths, cosphiFwd, vMs, wMs, 0, split.idx)
+        forward: windEffortStats(lengths, cosphiFwd, vMs, wFwd, 0, split.idx)
       }
     };
 
@@ -2587,8 +2734,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return segmentEnvironment(lengths, timeline.locations, timeline.startMin, cruiseSpeedKmh, reverse)[key]
         .map(function (v) { return v === null ? fallback : v; });
     }
-    var fwdStats = feelsStats(lengths, cosphiFwd, vMs, wMs, environment(false, "tempC", tempC), environment(false, "rh", rh));
-    var revStats = feelsStats(lengths, cosphiRev, vMs, wMs, environment(true, "tempC", tempC), environment(true, "rh", rh));
+    var fwdStats = feelsStats(lengths, cosphiFwd, vMs, wFwd, environment(false, "tempC", tempC), environment(false, "rh", rh));
+    var revStats = feelsStats(lengths, cosphiRev, vMs, wRev, environment(true, "tempC", tempC), environment(true, "rh", rh));
     var chill = {
       timeline: !!timeline,
       tempC: fwdStats.avgAirC,          // the ride's mean air temperature (the plain value when there is no timeline)
@@ -2612,7 +2759,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       full: rangeStatsFiveWay(lengths, cosphiFwd, neutralDeg, veryDeg, 0, lengths.length),
       lastHalfForward: rangeStatsFiveWay(lengths, cosphiFwd, neutralDeg, veryDeg, split.idx, lengths.length),
       lastHalfReverse: rangeStatsFiveWay(lengths, cosphiRev, neutralDeg, veryDeg, 0, split.idx),
-      isCalm: windSpeedKmh === 0
+      isCalm: steadyWind ? windSpeedKmh === 0 : windSpeedKmh < 0.5     // a changing wind is calm only if it is calm on average
     };
     // At 0 wind speed the tailwind/headwind direction is meaningless (see
     // the windEffortStats power multiplier, which correctly goes flat at
@@ -2631,6 +2778,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       rawCount: points.length, xy: xy, latLon: latLon, lengths: lengths, segCount: lengths.length,
       totalLength: totalLength, closureGap: closureGap,
       windFromDeg: windFromDeg, resampleM: resampleM, neutralDeg: neutralDeg, veryDeg: veryDeg,
+      steadyWind: steadyWind,
+      windRide: steadyWind ? null : rideWindSummary(totalLength, windTimeline.locations, windTimeline.startMin, cruiseSpeedKmh),
       fwd: fwd, rev: rev, identityGap: identityGap, identityOk: identityOk,
       balance: balance, sweep: sweep, lastHalf: lastHalf, effort: effort, chill: chill, fiveWay: fiveWay
     };
@@ -2945,7 +3094,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return "Coloured by how much colder (blue) or hotter (red) each stretch feels than the air " +
       (ch.timeline ? "at that moment of the ride (the forecast follows the clock; " + fmtTemp1(ch.forward.airStartC) + " at the start, " + fmtTemp1(ch.forward.airEndC) + " at the end)"
                    : "at " + fmtTemp(ch.tempC)) +
-      ", riding it as recorded at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h in a wind from " + degreesToCompass16(result.windFromDeg) +
+      ", riding it as recorded at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h in " +
+      (result.steadyWind ? "a wind from " + degreesToCompass16(result.windFromDeg) : "the forecast wind, which changes during the ride") +
       ". Darker means a bigger difference; grey means it feels like the air. The scale is fixed, so a colour means the same thing on every route and day.";
   }
 
@@ -3026,7 +3176,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
     document.getElementById("halfCaption").innerHTML =
       "Split at the route's distance midpoint (" + lh.splitKm.toFixed(1) + " km in). " +
-      "At <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> cruising speed into a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h)</b> wind: " +
+      "At <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> cruising speed into " +
+      (result.steadyWind ? "a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h)</b> wind: "
+                         : "a wind that changes during the ride, averaging <b>" + ef.windSpeedKmh.toFixed(1) + " km/h</b>: ") +
       "aerodynamic drag scales with relative-airspeed <i>squared</i>, not with the wind component directly, so this is shown as a multiple of the effort a completely calm day at the same speed would take.";
 
     var fwdEffort = ef.lastHalf.forward, revEffort = ef.lastHalf.reverse;
@@ -3105,7 +3257,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var caption =
       "At <b>" + fmtTemp(ch.tempC) + "</b>" +
       (warm ? " and about <b>" + Math.round(ch.rh) + "%</b> relative humidity (" + (state.rhFromForecast ? "from the forecast" : "your setting") + ")" : "") +
-      ", riding <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> in a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufort + ")</b> wind. " +
+      ", riding <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> in " +
+      (result.steadyWind ? "a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufort + ")</b> wind. "
+                         : "a wind that changes during the ride, averaging <b>" + ef.windSpeedKmh.toFixed(0) + " km/h</b>. ") +
       "Your speed and the wind combine into the wind on you, so how it feels is worked out for every segment and averaged by distance. ";
     if (ch.model === "windchill") {
       caption += "It uses the standard wind chill formula (Environment Canada and the US National Weather Service), which describes how fast exposed skin cools. ";
@@ -3179,7 +3333,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var totalKm = result.totalLength / 1000;
     lines.push("=== GPX wind report ===");
     lines.push("Source: " + fileLabel);
-    lines.push("Wind from: " + result.windFromDeg.toFixed(1) + " deg (" + degreesToCompass16(result.windFromDeg) + ")");
+    if (result.steadyWind) {
+      lines.push("Wind from: " + result.windFromDeg.toFixed(1) + " deg (" + degreesToCompass16(result.windFromDeg) + ")");
+    } else {
+      var wr = result.windRide;
+      lines.push("Wind: forecast, changing during the ride (follows the clock from the start time " + fcStart.value + " at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h).");
+      lines.push("  at the start: from " + degreesToCompass16(wr.start.dir) + " (" + wr.start.dir.toFixed(0) + " deg) at " + wr.start.sp.toFixed(1) + " km/h");
+      lines.push("  at the end:   from " + degreesToCompass16(wr.end.dir) + " (" + wr.end.dir.toFixed(0) + " deg) at " + wr.end.sp.toFixed(1) + " km/h");
+      lines.push("  average: " + (wr.meanDir === null ? "no single direction describes it (it changes too much)" : "from " + degreesToCompass16(wr.meanDir) + " (" + wr.meanDir.toFixed(0) + " deg)") + ", " + wr.meanSp.toFixed(1) + " km/h");
+    }
     lines.push("Raw points: " + result.rawCount + "  ->  resampled to " + (result.segCount + 1) + " points / " + result.segCount + " segments (spacing " + result.resampleM + " m)");
     lines.push("Total route length: " + totalKm.toFixed(2) + " km");
     lines.push("Closure gap (last point to first): " + result.closureGap.toFixed(1) + " m (" + (100 * result.closureGap / result.totalLength).toFixed(2) + "% of total length)");
@@ -3193,8 +3355,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var diffPp = Math.abs(result.fwd.easyPct - result.rev.easyPct);
     lines.push("Forward vs reverse difference: " + diffKm.toFixed(2) + " km easy (" + diffPp.toFixed(1) + " percentage points)");
     lines.push("");
-    lines.push("Identity check L_easy(reverse) == L_total - L_easy(forward): gap " + result.identityGap.toFixed(2) + " m -> " + (result.identityOk ? "OK" : "WARN"));
-    lines.push("Balance check Sum(L_i * cosphi_i) = " + result.balance.sum.toFixed(2) + " m (tolerance " + result.balance.tolerance.toFixed(2) + " m, tied to closure gap) -> " + (result.balance.ok ? "OK" : "WARN"));
+    if (result.steadyWind) {
+      lines.push("Identity check L_easy(reverse) == L_total - L_easy(forward): gap " + result.identityGap.toFixed(2) + " m -> " + (result.identityOk ? "OK" : "WARN"));
+      lines.push("Balance check Sum(L_i * cosphi_i) = " + result.balance.sum.toFixed(2) + " m (tolerance " + result.balance.tolerance.toFixed(2) + " m, tied to closure gap) -> " + (result.balance.ok ? "OK" : "WARN"));
+    } else {
+      lines.push("Identity and balance checks: not applicable. They assume one steady wind; with a changing wind, riding in reverse meets the wind at other moments and is not the mirror image of riding forward.");
+    }
     lines.push("");
     var verdict;
     if (result.fwd.easyPct > result.rev.easyPct + 1) verdict = "This route is easier ridden in the direction given in the GPX file.";
@@ -3209,7 +3375,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var ef = result.effort;
     var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
     lines.push("=== Last 50% of the round trip (split at " + result.lastHalf.splitKm.toFixed(1) + " km) ===");
-    lines.push("Wind speed: Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h). Cruising speed: " + ef.cruiseSpeedKmh.toFixed(0) + " km/h.");
+    lines.push(result.steadyWind
+      ? "Wind speed: Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h). Cruising speed: " + ef.cruiseSpeedKmh.toFixed(0) + " km/h."
+      : "Wind speed: " + ef.windSpeedKmh.toFixed(1) + " km/h on average, changing during the ride. Cruising speed: " + ef.cruiseSpeedKmh.toFixed(0) + " km/h.");
     lines.push("Effort here is relative-airspeed-based (drag ~ airspeed^2), shown as a multiple of calm-day effort at the same cruising speed - not a linear tailwind/headwind sum.");
     lines.push("Forward: " + ef.lastHalf.forward.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.forward.avgRelSpeedKmh.toFixed(1) + " km/h)");
     lines.push("Reverse: " + ef.lastHalf.reverse.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.reverse.avgRelSpeedKmh.toFixed(1) + " km/h)");
@@ -3290,6 +3458,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     view: "wind",                // which DATA view colours the map: "wind" or "temp"
     showHow: false,              // the "How it works" tab is showing (it keeps the last data view underneath)
     timeline: null,               // forecast series along the ride ({locations}); null in manual mode
+    windTimeline: null,           // the forecast WIND along the ride ({locations}); null when the wind is set by hand
+    fetchedThroughMin: 1440,      // how far the fetched forecast reaches on the ride's clock (1440 = end of the ride's day)
     rh: 50,                       // relative humidity, %; only matters on hot days
     rhFromForecast: false,
     tempC: 8,
@@ -3349,6 +3519,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
 
   function setWind(deg) {
+    state.windTimeline = null;             // your wind replaces the forecast's
     state.windFromDeg = ((deg % 360) + 360) % 360;
     windInput.value = degreesToCompass16(state.windFromDeg);
     fileError.classList.remove("show");
@@ -3358,6 +3529,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   windInput.addEventListener("change", function () {
     forecastNote.hidden = true;
+    state.windTimeline = null;
     try {
       state.windFromDeg = parseWindFrom(windInput.value);
       fileError.classList.remove("show");
@@ -3385,6 +3557,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
   windSpeedInput.addEventListener("change", function () {
     forecastNote.hidden = true;
+    state.windTimeline = null;
     var v = parseInt(windSpeedInput.value, 10);
     state.windSpeedBeaufort = isFinite(v) ? Math.max(0, Math.min(12, v)) : 4;
     scheduleRender();
@@ -3392,7 +3565,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   cruiseSpeedInput.addEventListener("change", function () {
     var v = parseFloat(cruiseSpeedInput.value);
     state.cruiseSpeedKmh = isFinite(v) && v > 0 ? v : 25;
-    markForecastStale();
+    markForecastStale(false);
     scheduleRender();
   });
 
@@ -3531,6 +3704,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var rideTiming = document.getElementById("rideTiming");
   var forecastStale = document.getElementById("forecastStale");
   var tempTimelineHint = document.getElementById("tempTimelineHint");
+  var windTimelineHint = document.getElementById("windTimelineHint");
   var fcGetBtn = document.getElementById("fcGetBtn");
   var forecastNote = document.getElementById("forecastNote");
   var forecastNoteText = document.getElementById("forecastNoteText");
@@ -3559,6 +3733,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var sign = seconds < 0 ? "-" : "+";
     var mins = Math.round(Math.abs(seconds) / 60);
     return "UTC" + sign + Math.floor(mins / 60) + (mins % 60 ? ":" + pad2(mins % 60) : "");
+  }
+
+  // The wind the ride actually meets (changing with the clock and the place), or
+  // null when the wind was typed in or adjusted by hand.
+  function currentWindTimeline() {
+    if (!state.windTimeline) return null;
+    var startMin = parseClock(fcStart.value);
+    return { locations: state.windTimeline.locations, startMin: startMin === null ? state.windTimeline.startMin : startMin };
   }
 
   // The conditions the ride actually meets, or null in manual mode.
@@ -3599,10 +3781,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
       : "From the forecast; it stays about " + fmtTemp1((a + b) / 2) + " during the ride. If you change it, your value replaces the forecast.";
     tempTimelineHint.hidden = false;
   }
-  // Date, start time or speed changed after a forecast was fetched: the
-  // temperature and humidity already follow the new start time and speed
-  // (they are read off the stored hourly series), the wind does not.
-  function markForecastStale() { if (state.timeline) forecastStale.hidden = false; }
+  // The stored hourly series answer any start time and speed within the fetched
+  // hours, so temperature, humidity AND wind follow such changes on their own.
+  // What needs a new request is a different date, or a ride that now runs past
+  // the hours that were fetched.
+  function markForecastStale(dateChanged) {
+    if (!state.timeline && !state.windTimeline) return;
+    var startMin = parseClock(fcStart.value), lenM = lastResult ? lastResult.totalLength : 0;
+    var pastFetched = startMin !== null && startMin + rideMinutes(lenM, state.cruiseSpeedKmh) > state.fetchedThroughMin;
+    if (dateChanged || pastFetched) forecastStale.hidden = false;
+  }
+  // A short description of how the forecast wind changes over the ride.
+  function windChangeText(wr) {
+    function one(w) { return degreesToCompass16(w.dir) + " (" + Math.round(w.dir) + "\u00b0) at " + w.sp.toFixed(0) + " km/h"; }
+    return "from " + one(wr.start) + " at the start to " + one(wr.end) + " at the end";
+  }
+  function updateWindTimelineHint(result) {
+    if (!state.windTimeline || !result.windRide) { windTimelineHint.hidden = true; return; }
+    var wr = result.windRide;
+    windTimelineHint.textContent = "From the forecast and changing during the ride: " + windChangeText(wr) + ". " +
+      (wr.meanDir === null
+        ? "The direction changes so much that no single average describes it, so the compass keeps its last value; the Beaufort field shows the average speed. "
+        : "The compass and the Beaufort field show the average. ") +
+      "If you change them, your value replaces the forecast wind.";
+    windTimelineHint.hidden = false;
+  }
 
   // One request covers the ride's whole day (and the next one if the ride
   // crosses midnight), so the hourly series can be read at any moment of it.
@@ -3627,7 +3830,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var results = Array.isArray(result.data) ? result.data : [result.data];
       var summary = summarizeForecast(results, dateStr, startMin, endMin);
       if (!summary) throw new Error("The forecast has no wind data for those hours. Try another time, or set the wind manually.");
-      return { summary: summary, results: results, plan: plan, timezone: results[0].timezone, offsetSeconds: results[0].utc_offset_seconds };
+      return { summary: summary, results: results, plan: plan, throughMin: endMin > 1440 ? 2880 : 1440, timezone: results[0].timezone, offsetSeconds: results[0].utc_offset_seconds };
     });
   }
 
@@ -3655,18 +3858,33 @@ svg.leaflet-image-layer.leaflet-interactive path {
     fetchForecast(state.points, dateStr, startMin, endMin).then(function (r) {
       var sm = r.summary;
       var beaufort = kmhToBeaufort(sm.speedKmh);
-      if (sm.dirFromDeg !== null) {
-        state.windFromDeg = sm.dirFromDeg;
-        windInput.value = String(Math.round(sm.dirFromDeg));
-      }
-      state.windSpeedBeaufort = beaufort;
-      windSpeedInput.value = beaufort;
+      state.fetchedThroughMin = r.throughMin;
+      var wind = { dir: sm.dirFromDeg, speedKmh: sm.speedKmh, ride: null };     // the plain window average, unless the timeline gives better
 
       // Temperature and humidity follow the clock and the place.
       var locations = r.plan.samples.map(function (smp) {
         var res = r.results[smp.unique];
-        return { frac: smp.frac, temp: forecastSeries(res, "temperature_2m", dateStr), rh: forecastSeries(res, "relative_humidity_2m", dateStr) };
+        return { frac: smp.frac, temp: forecastSeries(res, "temperature_2m", dateStr), rh: forecastSeries(res, "relative_humidity_2m", dateStr),
+                 wind: forecastWindSeries(res, dateStr) };
       });
+      // The wind follows the clock and the place too: each stretch is judged against
+      // the wind expected when the rider gets there. The compass and Beaufort fields
+      // then show the ride's average of it.
+      if (locations.every(function (l) { return l.wind.t.length > 0; })) {
+        state.windTimeline = { locations: locations, startMin: startMin };
+        wind.ride = rideWindSummary(lengthM, locations, startMin, state.cruiseSpeedKmh);
+        wind.speedKmh = wind.ride.meanSp;
+        wind.dir = wind.ride.meanDir;
+      } else {
+        state.windTimeline = null;
+      }
+      beaufort = kmhToBeaufort(wind.speedKmh);
+      if (wind.dir !== null) {
+        state.windFromDeg = wind.dir;
+        windInput.value = String(Math.round(wind.dir));
+      }
+      state.windSpeedBeaufort = beaufort;
+      windSpeedInput.value = beaufort;
       var haveTemp = locations.every(function (l) { return l.temp.t.length > 0; });
       var env = null;
       if (haveTemp) {
@@ -3682,8 +3900,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       scheduleRender();
 
       var day = new Date(dateStr + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-      var dirText = sm.dirFromDeg === null ? "essentially calm" :
-        "from " + degreesToCompass16(sm.dirFromDeg) + " (" + Math.round(sm.dirFromDeg) + "\u00b0)";
+      var dirText = wind.dir === null ? (wind.ride ? "changing so much that no single direction describes it" : "essentially calm") :
+        "from " + degreesToCompass16(wind.dir) + " (" + Math.round(wind.dir) + "\u00b0)";
+      var changes = wind.ride && (Math.abs(wind.ride.end.sp - wind.ride.start.sp) >= 3 ||
+        Math.abs(((wind.ride.end.dir - wind.ride.start.dir + 540) % 360) - 180) >= 15);
+      var windNoteText = (changes ? windChangeText(wind.ride) + "; on average " + dirText : dirText) + ", " + (wind.speedKmh === null ? "0" : wind.speedKmh.toFixed(0)) +
+        " km/h \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + ")";
       var tempText = "";
       if (env) {
         tempText = Math.abs(env.endC - env.startC) >= 0.5
@@ -3692,18 +3914,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
         if (env.meanC >= HUMIDITY_SHOW_C && env.meanRh !== null) tempText += ", humidity about " + Math.round(env.meanRh) + "%";
       }
       forecastNoteText.textContent =
-        "Forecast for " + day + ", riding " + fcStart.value + "\u2013" + fmtClock(startMin + rideMin) + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + dirText +
-        ", " + sm.speedKmh.toFixed(0) + " km/h on average with gusts up to " + sm.gustKmh.toFixed(0) + " km/h \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + ")" +
-        tempText + ". Wind averaged over the ride; temperature and humidity follow the clock, at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
+        "Forecast for " + day + ", riding " + fcStart.value + "\u2013" + fmtClock(startMin + rideMin) + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + windNoteText + ", gusts up to " + sm.gustKmh.toFixed(0) + " km/h" +
+        tempText + ". Wind, temperature and humidity follow the clock, at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
       forecastNote.hidden = false;
     }).catch(showForecastError).then(function () {
       fcGetBtn.disabled = false;
       fcGetBtn.textContent = "Get forecast";
     });
   });
-  fcStart.addEventListener("change", function () { markForecastStale(); scheduleRender(); });
+  fcStart.addEventListener("change", function () { markForecastStale(false); scheduleRender(); });
   fcStart.addEventListener("input", function () { scheduleRender(); });
-  fcDate.addEventListener("change", markForecastStale);
+  fcDate.addEventListener("change", function () { markForecastStale(true); });
 
   dropzone.addEventListener("click", function () { fileInput.click(); });
   dropzone.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
@@ -3732,6 +3953,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     state.fileLabel = label;
     state.isExample = false;
     state.timeline = null;                 // the forecast was for the previous route
+    state.windTimeline = null;
     forecastNote.hidden = true;
     forecastStale.hidden = true;
     fileError.classList.remove("show");
@@ -3939,7 +4161,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var result;
     try {
-      result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC, state.rh, currentTimeline());
+      result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC, state.rh, currentTimeline(), currentWindTimeline());
     } catch (e) {
       fileError.textContent = e.message;
       fileError.classList.add("show");
@@ -3977,7 +4199,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     document.getElementById("planCaption").textContent = state.view === "temp"
       ? tempViewCaption(result)
-      : "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°).";
+      : (result.steadyWind
+          ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°)."
+          : "Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there (as recorded from the start time).");
     renderPolarSweep(result);
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
     if (state.view === "temp") renderTempLegend(result); else renderRouteStats(result);
@@ -3997,6 +4221,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     renderChill(result);
     updateRideTiming(result);
     updateTimelineHint(result);
+    updateWindTimelineHint(result);
 
     document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
     lastResult = result;
