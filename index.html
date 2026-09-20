@@ -495,13 +495,6 @@
   .climb-table td { color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
   .climb-swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; }
   #climbLegend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-secondary); margin: 6px 0 4px; }
-  .elev-svg { width: 100%; height: auto; display: block; }
-  .elev-svg text { font-family: var(--font-display); font-size: 11px; fill: var(--ink-muted); }
-  .elev-svg .elev-grid { stroke: var(--grid); stroke-width: 1; }
-  .elev-svg .elev-line { fill: none; stroke: var(--ink-secondary); stroke-width: 1.6; stroke-linejoin: round; }
-  .elev-svg .elev-base { fill: var(--grid); opacity: 0.55; }
-  .elev-svg .climb-num-bg { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
-  .elev-svg text.climb-num { fill: var(--ink); font-size: 10.5px; font-weight: 700; }
   .climb-badge { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%;
     background: var(--panel); color: var(--ink); border: 2px solid var(--ink); font: 700 11px/1 var(--font-display); }
 
@@ -1765,11 +1758,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p class="chart-caption" id="climbNote"></p>
       </div>
     </div>
-    <div class="card chart-card" id="elevCard">
-      <h2>Elevation profile</h2>
-      <p class="chart-caption" id="elevCaption"></p>
-      <svg id="elevSvg" class="elev-svg" viewBox="0 0 800 250" role="img" aria-label="Elevation profile of the route with the climbs shaded by their steepest slope"></svg>
-    </div>
   </div>
 
   <div class="tabpanel" id="panelHow" role="tabpanel" aria-labelledby="tabHow" hidden>
@@ -1896,7 +1884,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <li>Where a climb is close to the average-slope threshold, small differences in the data can decide whether it is listed. On a test route (a straight line through South Limburg) the lookup gave five of the six climbs found from a file made from the same model, and the sixth sat at 1.99&nbsp;% against the 2&nbsp;% limit.</li>
         </ul>
         <h3>Why it needs smoothing</h3>
-        <p>Elevation in GPX files is noisy: it is typically a barometer or a coarse terrain model, and it wobbles by metres from point to point. Added up naively, that wobble looks like climbing. On one 78&nbsp;km ride that stayed within a 29&nbsp;m range, the raw points summed to 167&nbsp;m of ascent. So the profile is treated before anything is measured:</p>
+        <p>The terrain model is noisy: it wobbles by metres from point to point, and it is a <em>surface</em> model, so it also includes treetops and roofs. Added up naively, that looks like climbing. So the profile is treated before anything is measured:</p>
         <ol>
           <li>The profile is put on an even grid of one point per 25&nbsp;m of route, by interpolation.</li>
           <li>A median of three points removes single spikes, and a moving average over about 150&nbsp;m smooths the rest.</li>
@@ -1912,6 +1900,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p>Each climb is coloured by its <strong>maximum slope</strong>: the steepest 100&nbsp;m stretch of the smoothed profile. There are five classes: under 5&nbsp;%, 5&ndash;8&nbsp;%, 8&ndash;12&nbsp;%, 12&ndash;16&nbsp;% and 16&nbsp;% and up. It is one violet hue in five steps, standing out more the steeper the climb, with the rest of the route drawn thin and grey. The choice of forward or reverse works by running the same detection on the reversed profile, so a climb ridden one way is a descent the other way.</p>
         <h3>Limits</h3>
         <ul>
+          <li><strong>Trees and buildings.</strong> On a flat ride through woods and towns the model reads 5 to 10&nbsp;m too high in patches. On one flat 78&nbsp;km ride the total ascent came out at 307&nbsp;m against 76&nbsp;m in Strava&rsquo;s own elevation, so treat the ascent and descent totals of a flat route with care. Real hills stand out from such patches, but small climbs near the minimum may be missed or invented.</li>
           <li><strong>The maximum slope depends on the smoothing.</strong> A short, sharp ramp of 100&nbsp;m or less is flattened by smoothing over 150&nbsp;m, so the steepest figure is a lower bound for such ramps. That is why the average is shown next to it: the average is much less sensitive.</li>
           <li><strong>The thresholds are conventions.</strong> There is no official definition of a climb. Change them if a hill you know is missing or a minor one is shown.</li>
           <li><strong>Accuracy is the terrain model&rsquo;s.</strong> The app cannot see the road itself, only the land as mapped at 90&nbsp;m.</li>
@@ -3586,57 +3575,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   // ---- Climbs tab ------------------------------------------------------
   function fmtLen(m) { return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m"; }
-  function niceStep(range, target) {
-    var raw = range / target, mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), f = raw / mag;
-    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * mag;
-  }
-  function drawElevation(svg, tr, dir) {
-    var NS = "http://www.w3.org/2000/svg", ml = 46, mr = 12, mt = 12, mb = 28;
-    // Drawn at the width it really has (a scaled-down 800-wide chart would shrink its
-    // labels to nothing on a phone); a hidden panel has no width yet, so fall back.
-    var W = Math.max(280, Math.round(svg.getBoundingClientRect().width)) || 800, H = W < 520 ? 210 : 250;
-    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-    var z = dir === "fwd" ? tr.z : tr.z.slice().reverse(), n = z.length, km = tr.gridM / 1000;
-    var pad = Math.max(5, 0.1 * (tr.zMax - tr.zMin)), y0 = tr.zMin - pad, y1 = tr.zMax + pad;
-    var sx = function (i) { return ml + (n > 1 ? i / (n - 1) : 0) * (W - ml - mr); };
-    var sy = function (v) { return H - mb - (v - y0) / (y1 - y0) * (H - mt - mb); };
-    function el(tag, attrs, text) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; svg.appendChild(e); return e; }
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-    var ystep = niceStep(y1 - y0, 4), t;
-    for (t = Math.ceil(y0 / ystep) * ystep; t <= y1; t += ystep) {
-      el("line", { "class": "elev-grid", x1: ml, x2: W - mr, y1: sy(t).toFixed(1), y2: sy(t).toFixed(1) });
-      el("text", { x: ml - 6, y: (sy(t) + 4).toFixed(1), "text-anchor": "end" }, String(Math.round(t)));
-    }
-    var xstep = niceStep(km, Math.max(3, Math.round(W / 130)));
-    for (t = 0; t <= km + 1e-9; t += xstep) {
-      var x = ml + (t / km) * (W - ml - mr);
-      el("line", { "class": "elev-grid", x1: x.toFixed(1), x2: x.toFixed(1), y1: mt, y2: H - mb });
-      el("text", { x: x.toFixed(1), y: H - 9, "text-anchor": "middle" }, (Math.round(t * 10) / 10) + (t === 0 ? " km" : ""));
-    }
-    el("text", { x: 4, y: 11 }, "m");
-    var pts = z.map(function (v, i) { return sx(i).toFixed(1) + "," + sy(v).toFixed(1); });
-    el("polygon", { "class": "elev-base", points: pts.join(" ") + " " + sx(n - 1).toFixed(1) + "," + sy(y0).toFixed(1) + " " + sx(0).toFixed(1) + "," + sy(y0).toFixed(1) });
-    var colors = climbClassColors();
-    tr[dir].forEach(function (c) {
-      var seg = pts.slice(c.a, c.b + 1);
-      el("polygon", { points: seg.join(" ") + " " + sx(c.b).toFixed(1) + "," + sy(y0).toFixed(1) + " " + sx(c.a).toFixed(1) + "," + sy(y0).toFixed(1), fill: colors[c.cls], opacity: 0.9 });
-    });
-    el("polyline", { "class": "elev-line", points: pts.join(" ") });
-    tr[dir].forEach(function (c, k) {
-      var m = Math.round((c.a + c.b) / 2), cx = Math.min(W - mr - 10, Math.max(ml + 10, sx(m))), cy = Math.max(mt + 10, sy(z[m]) - 14);
-      el("circle", { "class": "climb-num-bg", cx: cx.toFixed(1), cy: cy.toFixed(1), r: 9 });
-      el("text", { "class": "climb-num", x: cx.toFixed(1), y: (cy + 3.8).toFixed(1), "text-anchor": "middle" }, String(k + 1));
-    });
-  }
-
   function renderClimbs(result) {
     var tr = result.terrain, dir = state.climbDir;
     var summary = document.getElementById("climbSummary"), table = document.getElementById("climbTable");
-    var listCard = document.getElementById("climbListCard"), elevCard = document.getElementById("elevCard");
+    var listCard = document.getElementById("climbListCard");
     var offer = document.getElementById("demOffer");
     if (!tr.available) {
       summary.innerHTML = tr.notLookedUp ? "<b>No elevation yet.</b> The Climbs tab needs the elevation of your route." : "<b>No elevation to show.</b> " + tr.reason;
-      listCard.hidden = true; elevCard.hidden = true;
+      listCard.hidden = true;
       var plan = tr.notLookedUp ? demPlan() : null;
       offer.hidden = !plan;
       if (plan) document.getElementById("demOfferText").innerHTML = "It is looked up online for every route, and the elevation recorded in a GPX file is not used, so all routes are measured the same way. " +
@@ -3645,7 +3591,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return;
     }
     offer.hidden = true;
-    listCard.hidden = false; elevCard.hidden = false;
+    listCard.hidden = false;
     var climbs = tr[dir], up = dir === "fwd" ? tr.ascentM : tr.descentM, down = dir === "fwd" ? tr.descentM : tr.ascentM, total = 0;
     climbs.forEach(function (c) { total += c.gainM; });
     var other = tr[dir === "fwd" ? "rev" : "fwd"];
@@ -3668,8 +3614,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     table.innerHTML = head + "<tbody>" + rows + "</tbody>";
     document.getElementById("climbNote").textContent = "Max is the steepest 100 m of the smoothed profile. The more a profile is smoothed the gentler a short, sharp ramp looks, so read it together with the average. " +
       "A 90 m terrain model shows the land as mapped, not the road: bridges, tunnels and cuttings are not in it, and steep ramps shorter than about 100 m are flattened.";
-    document.getElementById("elevCaption").textContent = "Distance is measured in the direction you ride (" + (dir === "fwd" ? "as recorded" : "in reverse") + "). The shaded areas are the climbs, coloured by their steepest slope and numbered as in the table.";
-    drawElevation(document.getElementById("elevSvg"), tr, dir);
   }
 
   // A temperature DIFFERENCE as a bare number in the chosen unit (9/5 only,
@@ -5373,8 +5317,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
   });
-
-  window.addEventListener("resize", function () { if (lastResult && !panelClimbs.hidden) renderClimbs(lastResult); });
 
   // Climbs tab controls: direction and the two detection thresholds.
   var climbDirFwd = document.getElementById("climbDirFwd"), climbDirRev = document.getElementById("climbDirRev");
