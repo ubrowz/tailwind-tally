@@ -500,6 +500,10 @@
   .elev-svg .elev-grid { stroke: var(--grid); stroke-width: 1; }
   .elev-svg .elev-line { fill: none; stroke: var(--ink-secondary); stroke-width: 1.6; stroke-linejoin: round; }
   .elev-svg .elev-base { fill: var(--grid); opacity: 0.55; }
+  .elev-svg .climb-num-bg { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
+  .elev-svg text.climb-num { fill: var(--ink); font-size: 10.5px; font-weight: 700; }
+  .climb-badge { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%;
+    background: var(--panel); color: var(--ink); border: 2px solid var(--ink); font: 700 11px/1 var(--font-display); }
 
   /* Wind / Temperature tabs. The panels are flex columns with the same gap
      as .page so the cards inside keep their normal spacing; the [hidden]
@@ -3072,6 +3076,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     return urls;
   }
+  // The route segment half way along a climb, where its number is drawn on the map.
+  function climbMidSegment(c, dir, gridM, lengths) {
+    var total = 0, i;
+    for (i = 0; i < lengths.length; i++) total += lengths[i];
+    var scale = gridM > 0 ? total / gridM : 1;
+    var r0 = (dir === "fwd" ? c.startM : gridM - c.endM) * scale, r1 = (dir === "fwd" ? c.endM : gridM - c.startM) * scale, mid = (r0 + r1) / 2, run = 0;
+    for (i = 0; i < lengths.length; i++) { if (mid < run + lengths[i]) return i; run += lengths[i]; }
+    return lengths.length - 1;
+  }
   // END climb-pure
 
 
@@ -3558,6 +3571,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
       i = j;
     }
     L.circleMarker(latLon[0], { radius: 6, color: "var(--panel)", weight: 2, fillColor: "var(--accent)", fillOpacity: 1, interactive: false }).addTo(leafletRouteLayer);
+    if (state.view === "climbs" && result.terrain.available) {
+      // The climb's number, half way along it, matching the table.
+      result.terrain[state.climbDir].forEach(function (c, k) {
+        var m = climbMidSegment(c, state.climbDir, result.terrain.gridM, result.lengths), a = latLon[m], b = latLon[m + 1];
+        // Beside the line, not on it, so the climb's colour stays visible: 15 px to the side that faces up.
+        var dx = (b[1] - a[1]) * Math.cos((a[0] + b[0]) * Math.PI / 360), dy = a[0] - b[0], len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+        if (ny > 0 || (ny === 0 && nx < 0)) { nx = -nx; ny = -ny; }
+        L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], { interactive: false, keyboard: false,
+          icon: L.divIcon({ className: "", html: '<div class="climb-badge">' + (k + 1) + "</div>", iconSize: [20, 20], iconAnchor: [10 - 15 * nx, 10 - 15 * ny] }) }).addTo(leafletRouteLayer);
+      });
+    }
     leafletMap.invalidateSize();
     leafletMap.fitBounds(L.latLngBounds(latLon), { padding: [20, 20] });
   }
@@ -3600,6 +3624,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       el("polygon", { points: seg.join(" ") + " " + sx(c.b).toFixed(1) + "," + sy(y0).toFixed(1) + " " + sx(c.a).toFixed(1) + "," + sy(y0).toFixed(1), fill: colors[c.cls], opacity: 0.9 });
     });
     el("polyline", { "class": "elev-line", points: pts.join(" ") });
+    tr[dir].forEach(function (c, k) {
+      var m = Math.round((c.a + c.b) / 2), cx = Math.min(W - mr - 10, Math.max(ml + 10, sx(m))), cy = Math.max(mt + 10, sy(z[m]) - 14);
+      el("circle", { "class": "climb-num-bg", cx: cx.toFixed(1), cy: cy.toFixed(1), r: 9 });
+      el("text", { "class": "climb-num", x: cx.toFixed(1), y: (cy + 3.8).toFixed(1), "text-anchor": "middle" }, String(k + 1));
+    });
   }
 
   function renderClimbs(result) {
@@ -3642,7 +3671,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("climbNote").textContent = "Max is the steepest 100 m of the smoothed profile. The more a profile is smoothed the gentler a short, sharp ramp looks, so read it together with the average. " +
       (tr.source === "lookup" ? "A 90 m terrain model shows the land as mapped, not the road: bridges, tunnels and cuttings are not in it, and steep ramps shorter than about 100 m are flattened. Elevation in a GPX file recorded on the ride is usually sharper."
         : "GPS elevation is noisy and the smoothing removes most of it, but it also flattens very short ramps.");
-    document.getElementById("elevCaption").textContent = "Distance is measured in the direction you ride (" + (dir === "fwd" ? "as recorded" : "in reverse") + "). The shaded areas are the climbs, coloured by their steepest slope.";
+    document.getElementById("elevCaption").textContent = "Distance is measured in the direction you ride (" + (dir === "fwd" ? "as recorded" : "in reverse") + "). The shaded areas are the climbs, coloured by their steepest slope and numbered as in the table.";
     drawElevation(document.getElementById("elevSvg"), tr, dir);
   }
 
@@ -4984,7 +5013,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     document.getElementById("planCaption").textContent = state.view === "climbs"
       ? "Climbs of at least " + state.climbMinGain + " m (average " + state.climbMinAvg + "% or steeper), " + (state.climbDir === "fwd" ? "as recorded" : "ridden in reverse") +
-        ", coloured by their steepest 100 m; the rest of the route is grey." + (result.terrain.available ? "" : " This route has no elevation, so nothing is coloured.")
+        ", coloured by their steepest 100 m and numbered as in the table; the rest of the route is grey." + (result.terrain.available ? "" : " This route has no elevation, so nothing is coloured.")
       : state.view === "temp"
       ? tempViewCaption(result)
       : (result.steadyWind
