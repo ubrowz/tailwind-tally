@@ -630,10 +630,9 @@
      chart doesn't blow up to fill an entire half-width card. */
   .sweep-layout {
     display: grid;
-    grid-template-areas: "caption" "chart" "callout" "table";
+    grid-template-areas: "chart" "callout" "table";
     gap: 16px;
   }
-  .sweep-layout .chart-caption { grid-area: caption; margin: 0; }
   .sweep-layout #polarSvg { grid-area: chart; }
   .sweep-layout #sweepCallout { grid-area: callout; }
   .sweep-layout .table-toggle { grid-area: table; margin-top: 0; }
@@ -641,7 +640,6 @@
     .sweep-layout {
       grid-template-columns: 340px 1fr;
       grid-template-areas:
-        "chart caption"
         "chart callout"
         "chart table";
       align-items: start;
@@ -684,6 +682,7 @@
   }
 
   .info-wrap { position: relative; display: inline-flex; }
+  label .info-wrap, h2 .info-wrap, h3 .info-wrap { margin-left: 6px; vertical-align: middle; }
   .info-btn {
     width: 15px;
     height: 15px;
@@ -700,15 +699,17 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
-  .info-btn:hover, .info-btn:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
+  .info-btn::after { content: ""; position: absolute; inset: -10px; }              /* a 35 px touch target */
+  .info-btn:hover, .info-btn[aria-expanded="true"], .info-btn:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
   .info-popover {
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
     z-index: 20;
-    width: 260px;
-    max-width: min(70vw, 260px);
+    width: 300px;
+    max-width: calc(100vw - 32px);
     background: var(--panel-raised);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -720,7 +721,10 @@
     text-transform: none;
     letter-spacing: normal;
     font-weight: 400;
+    white-space: normal;
+    text-align: left;
   }
+  .info-popover b { color: var(--ink); }
   /* :not([hidden]) rather than an unconditional display: an
      unconditional author rule would win the cascade over the browser's
      own (non-!important) default [hidden]{display:none}, leaving this
@@ -1532,7 +1536,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card" id="rideCard">
-    <h2>Your ride</h2>
+    <h2>Your ride <span class="info-pop" data-about="your ride">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the temperature, humidity and wind you meet, and with your speed it sets how it feels.</span></h2>
     <div class="two-col-grid">
       <div class="field">
         <label for="cruiseSpeedInput" id="cruiseSpeedLabel">Cruising speed (km/h)</label>
@@ -1546,8 +1550,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </select>
       </div>
     </div>
-    <p class="field-hint" id="rideStyleHint"></p>
-    <p class="field-hint">Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the temperature, humidity and wind you meet, and with your speed it sets how it feels.</p>
+    <p class="field-hint" id="rideStyleHint" hidden></p>
     <details class="advanced">
       <summary>Advanced</summary>
       <div class="advanced-grid">
@@ -1556,20 +1559,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <input type="number" id="riderMassInput" value="85" min="40" max="200" step="1">
         </div>
         <div class="field">
-          <label for="riderCdaInput">Drag area CdA (m&sup2;)</label>
+          <label for="riderCdaInput">Drag area CdA (m&sup2;) <span class="info-pop" data-about="the rider settings">The mass, drag area and rolling resistance are used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</span></label>
           <input type="number" id="riderCdaInput" value="0.32" min="0.15" max="0.8" step="0.01">
         </div>
         <div class="field">
           <label for="riderCrrInput">Rolling resistance Crr</label>
           <input type="number" id="riderCrrInput" value="0.005" min="0.002" max="0.02" step="0.001">
         </div>
-        <p class="field-hint">Used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</p>
       </div>
     </details>
   </div>
 
   <div class="card" id="weatherCard">
-    <h2>Weather for the ride</h2>
+    <h2>Weather for the ride <span class="info-pop" data-about="the weather options"><b>Set manually:</b> type the wind and the temperature yourself, in the Wind and Temperature tabs. <b>From forecast:</b> times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: temperature, humidity and wind change from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature, and you can still adjust them.</span></h2>
     <div class="mode-toggle" role="group" aria-label="Wind source">
       <button type="button" id="modeManual" aria-pressed="true">Set manually</button>
       <button type="button" id="modeForecast" aria-pressed="false">From forecast</button>
@@ -1586,7 +1588,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
       </div>
       <p class="ride-timing" id="rideTiming"></p>
-      <p class="field-hint">Times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: temperature, humidity and wind change from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature below, and you can still adjust them.</p>
       <div class="forecast-actions">
         <button type="button" class="copy-btn" id="fcGetBtn">Get forecast</button>
       </div>
@@ -1594,7 +1595,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, or the ride now runs past the hours that were fetched. The temperature, humidity and wind follow a changed start time and speed on their own; tap Get forecast again to pick up a different date or later hours.</p>
       <p class="error-text" id="forecastError"></p>
     </div>
-    <p class="field-hint" id="manualHint">Set the wind and the temperature yourself, in the Wind and Temperature tabs below.</p>
   </div>
 
   <div class="stat-row" id="statRow"></div>
@@ -1620,25 +1620,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div class="wind-fields">
         <div class="field">
-          <label for="windInput">Wind from</label>
+          <label for="windInput">Wind from <span class="info-pop" data-about="the wind direction">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</span></label>
           <input type="text" id="windInput" value="SW" autocomplete="off" spellcheck="false">
-          <p class="field-hint">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</p>
           <p class="field-hint" id="windTimelineHint" hidden></p>
         </div>
         <div class="field">
-          <label for="windSpeedInput">Wind speed (Beaufort)</label>
+          <label for="windSpeedInput">Wind speed (Beaufort) <span class="info-pop" id="speedHint" data-about="the wind speed"></span></label>
           <select id="windSpeedInput"></select>
         </div>
-        <p class="field-hint" id="speedHint">Wind speed and your speed (Your ride, above) feed the last-50% wind-effort estimate below.</p>
         <div class="field">
-          <label for="neutralInput">Crosswind band (&deg;)</label>
+          <label for="neutralInput">Crosswind band (&deg;) <span class="info-pop" data-about="the crosswind band">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</span></label>
           <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
-          <p class="field-hint">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</p>
         </div>
         <div class="field">
-          <label for="veryInput">Full tailwind / full headwind band (&deg;)</label>
+          <label for="veryInput">Full tailwind / full headwind band (&deg;) <span class="info-pop" data-about="the full tailwind and headwind band">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) — e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</span></label>
           <input type="number" id="veryInput" value="40" min="0" max="90" step="1">
-          <p class="field-hint">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) — e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</p>
         </div>
         <details class="advanced">
           <summary>Advanced</summary>
@@ -1652,8 +1648,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </div>
     <div class="ride-chart" id="windRideChart" hidden>
-      <h3>Wind during the ride</h3>
-      <p class="chart-caption">Arrows show where the wind blows toward, with its speed below, at each time of day. The two directions meet different places at the same time, so they differ.</p>
+      <h3>Wind during the ride <span class="info-pop" data-about="this chart">Arrows show where the wind blows toward, with its speed below, at each time of day. The two directions meet different places at the same time, so they differ.</span></h3>
       <svg class="ride-svg" id="windRideSvg" role="img" aria-label="Wind direction and speed during the ride, as recorded and in reverse"></svg>
       <p class="ride-readout" id="windRideReadout" aria-live="polite"></p>
       <div class="ride-legend" id="windRideLegend"></div>
@@ -1664,13 +1659,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="route-slot" id="routeSlotWind">
     <div class="card chart-card" id="routeCard">
       <div class="card-head">
-        <h2>Route</h2>
+        <h2>Route <span class="info-pop" id="planCaption" data-about="the route colours"></span></h2>
         <div style="display: flex; align-items: center; gap: 10px;">
           <span class="badge example" id="mapStatusBadge">Loading&hellip;</span>
           <button class="copy-btn" id="saveRouteBtn">Save image</button>
         </div>
       </div>
-      <p class="chart-caption" id="planCaption"></p>
+      <p class="chart-caption" id="planSummary"></p>
       <div class="map-wrap">
         <div id="leafletMapDiv"></div>
       </div>
@@ -1678,8 +1673,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
     </div>
     <div class="card chart-card">
-      <h2 id="effortTitle">Effort in the last 50% of the round trip</h2>
-      <p class="chart-caption" id="halfCaption"></p>
+      <h2><span id="effortTitle">Effort in the last 50% of the round trip</span> <span class="info-pop" id="halfCaption" data-about="this card"></span></h2>
       <div class="half-grid" id="halfGrid"></div>
       <p class="half-verdict" id="halfVerdict"></p>
     </div>
@@ -1687,12 +1681,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="card">
     <div class="card-head">
-      <h2>Wind-direction sweep</h2>
+      <h2>Wind-direction sweep <span class="info-pop" data-about="the sweep chart">Easy-fraction for the route as ridden, if the wind came from every direction, 0&ndash;359&deg;. Reverse isn't shown separately &mdash; riding in reverse with wind from &theta; is mathematically identical to riding forward with wind from &theta;+180&deg;, so reverse's value at any direction is just this same curve read 180&deg; across.</span></h2>
       <button class="copy-btn" id="saveSweepBtn">Save image</button>
     </div>
     <div class="sweep-layout">
-    <p class="chart-caption">Easy-fraction for the route as ridden, if the wind came from every direction, 0&ndash;359&deg;. Reverse isn't shown separately &mdash; riding in reverse with wind from &theta; is mathematically identical to riding forward with wind from &theta;+180&deg;, so reverse's value at any direction is just this same curve read 180&deg; across.</p>
-    <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, for the route as ridden"></svg>
+        <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, for the route as ridden"></svg>
     <div class="wind-sensitivity" id="sweepCallout"></div>
     <details class="table-toggle">
       <summary>View sweep as a table</summary>
@@ -1713,7 +1706,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <h2>Temperature</h2>
     <div class="two-col-grid">
           <div class="field">
-            <label for="tempInput">Air temperature</label>
+            <label for="tempInput">Air temperature <span class="info-pop" data-about="the air temperature">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels.</span></label>
             <input type="number" id="tempInput" min="-80" max="140" step="1">
           </div>
           <div class="field">
@@ -1724,21 +1717,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </select>
           </div>
         </div>
-<p class="field-hint">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels.</p>
     <p class="field-hint" id="tempTimelineHint" hidden></p>
     <div class="field" id="humidityField" hidden>
-      <label for="humidityInput">Humidity</label>
+      <label for="humidityInput">Humidity <span class="info-pop" id="humidityHint" data-about="the humidity"></span></label>
       <select id="humidityInput">
         <option value="30">Dry (about 30%)</option>
         <option value="50">Normal (about 50%)</option>
         <option value="70">Humid (about 70%)</option>
         <option value="90">Very humid (about 90%)</option>
       </select>
-      <p class="field-hint" id="humidityHint"></p>
     </div>
     <div class="ride-chart" id="tempRideChart" hidden>
-      <h3>Temperature during the ride</h3>
-      <p class="chart-caption">The air temperature and how it feels on the bike at each time of day. The shading is the difference between them, for the route as recorded.</p>
+      <h3>Temperature during the ride <span class="info-pop" data-about="this chart">The air temperature and how it feels on the bike at each time of day. The shading is the difference between them, for the route as recorded.</span></h3>
       <svg class="ride-svg" id="tempRideSvg" role="img" aria-label="Air temperature and feels-like temperature during the ride, as recorded and in reverse"></svg>
       <p class="ride-readout" id="tempRideReadout" aria-live="polite"></p>
       <div class="ride-legend" id="tempRideLegend"></div>
@@ -1748,8 +1738,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="chart-grid">
     <div class="route-slot" id="routeSlotTemp"></div>
     <div class="card chart-card" id="chillCard">
-    <h2>Feels like on the bike</h2>
-    <p class="chart-caption" id="chillCaption"></p>
+    <h2>Feels like on the bike <span class="info-pop" id="chillCaption" data-about="the feels-like temperature"></span></h2>
+    <p class="chart-caption">How the air feels to a rider at your speed, worked out for every stretch of the route.</p>
     <div class="half-grid" id="chillGrid"></div>
     <p class="half-verdict" id="chillVerdict"></p>
   </div>
@@ -1759,7 +1749,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="tabpanel" id="panelClimbs" role="tabpanel" aria-labelledby="tabClimbs" hidden>
     <div class="card">
-      <h2>Climbs</h2>
+      <h2>Climbs <span class="info-pop" data-about="how climbs are found">A climb is a rise of at least the minimum climb, at least as steep as the minimum average slope, in the smoothed elevation of your route. The average slope keeps long, gentle rises from counting.</span></h2>
       <div class="mode-toggle" role="group" aria-label="Direction">
         <button type="button" id="climbDirFwd" aria-pressed="true">As recorded</button>
         <button type="button" id="climbDirRev" aria-pressed="false">In reverse</button>
@@ -1774,7 +1764,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <input type="number" id="climbMinAvg" value="2" min="0" max="15" step="0.5">
         </div>
       </div>
-      <p class="field-hint">A climb is a rise of at least this much, at least this steep on average, in the smoothed elevation of your route. The average slope keeps long, gentle rises from counting.</p>
       <p class="climb-summary" id="climbSummary"></p>
       <div class="dem-offer" id="demOffer" hidden>
         <p id="demOfferText"></p>
@@ -1785,10 +1774,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="chart-grid">
       <div class="route-slot" id="routeSlotClimbs"></div>
       <div class="card chart-card" id="climbListCard">
-        <h2>Climbs, in the order you ride them</h2>
+        <h2>Climbs, in the order you ride them <span class="info-pop" id="climbNote" data-about="the climb table"></span></h2>
         <div id="climbLegend"></div>
         <div class="climb-table-wrap"><table class="climb-table" id="climbTable"></table></div>
-        <p class="chart-caption" id="climbNote"></p>
       </div>
     </div>
   </div>
@@ -4722,10 +4710,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
   fcDate.value = tomorrow.getFullYear() + "-" + pad2(tomorrow.getMonth() + 1) + "-" + pad2(tomorrow.getDate());
 
-  var manualHint = document.getElementById("manualHint");
   function setWindMode(fromForecast) {
     forecastPanel.hidden = !fromForecast;
-    manualHint.hidden = fromForecast;
     modeManual.setAttribute("aria-pressed", String(!fromForecast));
     modeForecast.setAttribute("aria-pressed", String(fromForecast));
   }
@@ -5212,13 +5198,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
       banner.innerHTML = checkSvg + "Roughly symmetric for this wind &mdash; neither direction has a clear advantage.";
     }
 
+    document.getElementById("planSummary").textContent = state.view === "climbs"
+      ? "Climbs of at least " + state.climbMinGain + " m, " + (state.climbDir === "fwd" ? "as recorded" : "in reverse") + ", numbered as in the table."
+      : state.view === "temp"
+      ? "Each stretch coloured by how much colder (blue) or hotter (red) it feels than the air."
+      : (result.steadyWind
+          ? "Tailwind and headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)."
+          : "Tailwind and headwind for the forecast wind, which changes during the ride.");
     document.getElementById("planCaption").textContent = state.view === "climbs"
       ? "Climbs of at least " + state.climbMinGain + " m (average " + state.climbMinAvg + "% or steeper), " + (state.climbDir === "fwd" ? "as recorded" : "ridden in reverse") +
         ", coloured by their steepest 100 m and numbered as in the table; the rest of the route is grey." + (result.terrain.available ? "" : " The elevation has not been looked up, so nothing is coloured.")
       : state.view === "temp"
       ? tempViewCaption(result)
       : (result.steadyWind
-          ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°)."
+          ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°): each stretch by the angle between the way you ride and the wind. Green is tailwind, red is headwind and grey is crosswind; darker means closer to dead-on."
           : "Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there (as recorded from the start time).");
     renderPolarSweep(result);
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
@@ -5245,9 +5238,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("speedHint").textContent = result.ride.mode === "power"
       ? "Wind speed and your calm-day speed (Your ride, above) set your steady power and the ride time below."
       : "Wind speed and your speed (Your ride, above) feed the last-50% wind-effort estimate below.";
-    document.getElementById("rideStyleHint").textContent = result.ride.mode === "power"
-      ? "About " + Math.round(result.ride.powerW) + " W at the pedals holds " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h on a calm, flat day (" + result.ride.rider.massKg + " kg, CdA " + result.ride.rider.cda + ", Crr " + result.ride.rider.crr + "). You slow into a headwind and speed up with a tailwind. Flat road only."
-      : "Steady speed holds your cruising speed whatever the wind; steady power holds the effort and lets the speed change.";
+    var styleHint = document.getElementById("rideStyleHint");
+    styleHint.hidden = result.ride.mode !== "power";
+    styleHint.textContent = result.ride.mode === "power"
+      ? "About " + Math.round(result.ride.powerW) + " W at the pedals holds " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h on a calm, flat day (" + result.ride.rider.massKg + " kg, CdA " + result.ride.rider.cda + ", Crr " + result.ride.rider.crr + ")."
+      : "";
 
     document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
     lastResult = result;
@@ -5559,25 +5554,45 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return "tailwind-tally-sweep-" + degreesToCompass16(state.windFromDeg) + ".png";
   });
 
-  // Info popovers (the "?" buttons next to "Wind sensitivity") are
-  // regenerated by innerHTML on every render(), so their listeners are
-  // delegated on document rather than bound per-button.
-  document.addEventListener("click", function (e) {
-    var btn = e.target.closest(".info-btn");
-    if (btn) {
-      var pop = btn.nextElementSibling;
-      var wasOpen = pop && !pop.hidden;
-      document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
-      if (pop) pop.hidden = wasOpen;
-      e.stopPropagation();
-      return;
-    }
-    if (e.target.closest(".info-popover")) return;
+  // Info popovers: the "?" buttons next to labels and titles that hold the explanations, and
+  // the one in the Wind sensitivity callout. Elements marked .info-pop in the markup (with a
+  // data-about naming the topic) are turned into button + popover here; their text may be
+  // set by the script later, and an empty one hides its button. The callout's popover is
+  // regenerated by innerHTML on every render(), so the listeners are delegated on document.
+  function closeInfo() {
     document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
+    document.querySelectorAll(".info-btn").forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+  }
+  function placeInfo(pop) {                    // keep the popover inside the window
+    pop.style.left = "0px";
+    var r = pop.getBoundingClientRect(), left = 0;
+    if (r.right > window.innerWidth - 12) left -= r.right - (window.innerWidth - 12);
+    if (r.left + left < 12) left += 12 - (r.left + left);
+    pop.style.left = left + "px";
+  }
+  document.querySelectorAll(".info-pop").forEach(function (pop) {
+    var wrap = document.createElement("span"), btn = document.createElement("button");
+    wrap.className = "info-wrap";
+    btn.type = "button"; btn.className = "info-btn"; btn.textContent = "?";
+    btn.setAttribute("aria-label", "More about " + (pop.getAttribute("data-about") || "this"));
+    btn.setAttribute("aria-expanded", "false");
+    pop.className = "info-popover"; pop.hidden = true; pop.setAttribute("role", "note");
+    pop.parentNode.insertBefore(wrap, pop);
+    wrap.appendChild(btn); wrap.appendChild(pop);
+    function sync() { wrap.style.display = pop.textContent.trim() === "" ? "none" : ""; }
+    sync();
+    new MutationObserver(sync).observe(pop, { childList: true, characterData: true, subtree: true });
   });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".info-popover")) { e.preventDefault(); return; }   // text inside a label must not activate its field
+    var btn = e.target.closest(".info-btn"), pop = btn ? btn.nextElementSibling : null, wasOpen = pop && !pop.hidden;
+    closeInfo();
+    if (btn) {
+      e.preventDefault(); e.stopPropagation();
+      if (pop && !wasOpen) { pop.hidden = false; btn.setAttribute("aria-expanded", "true"); placeInfo(pop); }
+    }
   });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeInfo(); });
 
   // Climbs tab controls: direction and the two detection thresholds.
   var climbDirFwd = document.getElementById("climbDirFwd"), climbDirRev = document.getElementById("climbDirRev");
