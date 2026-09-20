@@ -1647,7 +1647,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <footer>
     Geometry: equirectangular projection about the route centroid, resampled to fixed arc-length spacing before heading is measured. Elevation, gradient and speed are out of scope.
-    <div style="margin-top: 8px;"><a href="privacy.html" style="color: inherit;">Privacy Policy</a></div>
+    <div style="margin-top: 8px;"><a href="privacy.html" style="color: inherit;">Privacy Policy</a><span id="howItWorksLink"> &middot; <a href="how-it-works.html" style="color: inherit;">How it works</a></span></div>
   </footer>
 </div>
 
@@ -4087,6 +4087,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
   });
+
+  // "How it works" is a long reference page with tables and formulas, and the
+  // iOS app has no address bar or back button to make reading it comfortable, so
+  // the link is left out there (it is still on the App Store page via the
+  // Support URL, and in any browser). The app's WKWebView is recognisable by
+  // its user agent: on iOS, Safari and Chrome say "Safari/", a bare web view
+  // does not. Any other embedded iOS web view is treated the same way.
+  (function () {
+    var ua = navigator.userAgent || "";
+    var embeddedIos = /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari\//.test(ua);
+    var link = document.getElementById("howItWorksLink");
+    if (embeddedIos && link) link.hidden = true;
+  })();
 
   render();
 })();

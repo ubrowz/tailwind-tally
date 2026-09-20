@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works — Tailwind Tally</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --font-display: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --ink: #0b0b0b;
+    --ink-secondary: #52514e;
+    --ink-muted: #898781;
+    --paper: #f9f9f7;
+    --panel: #fcfcfb;
+    --border: rgba(11, 11, 11, 0.10);
+    --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ffffff;
+      --ink-secondary: #c3c2b7;
+      --ink-muted: #898781;
+      --paper: #0d0d0d;
+      --panel: #1a1a19;
+      --border: rgba(255, 255, 255, 0.11);
+      --accent: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+    --paper: #0d0d0d;
+    --panel: #1a1a19;
+    --border: rgba(255, 255, 255, 0.11);
+    --accent: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); }
+  body {
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+  a { color: var(--accent); }
+  header { margin-bottom: 32px; }
+  header .eyebrow {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
+  }
+  h1 { font-family: var(--font-display); font-size: 28px; font-weight: 600; margin: 0 0 8px; }
+  header p { color: var(--ink-secondary); margin: 0; font-size: 14px; }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    margin: 40px 0 10px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+  }
+  h3 { font-family: var(--font-display); font-size: 14px; font-weight: 600; margin: 22px 0 6px; }
+  p, li { font-size: 15px; color: var(--ink-secondary); }
+  strong { color: var(--ink); font-weight: 600; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  code {
+    font-family: var(--font-display);
+    font-size: 0.9em;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .formula {
+    font-family: var(--font-display);
+    font-size: 13.5px;
+    line-height: 1.7;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin: 12px 0;
+    white-space: pre-wrap;        /* wrap on narrow screens instead of hiding the end of a formula */
+    overflow-wrap: break-word;
+    color: var(--ink);
+  }
+  .callout {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 14px 0;
+  }
+  .callout p { margin: 4px 0; }
+  .table-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; }
+  td { color: var(--ink-secondary); }
+  td.num, th.num { text-align: right; font-family: var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  nav.toc { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; margin: 20px 0 0; }
+  nav.toc ol { margin: 6px 0 0; }
+  nav.toc li { font-size: 14px; margin-bottom: 3px; }
+  .refs li { font-size: 14px; }
+  .back { display: inline-block; margin-top: 40px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <span class="eyebrow">Tailwind Tally</span>
+    <h1>How it works</h1>
+    <p>The science behind the &ldquo;feels like&rdquo; temperature, and where the numbers come from. Last updated September 20, 2026. The explanation of the wind analysis itself (tailwind and headwind classes, the effort estimate) will be added here later.</p>
+    <nav class="toc" aria-label="Contents">
+      <strong>Contents</strong>
+      <ol>
+        <li><a href="#short">The short version</a></li>
+        <li><a href="#inputs">What goes in</a></li>
+        <li><a href="#airspeed">The wind on you</a></li>
+        <li><a href="#cold">Cold: wind chill</a></li>
+        <li><a href="#warm">Mild and hot: apparent temperature</a></li>
+        <li><a href="#blend">Putting the two together</a></li>
+        <li><a href="#still">Standing still: the heat index</a></li>
+        <li><a href="#colours">From numbers to colours</a></li>
+        <li><a href="#limits">What this is not</a></li>
+        <li><a href="#check">How it is checked</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
+  </header>
+
+  <h2 id="short">1. The short version</h2>
+  <p>A thermometer tells you the air temperature. It does not tell you how the ride will <em>feel</em>. Riding into a headwind at 25&nbsp;km/h on a 5&nbsp;&deg;C day feels much colder than 5&nbsp;&deg;C, and riding in humid heat feels hotter than the number says. Tailwind Tally estimates that feeling for every 25&nbsp;metre stretch of your route:</p>
+  <ol>
+    <li>It works out the <strong>wind on you</strong> on that stretch: your own speed combined with the wind, given the direction you are riding.</li>
+    <li>It takes the <strong>air temperature and humidity</strong> you enter, or the forecast for the moment you would be there.</li>
+    <li>Below about 10&nbsp;&deg;C it uses the official <strong>wind chill</strong> formula. From 20&nbsp;&deg;C up it uses the <strong>apparent temperature</strong>, which includes wind and humidity. In between it fades smoothly from one to the other.</li>
+    <li>It compares the result with the air temperature and colours the route by how much colder (blue) or hotter (red) each stretch feels.</li>
+  </ol>
+  <div class="callout">
+    <p><strong>It is a guide, not a measurement.</strong> Both formulas were built for a standard person in standard conditions. Clothing, sun, effort and the individual all matter, and none of them are in the model. The rest of this page says exactly what is and is not included.</p>
+  </div>
+
+  <h2 id="inputs">2. What goes in</h2>
+  <ul>
+    <li><strong>Air temperature</strong> and <strong>humidity</strong>: typed in by you, or taken from the forecast.</li>
+    <li><strong>Your speed</strong>: the cruising speed you enter, held constant. The app does not model hills, stops or descents.</li>
+    <li><strong>The wind</strong>: direction and speed, typed in (speed as a Beaufort force) or taken from the forecast.</li>
+    <li><strong>The route</strong>: your GPX track, resampled to 25&nbsp;metre stretches, each with a heading.</li>
+  </ul>
+
+  <h3>The forecast</h3>
+  <p>In forecast mode the app asks <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> for hourly values, for the date you pick. It sends up to three places from your route (the start, the middle and the end), each rounded to 0.1&deg; (about 11&nbsp;km), never the route itself. You give only a <strong>start time</strong>. The ride then lasts as long as the route takes at your cruising speed, and each stretch gets its own clock time:</p>
+  <div class="formula">time at a stretch  =  start time  +  distance ridden so far / your speed</div>
+  <p>Temperature and humidity are read from the hourly forecast at that moment (linearly between the hours), and between the three places (linearly by distance along the route). Riding the route in reverse starts at the other end at the same clock time, so the same place is reached at a different moment and the two directions can differ.</p>
+  <p>The <strong>wind is different</strong>: it is one value, averaged over the whole ride. Its direction is a speed-weighted vector mean (a plain average of 350&deg; and 10&deg; would wrongly give 180&deg;), its speed is the mean of the hourly speeds, and it is then filed under the nearest Beaufort force. A wind that changes direction during the ride is not modelled yet. The forecast wind is the standard 10&nbsp;metre wind, which is also how the Beaufort scale is defined, so manual and forecast wind are directly comparable.</p>
+
+  <h2 id="airspeed">3. The wind on you</h2>
+  <p>What cools or heats you is not the wind alone but the <strong>air moving past you</strong>, which is your own motion combined with the wind. On each 25&nbsp;metre stretch, with <code>v</code> your speed, <code>w</code> the wind speed and &phi; the angle between the direction you ride and the direction the wind blows toward:</p>
+  <div class="formula">airspeed&sup2;  =  v&sup2;  +  w&sup2;  &minus;  2 &middot; v &middot; w &middot; cos &phi;
+
+cos &phi; = +1   pure tailwind   airspeed = v &minus; w
+cos &phi; =  0   pure crosswind  airspeed = &radic;(v&sup2; + w&sup2;)
+cos &phi; = &minus;1   pure headwind   airspeed = v + w</div>
+  <p><strong>Example.</strong> You ride at 25&nbsp;km/h in a Beaufort&nbsp;4 wind (24&nbsp;km/h). Straight into it the air passes you at 49&nbsp;km/h, across it at about 35&nbsp;km/h, and with it at just 1&nbsp;km/h. That difference is why the same route feels so different from one stretch to the next.</p>
+
+  <h2 id="cold">4. Cold: wind chill</h2>
+  <p>For cold weather the app uses the standard wind chill formula that Environment Canada and the US National Weather Service have used since 2001. It comes from Osczevski and Bluestein (2005), who based it on a model of heat flow from the upwind side of a head-sized cylinder moving at walking speed into the wind. With <code>T</code> in &deg;C and <code>V</code> the airspeed in km/h:</p>
+  <div class="formula">wind chill  =  13.12  +  0.6215 T  &minus;  11.37 V<sup>0.16</sup>  +  0.3965 T V<sup>0.16</sup></div>
+  <p>It is officially defined only for <strong>T &le; 10&nbsp;&deg;C</strong> and <strong>V &gt; 4.8&nbsp;km/h</strong> (the 3&nbsp;mph limit in the US version). Below 4.8&nbsp;km/h of airspeed there is no wind chill, which is why a tailwind that matches your speed brings no cooling at all.</p>
+  <p><strong>Example.</strong> At &minus;10&nbsp;&deg;C it feels like &minus;15.3&nbsp;&deg;C at 10&nbsp;km/h of airspeed, &minus;18.8&nbsp;&deg;C at 25&nbsp;km/h and &minus;21.3&nbsp;&deg;C at 45&nbsp;km/h.</p>
+  <p><strong>Caveats.</strong> The formula describes how fast exposed skin on the face cools, in steady conditions, for someone walking. Using a cyclist&rsquo;s airspeed is the usual approximation and not what it was calibrated for. The authors themselves point out the steady-state character of the concept.</p>
+
+  <h2 id="warm">5. Mild and hot: apparent temperature</h2>
+  <p>Wind chill is not defined for mild weather, and it ignores humidity. From 20&nbsp;&deg;C up the app uses the <strong>apparent temperature</strong> of Robert Steadman, in the form used by the Australian Bureau of Meteorology. It combines temperature, humidity and wind. With <code>T</code> in &deg;C, <code>RH</code> the relative humidity in % and <code>v</code> the wind in metres per second:</p>
+  <div class="formula">apparent temperature  =  T  +  0.33 &middot; e  &minus;  0.70 &middot; v  &minus;  4.00
+
+e  =  (RH / 100)  &middot;  6.105  &middot;  exp( 17.27 T / (237.7 + T) )      [hPa, water vapour pressure]</div>
+  <p>It reads as three effects on top of the air temperature: <strong>humid air feels warmer</strong> (the <code>0.33&middot;e</code> term, because sweat evaporates more slowly), <strong>moving air feels cooler</strong> (0.7&nbsp;&deg;C for every metre per second), and a fixed offset of &minus;4&nbsp;&deg;C. The model is of an adult walking outdoors in the shade. In the original formula <code>v</code> is the wind at 10&nbsp;metres; the app uses the airspeed on the rider, the same approximation as for the wind chill.</p>
+  <p><strong>Example.</strong> At 32&nbsp;&deg;C and 70&nbsp;% humidity the water vapour pressure is 33.2&nbsp;hPa, so humidity adds 10.9&nbsp;&deg;C. Riding at 25&nbsp;km/h (6.9&nbsp;m/s) takes 4.9&nbsp;&deg;C off, and the offset another 4.0. The result is 34.1&nbsp;&deg;C, only 2&nbsp;&deg;C above the air temperature. In still air the same day would feel like 38.9&nbsp;&deg;C.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Riding speed (no other wind)</th><th class="num">Feels like at 32&nbsp;&deg;C, 70&nbsp;%</th></tr></thead>
+      <tbody>
+        <tr><td>Standing still</td><td class="num">38.9&nbsp;&deg;C</td></tr>
+        <tr><td>10&nbsp;km/h (a slow climb)</td><td class="num">37.0&nbsp;&deg;C</td></tr>
+        <tr><td>25&nbsp;km/h</td><td class="num">34.1&nbsp;&deg;C</td></tr>
+        <tr><td>40&nbsp;km/h</td><td class="num">31.2&nbsp;&deg;C</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Steadman&rsquo;s own analysis found that, for normal midday climates in the US, humidity, wind and sun move the apparent temperature by between &minus;5 and +7&nbsp;K from the dry-bulb temperature. That is the scale of effect to expect.</p>
+
+  <h2 id="blend">6. Putting the two together</h2>
+  <p>The two models are not the same physics, and they disagree by a few degrees in the middle, so switching between them at a single temperature would make the result jump. Instead the app fades from one to the other between <strong>10&nbsp;&deg;C</strong> (where the official wind chill ends) and <strong>20&nbsp;&deg;C</strong>:</p>
+  <div class="formula">x  =  (T &minus; 10) / 10                     (limited to 0 &hellip; 1)
+weight  =  3x&sup2; &minus; 2x&sup3;                      (a smooth S-curve)
+feels like  =  (1 &minus; weight) &middot; wind chill  +  weight &middot; apparent temperature</div>
+  <p>Above 10&nbsp;&deg;C the wind chill formula is evaluated beyond its official range, and capped so it never says it feels warmer than the air. That extension is only used inside the fade zone, and it is a plausible shape, not something that has been validated. The result at 15&nbsp;&deg;C, 60&nbsp;% humidity and 25&nbsp;km/h: wind chill 13.4&nbsp;&deg;C, apparent temperature 9.5&nbsp;&deg;C, weight 0.5, so 11.4&nbsp;&deg;C.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Air temperature</th><th class="num">&minus;10</th><th class="num">0</th><th class="num">10</th><th class="num">15</th><th class="num">20</th><th class="num">25</th><th class="num">30</th><th class="num">35</th><th class="num">40&nbsp;&deg;C</th></tr></thead>
+      <tbody>
+        <tr><td>Feels like minus air (25&nbsp;km/h, 50&nbsp;% humidity)</td><td class="num">&minus;8.8</td><td class="num">&minus;5.9</td><td class="num">&minus;3.1</td><td class="num">&minus;3.8</td><td class="num">&minus;5.0</td><td class="num">&minus;3.6</td><td class="num">&minus;1.9</td><td class="num">+0.4</td><td class="num">+3.3</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Note the small dip in the cooling between 10 and 20&nbsp;&deg;C. It is the seam between the two models, not a real effect. The absolute feels-like temperature still rises steadily with the air temperature.</p>
+  <p><strong>A known limit.</strong> In the fade zone, in very dry air (20&nbsp;% humidity or less) at high airspeed (40&nbsp;km/h or more), a slightly warmer air temperature can feel up to 1&nbsp;&deg;C colder, and up to about 3&nbsp;&deg;C in the extreme corner of bone-dry air at 60&nbsp;km/h. It never happens up to 25&nbsp;km/h of airspeed or in humid air.</p>
+
+  <h2 id="still">7. Standing still: the heat index</h2>
+  <p>The apparent temperature includes the cooling from riding. If you stop, or crawl up a steep hill with no breeze, that cooling disappears. For that case the app shows the <strong>heat index</strong> of the US National Weather Service, which uses only temperature and humidity. It comes from Steadman&rsquo;s work and Rothfusz&rsquo;s regression fit (1990): a simple formula for milder conditions, and a longer regression once the result reaches 80&nbsp;&deg;F (about 27&nbsp;&deg;C), with two extra adjustments for very dry or very humid air. The regression is published at the National Weather Service; the page linked under Sources lists every coefficient.</p>
+  <p>The published algorithm has small <strong>steps</strong> where it switches between its parts (up to about 1.3&nbsp;&deg;C in humid air), the same kind of jump the wind chill cutoff would cause. The app smooths them: it blends the simple formula into the regression over 78&ndash;82&nbsp;&deg;F, fades the two humidity adjustments in over 78&ndash;80&nbsp;&deg;F, and ramps the whole effect in between 22 and 26&nbsp;&deg;C. From about 29&nbsp;&deg;C upwards the result is exactly the published value.</p>
+  <p><strong>Example.</strong> At 32&nbsp;&deg;C and 70&nbsp;% humidity the heat index is 40.4&nbsp;&deg;C, 8.4&nbsp;&deg;C above the air temperature and far above the 34.1&nbsp;&deg;C you would feel riding at 25&nbsp;km/h.</p>
+  <p>The heat index assumes shade, and the National Weather Service notes that direct sunlight can add up to 15&nbsp;&deg;F (about 8&nbsp;&deg;C). It also carries the Weather Service&rsquo;s heat-illness categories, which the app quotes when the standing-still value is high: from 103&nbsp;&deg;F (39&nbsp;&deg;C) heat cramps or heat exhaustion are likely and heat stroke is possible, and from 125&nbsp;&deg;F (52&nbsp;&deg;C) heat stroke is highly likely.</p>
+
+  <h2 id="colours">8. From numbers to colours</h2>
+  <p>The map on the Temperature tab colours each stretch by <strong>feels like minus air temperature</strong> at that moment on that stretch. The steps are fixed, so a colour means the same thing on every route and every day:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Difference from the air</th><th>Colour</th></tr></thead>
+      <tbody>
+        <tr><td>More than 12&nbsp;&deg;C colder</td><td><span class="swatch" style="background:#104281"></span>darkest blue</td></tr>
+        <tr><td>8 to 12&nbsp;&deg;C colder</td><td><span class="swatch" style="background:#1c5cab"></span>dark blue</td></tr>
+        <tr><td>5 to 8&nbsp;&deg;C colder</td><td><span class="swatch" style="background:#2a78d6"></span>blue</td></tr>
+        <tr><td>3 to 5&nbsp;&deg;C colder</td><td><span class="swatch" style="background:#5598e7"></span>light blue</td></tr>
+        <tr><td>1 to 3&nbsp;&deg;C colder</td><td><span class="swatch" style="background:#86b6ef"></span>lightest blue</td></tr>
+        <tr><td>Within 1&nbsp;&deg;C of the air</td><td><span class="swatch" style="background:#898781"></span>grey</td></tr>
+        <tr><td>1 to 3&nbsp;&deg;C hotter</td><td><span class="swatch" style="background:#ff8c85"></span>light red</td></tr>
+        <tr><td>3 to 5&nbsp;&deg;C hotter</td><td><span class="swatch" style="background:#e84f4d"></span>red</td></tr>
+        <tr><td>5 to 8&nbsp;&deg;C hotter</td><td><span class="swatch" style="background:#bb1e27"></span>dark red</td></tr>
+        <tr><td>More than 8&nbsp;&deg;C hotter</td><td><span class="swatch" style="background:#830112"></span>darkest red</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Each colour arm is one hue running from light to dark, so a stronger effect is always darker. In dark mode the arms are reversed (stronger is lighter) so a bigger effect still stands out against a dark map. Colours are compared with the air temperature <em>at that moment</em>, so a morning that warms up does not read as chill. In Fahrenheit the same steps are used and shown converted.</p>
+  <p>The &ldquo;coldest tenth&rdquo; and &ldquo;hottest tenth&rdquo; figures are the average feels-like over the coldest or hottest 10&nbsp;% of the <em>distance</em>, not the single most extreme stretch, so one stray GPS point cannot set the headline number.</p>
+
+  <h2 id="limits">9. What this is not</h2>
+  <ul>
+    <li><strong>Not a measurement.</strong> It is a model of an average person. Individuals differ a lot, and what a cyclist feels is subjective.</li>
+    <li><strong>No sun.</strong> Neither formula includes solar radiation. Full sun feels hotter (the heat index notes up to about 8&nbsp;&deg;C).</li>
+    <li><strong>No clothing, no effort.</strong> The models do not know what you wear or how hard you work. Riding hard generates heat the models do not count.</li>
+    <li><strong>Constant speed.</strong> The clock and the airspeed use your cruising speed. Climbs, descents, stops and sprints are not modelled, so timing is approximate. The forecast is hourly, so that is usually accurate enough.</li>
+    <li><strong>One wind for the whole ride.</strong> Temperature and humidity follow the clock and the place; the wind does not (yet).</li>
+    <li><strong>Forecast resolution.</strong> Weather models resolve places a few kilometres apart at best, and three sample places are used. Local effects such as valleys, coasts, buildings and tree cover are not captured.</li>
+    <li><strong>Very hot, dry air.</strong> Above about 35&nbsp;&deg;C in dry air, moving air stops helping and can add heat. The apparent temperature formula does not capture that.</li>
+    <li><strong>Not medical or safety advice.</strong> The heat-illness categories quoted are the National Weather Service&rsquo;s for the standing-still heat index. Use your own judgement and local guidance.</li>
+  </ul>
+
+  <h2 id="check">10. How it is checked</h2>
+  <p>The maths is covered by automated tests that run against the code in this app. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
+  <p>If you find a case where a number looks wrong, please say so on the <a href="https://github.com/ubrowz/tailwind-tally/issues" target="_blank" rel="noopener">issue tracker</a> with the temperature, humidity, speed and wind you used.</p>
+
+  <h2 id="sources">11. Sources</h2>
+  <ul class="refs">
+    <li>Osczevski, R. and Bluestein, M. (2005). The new wind chill equivalent temperature chart. <em>Bulletin of the American Meteorological Society</em>, 86(10), 1453&ndash;1458. <a href="https://journals.ametsoc.org/view/journals/bams/86/10/bams-86-10-1453.xml" target="_blank" rel="noopener">journals.ametsoc.org</a></li>
+    <li>US National Weather Service. Wind chill: formula, validity range and chart. <a href="https://www.weather.gov/safety/cold-wind-chill-chart" target="_blank" rel="noopener">weather.gov/safety/cold-wind-chill-chart</a></li>
+    <li>Steadman, R. G. (1984). A universal scale of apparent temperature. <em>Journal of Climate and Applied Meteorology</em>, 23(12), 1674&ndash;1687. <a href="https://journals.ametsoc.org/view/journals/apme/23/12/1520-0450_1984_023_1674_ausoat_2_0_co_2.xml" target="_blank" rel="noopener">journals.ametsoc.org</a></li>
+    <li>Steadman, R. G. (1979). The assessment of sultriness. Part I: A temperature-humidity index based on human physiology and clothing science, 861&ndash;873; Part II: Effects of wind, extra radiation and barometric pressure on apparent temperature, 874&ndash;885. <em>Journal of Applied Meteorology</em>, 18. <a href="https://journals.ametsoc.org/view/journals/apme/18/7/1520-0450_1979_018_0861_taospi_2_0_co_2.xml" target="_blank" rel="noopener">Part I</a> &middot; <a href="https://ui.adsabs.harvard.edu/abs/1979JApMe..18..874S/abstract" target="_blank" rel="noopener">Part II</a></li>
+    <li>Rothfusz, L. P. (1990). The heat index equation (or, more than you ever wanted to know about heat index). NWS Southern Region Technical Attachment SR/SSD 90-23. <a href="https://www.weather.gov/media/ffc/ta_htindx.PDF" target="_blank" rel="noopener">weather.gov (PDF)</a> &middot; <a href="https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml" target="_blank" rel="noopener">the equation with all coefficients</a></li>
+    <li>US National Weather Service. Heat index: what it is, shade assumption, and the heat-illness categories. <a href="https://www.weather.gov/ama/heatindex" target="_blank" rel="noopener">weather.gov/ama/heatindex</a></li>
+    <li>Australian Bureau of Meteorology: thermal comfort and apparent temperature. <a href="http://www.bom.gov.au/info/thermal_stress/" target="_blank" rel="noopener">bom.gov.au</a></li>
+    <li>Weather forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li>
+  </ul>
+
+  <a class="back" href="./">&larr; Back to Tailwind Tally</a>
+</div>
+</body>
+</html>
