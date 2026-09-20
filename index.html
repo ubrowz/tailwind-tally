@@ -482,6 +482,7 @@
   .climb-summary { font-size: 13.5px; color: var(--ink-secondary); margin: 10px 0 0; }
   .climb-summary b { color: var(--ink); }
   .climb-summary a { color: inherit; }
+  #rideCard .two-col-grid { align-items: end; }
   .dem-offer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
   .dem-offer p { font-size: 13px; color: var(--ink-secondary); margin: 0 0 10px; }
   .dem-offer a { color: inherit; }
@@ -1521,6 +1522,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <p class="error-text" id="stravaError"></p>
   </div>
 
+  <div class="card" id="rideCard">
+    <h2>Your ride</h2>
+    <div class="two-col-grid">
+      <div class="field">
+        <label for="cruiseSpeedInput" id="cruiseSpeedLabel">Cruising speed (km/h)</label>
+        <input type="number" id="cruiseSpeedInput" value="25" min="1" max="60" step="1">
+      </div>
+      <div class="field">
+        <label for="rideStyleInput">Riding style</label>
+        <select id="rideStyleInput">
+          <option value="speed">Steady speed</option>
+          <option value="power">Steady power (the same effort as your speed on a calm day)</option>
+        </select>
+      </div>
+    </div>
+    <p class="field-hint" id="rideStyleHint"></p>
+    <p class="field-hint">Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the temperature, humidity and wind you meet, and with your speed it sets how it feels.</p>
+    <details class="advanced">
+      <summary>Advanced</summary>
+      <div class="advanced-grid">
+        <div class="field">
+          <label for="riderMassInput">Rider + bike mass (kg)</label>
+          <input type="number" id="riderMassInput" value="85" min="40" max="200" step="1">
+        </div>
+        <div class="field">
+          <label for="riderCdaInput">Drag area CdA (m&sup2;)</label>
+          <input type="number" id="riderCdaInput" value="0.32" min="0.15" max="0.8" step="0.01">
+        </div>
+        <div class="field">
+          <label for="riderCrrInput">Rolling resistance Crr</label>
+          <input type="number" id="riderCrrInput" value="0.005" min="0.002" max="0.02" step="0.001">
+        </div>
+        <p class="field-hint">Used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</p>
+      </div>
+    </details>
+  </div>
+
   <div class="card" id="weatherCard">
     <h2>Weather for the ride</h2>
     <div class="mode-toggle" role="group" aria-label="Wind source">
@@ -1575,25 +1613,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p class="field-hint">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</p>
           <p class="field-hint" id="windTimelineHint" hidden></p>
         </div>
-        <div class="two-col-grid">
-          <div class="field">
-            <label for="windSpeedInput">Wind speed (Beaufort)</label>
-            <select id="windSpeedInput"></select>
-          </div>
-          <div class="field">
-            <label for="cruiseSpeedInput" id="cruiseSpeedLabel">Cruising speed (km/h)</label>
-            <input type="number" id="cruiseSpeedInput" value="25" min="1" max="60" step="1">
-          </div>
-        </div>
-        <p class="field-hint" id="speedHint">Wind speed and cruising speed feed the last-50% wind-effort estimate below.</p>
         <div class="field">
-          <label for="rideStyleInput">Riding style</label>
-          <select id="rideStyleInput">
-            <option value="speed">Steady speed</option>
-            <option value="power">Steady power (the same effort as your speed on a calm day)</option>
-          </select>
-          <p class="field-hint" id="rideStyleHint"></p>
+          <label for="windSpeedInput">Wind speed (Beaufort)</label>
+          <select id="windSpeedInput"></select>
         </div>
+        <p class="field-hint" id="speedHint">Wind speed and your speed (Your ride, above) feed the last-50% wind-effort estimate below.</p>
         <div class="field">
           <label for="neutralInput">Crosswind band (&deg;)</label>
           <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
@@ -1611,19 +1635,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
               <label for="resampleInput">Resample spacing (m)</label>
               <input type="number" id="resampleInput" value="25" min="0" step="5">
             </div>
-            <div class="field">
-              <label for="riderMassInput">Rider + bike mass (kg)</label>
-              <input type="number" id="riderMassInput" value="85" min="40" max="200" step="1">
-            </div>
-            <div class="field">
-              <label for="riderCdaInput">Drag area CdA (m&sup2;)</label>
-              <input type="number" id="riderCdaInput" value="0.32" min="0.15" max="0.8" step="0.01">
-            </div>
-            <div class="field">
-              <label for="riderCrrInput">Rolling resistance Crr</label>
-              <input type="number" id="riderCrrInput" value="0.005" min="0.002" max="0.02" step="0.001">
-            </div>
-            <p class="field-hint">The last three are used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</p>
           </div>
         </details>
       </div>
@@ -1851,7 +1862,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p><strong>How much it matters.</strong> Real forecasts vary. For a Dutch location over 65 days in summer, the wind direction turned by more than 30&deg; during a four-hour window on 28&nbsp;% of days and by more than 45&deg; on 14&nbsp;%, though the biggest turns tended to come at light winds. On the 25.7&nbsp;km sample loop, on a typical day with the wind turning 8&deg; an hour, the time-aware answer differs from a single average wind by no more than about 2 percentage points of tailwind. When a front passes (wind turning 35&deg; an hour, ridden at 10&nbsp;km/h for 2.6 hours), the difference is 6 to 14 points, enough to change the advice: one average wind says riding in reverse is easier by 4.8 points, while the wind at the moment says riding forward is easier by 3.7. So it is a modest refinement on most days and a real one on days when the weather changes, and on long rides.</p>
 
         <h2 id="how-power">6. Riding at steady power</h2>
-        <p>By default the app assumes you hold a steady <em>speed</em>. Some riders hold a steady <em>effort</em> instead: their power stays constant, so their speed drops in a headwind and rises with a tailwind. Choose <strong>Steady power</strong> under Riding style to model that. The speed you enter then means &ldquo;the speed at this effort on a calm, flat day&rdquo;, so you do not need to know your watts: the app works out the matching power and shows it.</p>
+        <p>By default the app assumes you hold a steady <em>speed</em>. Some riders hold a steady <em>effort</em> instead: their power stays constant, so their speed drops in a headwind and rises with a tailwind. Choose <strong>Steady power</strong> under Riding style (in the Your ride card, above the tabs, so it applies to every tab) to model that. The speed you enter then means &ldquo;the speed at this effort on a calm, flat day&rdquo;, so you do not need to know your watts: the app works out the matching power and shows it.</p>
         <h3>The power balance</h3>
         <p>On a flat road, the power at the pedals balances air resistance and rolling resistance:</p>
         <div class="how-formula">P &middot; &eta;  =  ( &frac12; &middot; &rho; &middot; CdA &middot; |v<sub>air</sub>| &middot; (v &minus; w<sub>along</sub>)  +  Crr &middot; m &middot; g ) &middot; v</div>
@@ -5000,8 +5011,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     updateTimelineHint(result);
     updateWindTimelineHint(result);
     document.getElementById("speedHint").textContent = result.ride.mode === "power"
-      ? "Wind speed and your calm-day speed set your steady power and the ride time below."
-      : "Wind speed and cruising speed feed the last-50% wind-effort estimate below.";
+      ? "Wind speed and your calm-day speed (Your ride, above) set your steady power and the ride time below."
+      : "Wind speed and your speed (Your ride, above) feed the last-50% wind-effort estimate below.";
     document.getElementById("rideStyleHint").textContent = result.ride.mode === "power"
       ? "About " + Math.round(result.ride.powerW) + " W at the pedals holds " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h on a calm, flat day (" + result.ride.rider.massKg + " kg, CdA " + result.ride.rider.cda + ", Crr " + result.ride.rider.crr + "). You slow into a headwind and speed up with a tailwind. Flat road only."
       : "Steady speed holds your cruising speed whatever the wind; steady power holds the effort and lets the speed change.";
