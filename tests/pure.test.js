@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
-  new Function(grab("forecast-pure") + grab("chill-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("chill-pure") + grab("power-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -554,6 +554,112 @@ t("rideWindSummary: a steady wind is fully consistent; a gentle veer stays above
   assert(near(rideWindSummary(30000, [{ frac: 0, wind: { t: [0], sp: [15], dir: [200] } }], 600, 25).consistency, 1));
   const veer = rideWindSummary(50000, [{ frac: 0, wind: { t: [600, 720], sp: [15, 15], dir: [250, 290] } }], 600, 25);
   assert(veer.consistency > 0.9 && veer.meanDir !== null && near(veer.meanDir, 270, 2));
+});
+
+// ---- riding at steady power (flat road)
+const RIDER = RIDER_DEFAULTS, RHO = 1.2, kmh = (x) => x / 3.6;
+t("power model: hand-computed watts for 25 km/h on a calm flat day", () => {
+  // aero 0.5*1.2*0.32*(6.944)^3 = 64.3 W, rolling 0.005*85*9.81*6.944 = 28.9 W, both at the wheel; / 0.975 = 95.5 W
+  const w = powerForSpeed(kmh(25), RHO, RIDER);
+  assert(Math.abs(w - 95.5) < 0.2, String(w));
+});
+t("air density: about 1.29 at 0 C, 1.20 at 20 C, 1.16 at 30 C (dry, sea level)", () => {
+  assert(Math.abs(airDensity(0) - 1.292) < 0.005); assert(Math.abs(airDensity(20) - 1.204) < 0.005); assert(Math.abs(airDensity(30) - 1.165) < 0.005);
+});
+t("calibration round trip: the power for a speed gives that speed back on a calm day, 10-50 km/h", () => {
+  for (let v = 10; v <= 50; v += 2.5) assert(near(solveSpeedMs(powerForSpeed(kmh(v), RHO, RIDER), 0, 0, RHO, RIDER) * 3.6, v, 1e-6), `v=${v}`);
+});
+t("the solved speed satisfies the power balance exactly, in headwind, tailwind, crosswind", () => {
+  const P = powerForSpeed(kmh(25), RHO, RIDER);
+  for (const wa of [-12, -6, 0, 3, 8]) for (const wc of [0, 2, 6]) {
+    const v = solveSpeedMs(P, wa, wc, RHO, RIDER);
+    assert(near(powerAtSpeed(v, wa, wc, RHO, RIDER), P, 1e-6), `wa=${wa} wc=${wc}: ${powerAtSpeed(v, wa, wc, RHO, RIDER)} vs ${P}`);
+  }
+});
+t("values from the simulation quoted in the proposal (96 W, straight flat road)", () => {
+  const P = powerForSpeed(kmh(25), RHO, RIDER);
+  const expect = { "-30": 11.4, "-20": 15.0, "-10": 19.6, "0": 25.0, "10": 31.1, "20": 37.8, "30": 44.9 };
+  for (const w in expect) assert(Math.abs(solveSpeedMs(P, kmh(+w), 0, RHO, RIDER) * 3.6 - expect[w]) < 0.06, `${w}: ${solveSpeedMs(P, kmh(+w), 0, RHO, RIDER) * 3.6}`);
+});
+t("headwind slows, tailwind speeds up, and a headwind costs more than an equal tailwind gives back", () => {
+  const P = powerForSpeed(kmh(25), RHO, RIDER), s = (w) => solveSpeedMs(P, kmh(w), 0, RHO, RIDER) * 3.6;
+  for (let w = -30; w < 30; w += 2) assert(s(w + 2) > s(w), `w=${w}`);
+  for (const w of [5, 10, 20, 30]) assert(25 - s(-w) > s(w) - 25 ? false : true, `asymmetry at ${w}`);  // gain from a tailwind exceeds the loss in speed...
+  for (const w of [5, 10, 20, 30]) assert(1 / s(-w) + 1 / s(w) > 2 / 25, `TIME is longer overall at ${w}`);   // ...but the time lost in the headwind outweighs the time gained
+});
+t("a pure crosswind still costs speed (the size of the air velocity grows)", () => {
+  const P = powerForSpeed(kmh(25), RHO, RIDER);
+  assert(solveSpeedMs(P, 0, kmh(20), RHO, RIDER) < solveSpeedMs(P, 0, 0, RHO, RIDER));
+});
+t("strong tailwind and a small power: still a stable speed, and the balance holds (wind faster than the bike)", () => {
+  const v = solveSpeedMs(30, kmh(40), 0, RHO, RIDER);
+  assert(v > 0 && isFinite(v)); assert(near(powerAtSpeed(v, kmh(40), 0, RHO, RIDER), 30, 1e-6));
+});
+t("zero power coasts to the speed where the wind's push equals rolling resistance", () => {
+  const v = solveSpeedMs(0, kmh(30), 0, RHO, RIDER);
+  assert(v > 0 && Math.abs(powerAtSpeed(v, kmh(30), 0, RHO, RIDER)) < 1e-6);
+});
+t("colder (denser) air needs more power for the same speed; heavier rider needs more too", () => {
+  assert(powerForSpeed(kmh(25), airDensity(0), RIDER) > powerForSpeed(kmh(25), airDensity(30), RIDER));
+  assert(powerForSpeed(kmh(25), RHO, { ...RIDER, massKg: 100 }) > powerForSpeed(kmh(25), RHO, RIDER));
+});
+
+// a straight 20 km east-west route in 100 segments; riding "forward" = eastbound
+const eLens = Array(100).fill(200), eHead = Array(100).fill([1, 0]);
+const towardOf = (dirFrom) => { const a = ((dirFrom + 180) % 360) * Math.PI / 180; return [Math.sin(a), Math.cos(a)]; };
+const P25 = powerForSpeed(kmh(25), RHO, RIDER);
+function profile(over) {
+  return ridePowerProfile(Object.assign({ lengths: eLens, headings: eHead, reverse: false, startMin: 600, powerW: P25, rider: RIDER, toward: towardOf,
+    windAt: () => ({ speedKmh: 0, dirFromDeg: 0 }), tempAt: () => 20 }, over));
+}
+t("profile, no wind: the same speed on every stretch, time = length / speed", () => {
+  const r = profile({ tempAt: () => 20 });
+  const v = solveSpeedMs(P25, 0, 0, airDensity(20), RIDER);
+  assert(r.speedMs.every((x) => near(x, v, 1e-9)));
+  assert(near(r.minutes, 20000 / v / 60, 1e-9));
+});
+t("profile: total minutes is the sum of the stretch times, and the clock only moves forward", () => {
+  const r = profile({ windAt: () => ({ speedKmh: 15, dirFromDeg: 270 }) });
+  assert(near(r.minutes, r.dtMin.reduce((a, b) => a + b, 0), 1e-9));
+  const order = r.tMid; for (let i = 1; i < order.length; i++) assert(order[i] > order[i - 1]);        // forward rides in route order
+});
+t("profile, wind from the WEST: eastbound has a tailwind, so it is faster than westbound", () => {
+  const w = { windAt: () => ({ speedKmh: 20, dirFromDeg: 270 }) };
+  const east = profile(w), west = profile({ ...w, reverse: true });
+  assert(east.minutes < west.minutes);
+  assert(east.cosphi.every((c) => near(c, 1, 1e-9)) && west.cosphi.every((c) => near(c, -1, 1e-9)));
+  assert(near(east.windKmh[10], 20) && near(east.windDir[10], 270));
+});
+t("profile: any wind costs time overall on a there-and-back route (headwind loses more than tailwind gains)", () => {
+  const w = { windAt: () => ({ speedKmh: 20, dirFromDeg: 270 }) };
+  const calm = profile({}), east = profile(w), west = profile({ ...w, reverse: true });
+  assert(east.minutes + west.minutes > 2 * calm.minutes);
+});
+t("profile, reverse visits the far end first: the LAST route index is ridden first", () => {
+  const r = profile({ reverse: true, windAt: () => ({ speedKmh: 10, dirFromDeg: 270 }) });
+  for (let i = 1; i < 100; i++) assert(r.tMid[i] < r.tMid[i - 1]);
+});
+t("profile: the clock follows the REAL speed - a wind that flips at 30 min flips where the rider actually is then", () => {
+  // eastbound, wind from the west (tailwind, fast) until 10:00 + 30 min, then from the east (headwind, slow)
+  const flip = (frac, tm) => ({ speedKmh: 20, dirFromDeg: tm < 630 ? 270 : 90 });
+  const r = profile({ windAt: flip });
+  const firstHead = r.cosphi.findIndex((c) => c < 0);
+  const vTail = solveSpeedMs(P25, kmh(20), 0, airDensity(20), RIDER);
+  const expectedIdx = Math.ceil((vTail * 30 * 60) / 200);                                       // metres ridden in 30 min at the TAILWIND speed / 200 m
+  const constantClockIdx = Math.ceil((25 / 3.6 * 30 * 60) / 200);                                // where a constant 25 km/h clock would put the flip
+  assert(firstHead > 0 && Math.abs(firstHead - expectedIdx) <= 1, `flip at segment ${firstHead}, expected ~${expectedIdx}`);
+  assert(Math.abs(firstHead - constantClockIdx) > 10, `must differ from the constant-speed clock (${constantClockIdx})`);
+});
+t("profile: temperature is read at the arrival time (warming day -> warmer air later in the ride)", () => {
+  const r = profile({ tempAt: (f, tm) => 10 + (tm - 600) / 60 });
+  assert(r.tempC[99] > r.tempC[0]); for (let i = 1; i < 100; i++) assert(r.tempC[i] >= r.tempC[i - 1]);
+});
+t("each stretch of a profile satisfies the power balance at its own wind and density", () => {
+  const r = profile({ windAt: (f) => ({ speedKmh: 8 + 20 * f, dirFromDeg: 250 + 60 * f }), tempAt: (f) => 5 + 20 * f });
+  for (let i = 0; i < 100; i += 9) {
+    const wMs = r.windKmh[i] / 3.6, cos = r.cosphi[i];
+    assert(near(powerAtSpeed(r.speedMs[i], wMs * cos, wMs * Math.sqrt(1 - cos * cos), airDensity(r.tempC[i]), RIDER), P25, 1e-6), `segment ${i}`);
+  }
 });
 
 console.log(`\n${n} tests passed`);
