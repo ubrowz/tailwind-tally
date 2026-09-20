@@ -2449,6 +2449,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     fileError.classList.remove("show");
     scheduleRender();
   }
+  // The iOS app hands a shared .gpx file to the page by running
+  // loadGpxText(...) in the page's global scope (WKWebView.evaluateJavaScript),
+  // and this whole script is wrapped in a function, so without this line that
+  // call fails with "loadGpxText is not defined" and nothing loads.
+  window.loadGpxText = loadGpxText;
 
   function loadFile(file) {
     var reader = new FileReader();
