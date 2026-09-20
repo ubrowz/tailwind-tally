@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Tailwind Tally</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -1629,11 +1630,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <select id="windSpeedInput"></select>
         </div>
         <div class="field">
-          <label for="neutralInput">Crosswind band (&deg;) <span class="info-pop" data-about="the crosswind band">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) — e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</span></label>
+          <label for="neutralInput">Crosswind band (&deg;) <span class="info-pop" data-about="the crosswind band">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) &mdash; e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</span></label>
           <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
         </div>
         <div class="field">
-          <label for="veryInput">Full tailwind / full headwind band (&deg;) <span class="info-pop" data-about="the full tailwind and headwind band">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) — e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</span></label>
+          <label for="veryInput">Full tailwind / full headwind band (&deg;) <span class="info-pop" data-about="the full tailwind and headwind band">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) &mdash; e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</span></label>
           <input type="number" id="veryInput" value="40" min="0" max="90" step="1">
         </div>
         <details class="advanced">
@@ -3777,7 +3778,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       S.forEach(function (ser) { ser.pts.forEach(function (p) { [p.airC, p.feelsC].forEach(function (c) { if (c !== null) { var v = cToDisplay(c); yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); } }); }); });
       var padV = Math.max(1, 0.12 * (yMax - yMin));
       yMin -= padV; yMax += padV;
-      unitLabel = "°" + state.tempUnit;
+      unitLabel = "\u00b0" + state.tempUnit;
     }
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     var sy = function (v) { return panelTop + panelH - (v - yMin) / (yMax - yMin) * panelH; };
@@ -4327,8 +4328,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           "</div>" +
         "</span>" +
       "</div>" +
-      "Most asymmetric wind: <b>" + degreesToCompass16(result.sweep.maxI) + " (" + result.sweep.maxI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.maxI]).toFixed(1) + "pp forward/reverse gap.<br>" +
-      "Most symmetric wind: <b>" + degreesToCompass16(result.sweep.minI) + " (" + result.sweep.minI + "°)</b>, a " + (100 * result.sweep.asym[result.sweep.minI]).toFixed(1) + "pp gap."
+      "Most asymmetric wind: <b>" + degreesToCompass16(result.sweep.maxI) + " (" + result.sweep.maxI + "\u00b0)</b>, a " + (100 * result.sweep.asym[result.sweep.maxI]).toFixed(1) + "pp forward/reverse gap.<br>" +
+      "Most symmetric wind: <b>" + degreesToCompass16(result.sweep.minI) + " (" + result.sweep.minI + "\u00b0)</b>, a " + (100 * result.sweep.asym[result.sweep.minI]).toFixed(1) + "pp gap."
     );
   }
 
@@ -4397,7 +4398,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   BEAUFORT_KMH.forEach(function (kmh, i) {
     var opt = document.createElement("option");
     opt.value = i;
-    opt.textContent = i + " — " + BEAUFORT_LABELS[i] + " (" + kmh + " km/h)";
+    opt.textContent = i + " \u2014 " + BEAUFORT_LABELS[i] + " (" + kmh + " km/h)";
     windSpeedInput.appendChild(opt);
   });
   windSpeedInput.value = state.windSpeedBeaufort;
@@ -4671,7 +4672,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (!plan) return;
     var smp = plan.sample, urls = elevationUrls(ELEVATION_API, smp.lat, smp.lon, DEM_DECIMALS, DEM_BATCH);
     demBusy = true; demGetBtn.disabled = true;
-    fetchElevations(urls, function (k, n) { demGetBtn.textContent = "Looking up elevation… " + (k + 1) + " of " + n; }).then(function (ele) {
+    fetchElevations(urls, function (k, n) { demGetBtn.textContent = "Looking up elevation\u2026 " + (k + 1) + " of " + n; }).then(function (ele) {
       if (ele.length !== smp.s.length) throw new Error("The elevation service returned an unexpected answer. Try again in a moment.");
       if (pts !== state.points) return;                      // another route was loaded meanwhile
       state.dem = { points: pts, s: smp.s, ele: ele, spacingM: smp.spacingM };
@@ -5083,7 +5084,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (!route) return;
     stravaError.classList.remove("show");
     stravaLoadBtn.disabled = true;
-    stravaLoadBtn.textContent = "Loading…";
+    stravaLoadBtn.textContent = "Loading\u2026";
     fetch(TILE_PROXY_BASE + "/strava/routes/" + encodeURIComponent(routeId) + "/gpx?access_token=" + encodeURIComponent(strava.accessToken))
       .then(function (res) {
         if (!res.ok) return res.text().then(function (t) { throw new Error(t || "Strava rejected that request."); });
@@ -5117,7 +5118,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     strava.scope = grantedScope;
     stravaConnectBtn.disabled = true;
-    stravaConnectBtn.textContent = "Connecting…";
+    stravaConnectBtn.textContent = "Connecting\u2026";
     fetch(TILE_PROXY_BASE + "/strava/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -5169,7 +5170,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return;
     }
 
-    readoutDeg.textContent = Math.round(state.windFromDeg) + "°";
+    readoutDeg.textContent = Math.round(state.windFromDeg) + "\u00b0";
     readoutCode.textContent = degreesToCompass16(state.windFromDeg);
     compassArrow.style.transform = "rotate(" + ((state.windFromDeg + 180) % 360) + "deg)";
     document.querySelectorAll(".compass-point").forEach(function (btn) {
@@ -5211,7 +5212,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       : state.view === "temp"
       ? tempViewCaption(result)
       : (result.steadyWind
-          ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "°): each stretch by the angle between the way you ride and the wind. Green is tailwind, red is headwind and grey is crosswind; darker means closer to dead-on."
+          ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0): each stretch by the angle between the way you ride and the wind. Green is tailwind, red is headwind and grey is crosswind; darker means closer to dead-on."
           : "Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there (as recorded from the start time).");
     renderPolarSweep(result);
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
@@ -5225,8 +5226,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     var bestRevDeg = (bestFwdDeg + 180) % 360;
     document.getElementById("sweepCallout").innerHTML =
-      '<div class="best-wind-line">Best wind, as ridden: <b>' + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "°)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy " +
-      "&mdash; equivalently, <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "°)</b> is the best wind if riding in reverse.</div>" +
+      '<div class="best-wind-line">Best wind, as ridden: <b>' + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "\u00b0)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% easy " +
+      "&mdash; equivalently, <b>" + degreesToCompass16(bestRevDeg) + " (" + bestRevDeg + "\u00b0)</b> is the best wind if riding in reverse.</div>" +
       buildAsymSymHTML(result);
 
     renderLastHalf(result);
@@ -5340,7 +5341,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var prevText = btn.textContent;
       var filename = filenameFn();
       btn.disabled = true;
-      btn.textContent = "Preparing…";
+      btn.textContent = "Preparing\u2026";
       svgStringToPngBlob(svgString, vb[2], vb[3], 2).then(function (blob) {
         if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
         return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
@@ -5529,7 +5530,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var prevText = btn.textContent;
       var filename = "tailwind-tally-route-" + degreesToCompass16(state.windFromDeg) + ".png";
       btn.disabled = true;
-      btn.textContent = "Preparing…";
+      btn.textContent = "Preparing\u2026";
       exportMapToPngBlob(lastResult).then(function (blob) {
         if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
         return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
