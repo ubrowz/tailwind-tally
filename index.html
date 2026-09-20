@@ -1598,6 +1598,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <p class="field-hint" id="manualHint">Set the wind and the temperature yourself, in the Wind and Temperature tabs below.</p>
   </div>
 
+  <div class="stat-row" id="statRow"></div>
+  <div class="verdict-banner" id="verdictBanner"></div>
+  <p class="method-note">Easy/hard here is a plain distance count: every metre where the wind has any tailwind component at all counts as easy, and any headwind component counts as hard &mdash; regardless of how strong that push or drag actually is.</p>
+
   <div class="tabbar" role="tablist" aria-label="What to look at">
     <button type="button" role="tab" id="tabWind" aria-selected="true" aria-controls="panelWind">Wind</button>
     <button type="button" role="tab" id="tabTemp" aria-selected="false" aria-controls="panelTemp" tabindex="-1">Temperature</button>
@@ -1682,10 +1686,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <p class="half-verdict" id="halfVerdict"></p>
     </div>
   </div>
-
-  <div class="stat-row" id="statRow"></div>
-  <div class="verdict-banner" id="verdictBanner"></div>
-  <p class="method-note">Easy/hard here is a plain distance count: every metre where the wind has any tailwind component at all counts as easy, and any headwind component counts as hard &mdash; regardless of how strong that push or drag actually is.</p>
 
   <div class="card">
     <div class="card-head">
