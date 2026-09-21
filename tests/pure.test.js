@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
-  new Function(grab("forecast-pure") + grab("series-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -845,6 +845,53 @@ t("seriesIndexAtTime: nearest point, clamped at both ends", () => {
   const pts = [10, 20, 30, 50].map((tm) => ({ t: tm }));
   assert.deepStrictEqual([0, 10, 14, 16, 20, 29, 39, 41, 50, 99].map((x) => seriesIndexAtTime(pts, x)), [0, 0, 0, 1, 1, 2, 2, 3, 3, 3]);
   assert.strictEqual(seriesIndexAtTime([], 5), -1);
+});
+
+// rain along the ride
+const rainLoc = (mm, prob) => ({ hourly: { time: mm.map((_, i) => `${day}T${String(i).padStart(2, "0")}:00`), precipitation: mm, precipitation_probability: prob } });
+t("rainClass: dry below 0.1 mm/h, then the four classes at their edges", () => {
+  assert.deepStrictEqual([0, 0.05, 0.0999, 0.1, 0.49, 0.5, 2.49, 2.5, 7.59, 7.6, 40, null, undefined, NaN].map(rainClass), [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 0, 0]);
+  assert.strictEqual(RAIN_CLASS_LABELS.length, RAIN_EDGES.length + 1);
+});
+t("forecastRainSeries: minute stamps, hours without an amount dropped, a missing probability stays null", () => {
+  const mm = Array(24).fill(0); mm[9] = 1.2; mm[10] = null; mm[11] = 0.4;
+  const r = forecastRainSeries(rainLoc(mm, Array(24).fill(30)), day);
+  assert.strictEqual(r.t.length, 23); assert.strictEqual(r.t[0], 0); assert(r.t.includes(540) && !r.t.includes(600) && r.t.includes(660));
+  assert.strictEqual(r.mm[r.t.indexOf(540)], 1.2); assert.strictEqual(r.prob[r.t.indexOf(540)], 30);
+  const noProb = forecastRainSeries(rainLoc(mm, undefined), day); assert(noProb.prob.every((v) => v === null));
+  assert.strictEqual(forecastRainSeries({ hourly: { time: [`${day}T00:00`] } }, day).t.length, 0); assert.strictEqual(forecastRainSeries({}, day).t.length, 0);
+});
+t("rainStepAt: a stamp describes the hour that ENDS at it (step, not slope); clamped at both ends", () => {
+  const ser = { t: [540, 600, 660], mm: [1, 5, 0], prob: [40, 90, null] };
+  const at = (x) => rainStepAt(ser, x).mm;
+  assert.deepStrictEqual([500, 540, 541, 600, 601, 660, 700].map(at), [1, 1, 5, 5, 0, 0, 0]);
+  assert.strictEqual(rainStepAt(ser, 570).prob, 90); assert.strictEqual(rainStepAt({ t: [], mm: [], prob: [] }, 5), null);
+});
+t("rainAtPlace: step in time at each place, linear along the route between places, missing probabilities skipped", () => {
+  const mk3 = (mm, prob) => ({ t: [600], mm: [mm], prob: [prob] });
+  const locs = [{ frac: 0, rain: mk3(0, 10) }, { frac: 0.5, rain: mk3(4, null) }, { frac: 1, rain: mk3(8, 50) }];
+  const r = (f) => rainAtPlace(locs, f, 590);
+  assert.strictEqual(r(0).mm, 0); assert(near(r(0.25).mm, 2, 1e-12)); assert(near(r(0.5).mm, 4, 1e-12)); assert(near(r(0.75).mm, 6, 1e-12)); assert.strictEqual(r(1).mm, 8);
+  assert(near(r(0.5).prob, 30, 1e-12), "probability interpolated between the two places that have one"); assert.strictEqual(r(0).prob, 10);
+  assert.strictEqual(rainAtPlace([{ frac: 0, rain: mk3(1, null) }], 0.3, 0).prob, null); assert.strictEqual(rainAtPlace([], 0.3, 0), null);
+});
+t("rainDirectionStats: wet distance, classes, runs in ride order, and the rain that falls on the rider", () => {
+  const lengths = Array(10).fill(1000), dt = Array(10).fill(3);                  // 10 km at 20 km/h
+  const mm = [0, 0, 0.3, 1.0, 3.0, 0, 0, 0, 0, 9.0], prob = mm.map((v) => (v > 0 ? 70 : 10));
+  const f = rainDirectionStats(lengths, mm, prob, dt, false), r = rainDirectionStats(lengths, mm, prob, dt, true);
+  assert.strictEqual(f.wetM, 4000); assert(near(f.wetPct, 40, 1e-9)); assert.deepStrictEqual(f.classM, [6000, 1000, 1000, 1000, 1000]);
+  assert.deepStrictEqual(f.runs.map((x) => [x.fromKm, x.toKm, x.peakMm, x.cls]), [[2, 3, 0.3, 1], [3, 4, 1, 2], [4, 5, 3, 3], [9, 10, 9, 4]], "one run per class, as coloured on the map");
+  assert.deepStrictEqual(r.runs.map((x) => [x.fromKm, x.toKm, x.peakMm, x.cls]), [[0, 1, 9, 4], [5, 6, 3, 3], [6, 7, 1, 2], [7, 8, 0.3, 1]], "the other way round: the heavy stretch comes first");
+  const twoOfOne = rainDirectionStats([1000, 1000, 1000], [0.3, 0.4, 0.2], [null, null, null], [1, 1, 1], false).runs; assert.strictEqual(twoOfOne.length, 1); assert.strictEqual(twoOfOne[0].peakMm, 0.4); assert.strictEqual(twoOfOne[0].toKm, 3);
+  assert(near(f.accumMm, (0.3 + 1 + 3 + 9) * 3 / 60, 1e-12) && near(r.accumMm, f.accumMm, 1e-12), "time-weighted rain is the same sum either way here (equal times)");
+  assert.strictEqual(f.peakMm, 9); assert.strictEqual(f.peakProb, 70); assert(near(f.minutes, 30, 1e-12) && near(f.wetMinutes, 12, 1e-12));
+  const dry = rainDirectionStats(lengths, Array(10).fill(0), Array(10).fill(null), dt, false); assert.strictEqual(dry.wetM, 0); assert.strictEqual(dry.runs.length, 0); assert.strictEqual(dry.peakProb, null);
+});
+t("buildRideSeries carries the rain along, in ride order", () => {
+  const lengths = Array(10).fill(100), tt = lengths.map((_, i) => i), mm = lengths.map((_, i) => i), pr = lengths.map((_, i) => 10 * i);
+  const f = buildRideSeries({ lengths, reverse: false, t: tt, rainMm: mm, rainProb: pr, maxPoints: 5 }), r = buildRideSeries({ lengths, reverse: true, t: tt.slice().reverse(), rainMm: mm, rainProb: pr, maxPoints: 5 });
+  assert.strictEqual(f[0].rainMm, 0); assert.strictEqual(f[4].rainMm, 9); assert.strictEqual(r[0].rainMm, 9); assert.strictEqual(r[4].rainProb, 0);
+  assert.strictEqual(buildRideSeries({ lengths, reverse: false, t: tt, maxPoints: 3 })[0].rainMm, null);
 });
 
 console.log(`\n${n} tests passed`);

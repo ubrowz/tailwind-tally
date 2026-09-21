@@ -1586,7 +1586,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card" id="weatherCard">
-    <h2>Weather for the ride <span class="info-pop" data-about="the weather options"><b>Set manually:</b> type the wind and the temperature yourself, in the Wind and Temperature tabs. <b>From forecast:</b> times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: temperature, humidity and wind change from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature, and you can still adjust them.</span></h2>
+    <h2>Weather for the ride <span class="info-pop" data-about="the weather options"><b>Set manually:</b> type the wind and the temperature yourself, in the Wind and Temperature tabs. <b>From forecast:</b> times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: temperature, humidity and wind change from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind and temperature, and you can still adjust them; the Rain tab uses the forecast too.</span></h2>
     <div class="mode-toggle" role="group" aria-label="Wind source">
       <button type="button" id="modeManual" aria-pressed="true">Set manually</button>
       <button type="button" id="modeForecast" aria-pressed="false">From forecast</button>
@@ -1618,6 +1618,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="tabbar" role="tablist" aria-label="What to look at">
     <button type="button" role="tab" id="tabWind" aria-selected="true" aria-controls="panelWind">Wind</button>
     <button type="button" role="tab" id="tabTemp" aria-selected="false" aria-controls="panelTemp" tabindex="-1">Temperature</button>
+    <button type="button" role="tab" id="tabRain" aria-selected="false" aria-controls="panelRain" tabindex="-1">Rain</button>
     <button type="button" role="tab" id="tabClimbs" aria-selected="false" aria-controls="panelClimbs" tabindex="-1">Climbs</button>
     <button type="button" role="tab" id="tabHow" aria-selected="false" aria-controls="panelHow" tabindex="-1">How it works</button>
   </div>
@@ -1762,6 +1763,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
 
+  <div class="tabpanel" id="panelRain" role="tabpanel" aria-labelledby="tabRain" hidden>
+    <div class="card">
+      <h2>Rain <span class="info-pop" data-about="the rain forecast">The rain forecast for the time and place at which you would be on every stretch of the route: the same clock as the temperature and the wind. Amounts are millimetres per hour. The chance is the probability of more than 0.1 mm in that hour. Forecast models place showers only roughly, a few kilometres and about an hour either way.</span></h2>
+      <div class="mode-toggle" role="group" aria-label="Direction">
+        <button type="button" id="rainDirFwd" aria-pressed="true">As recorded</button>
+        <button type="button" id="rainDirRev" aria-pressed="false">In reverse</button>
+      </div>
+      <p class="climb-summary" id="rainSummary"></p>
+      <div class="ride-chart" id="rainRideChart" hidden>
+        <h3>Rain during the ride <span class="info-pop" data-about="this chart">Above, how hard it rains (mm per hour), below the chance of rain, at each time of day. The two directions meet different places at the same time, so they differ.</span></h3>
+        <svg class="ride-svg" id="rainRideSvg" role="img" aria-label="Rain intensity and chance of rain during the ride, as recorded and in reverse"></svg>
+        <p class="ride-readout" id="rainRideReadout" aria-live="polite"></p>
+        <div class="ride-legend" id="rainRideLegend"></div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="route-slot" id="routeSlotRain"></div>
+      <div class="card chart-card" id="rainListCard">
+        <h2>Where it rains, in the order you ride <span class="info-pop" data-about="the rain table">Each row is a stretch of the route where at least 0.1 mm per hour is expected when you get there. Rain classes: very light 0.1 to 0.5 mm/h, light 0.5 to 2.5, moderate 2.5 to 7.6, heavy above 7.6.</span></h2>
+        <div class="climb-table-wrap"><table class="climb-table" id="rainTable"></table></div>
+      </div>
+    </div>
+  </div>
+
   <div class="tabpanel" id="panelClimbs" role="tabpanel" aria-labelledby="tabClimbs" hidden>
     <div class="card">
       <h2>Climbs <span class="info-pop" data-about="how climbs are found">A climb is a rise of at least the minimum climb, at least as steep as the minimum average slope, in the smoothed elevation of your route. The average slope keeps long, gentle rises from counting.</span></h2>
@@ -1801,7 +1826,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <article class="how-article">
 <header class="how-head">
             <h2 class="how-title">How it works</h2>
-            <p>The science behind the wind analysis, the ride-time model, the &ldquo;feels like&rdquo; temperature and the climbs, and where the numbers come from. Last updated September 20, 2026.</p>
+            <p>The science behind the wind analysis, the ride-time model, the &ldquo;feels like&rdquo; temperature, the rain and the climbs, and where the numbers come from. Last updated September 20, 2026.</p>
             <nav class="how-toc" aria-label="Contents of How it works">
               <strong>Contents</strong>
               <ol>
@@ -1812,6 +1837,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <li><a href="#how-changing">A wind that changes during the ride</a></li>
           <li><a href="#how-power">Riding at steady power</a></li>
           <li><a href="#how-climbs">Climbs</a></li>
+          <li><a href="#how-rain">Rain</a></li>
           <li><a href="#how-cold">Cold: wind chill</a></li>
           <li><a href="#how-warm">Mild and hot: apparent temperature</a></li>
           <li><a href="#how-blend">Putting the two together</a></li>
@@ -1825,11 +1851,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </header>
         
           <h2 id="how-short">1. The short version</h2>
-          <p>Tailwind Tally takes a GPX route and answers four questions:</p>
+          <p>Tailwind Tally takes a GPX route and answers five questions:</p>
           <ul>
             <li><strong>How much of the route is with me or against me?</strong> Every 25&nbsp;metre stretch is a tailwind, headwind or crosswind, for the route as recorded and in reverse, with a rough effort figure (sections 3 and 4). The wind is one steady value you set, or a forecast that changes with the clock and the place (sections 2 and 5).</li>
             <li><strong>How long will it take?</strong> At a steady speed the ride time is simply distance over speed. If you ride at steady <em>power</em> instead, your speed drops in a headwind and rises with a tailwind, and the app works out the resulting ride time on a flat road (section 6).</li>
-            <li><strong>How will it feel?</strong> The Temperature tab estimates the feels-like temperature on every stretch (sections 8 to 12).</li>
+            <li><strong>How will it feel?</strong> The Temperature tab estimates the feels-like temperature on every stretch (sections 9 to 13).</li>
+            <li><strong>Will it rain?</strong> The Rain tab shows where and when rain is expected along the route, for each direction, from the forecast (section 8).</li>
             <li><strong>Where are the hills?</strong> The Climbs tab finds the climbs, numbers them and colours them by steepness, using elevation looked up on request (section 7).</li>
           </ul>
           <p>The rest of this section is about the temperature. A thermometer tells you the air temperature. It does not tell you how the ride will <em>feel</em>. Riding into a headwind at 25&nbsp;km/h on a 5&nbsp;&deg;C day feels much colder than 5&nbsp;&deg;C, and riding in humid heat feels hotter than the number says. Tailwind Tally estimates that feeling for every 25&nbsp;metre stretch of your route:</p>
@@ -1853,7 +1880,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li><strong>Elevation</strong>, for the Climbs tab only: looked up online when you ask for it (section 7). The elevation in your GPX file is not used.</li>
           </ul>
           <h3>What leaves your device</h3>
-          <p>Your GPX file is read in your browser and never uploaded. Two optional features contact a service, and only when you ask: the <strong>forecast</strong> sends up to three places from the route, each rounded to about 11&nbsp;km, and the date; the <strong>elevation lookup</strong> for the Climbs tab sends points along the route, about 100&nbsp;m apart and rounded to about 10&nbsp;m, which is in effect the shape of the route. Both go straight to <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. The map tiles are requested as you look at the map. The privacy policy lists all of it.</p>
+          <p>Your GPX file is read in your browser and never uploaded. Two optional features contact a service, and only when you ask: the <strong>forecast</strong> (wind, temperature, humidity and rain) sends up to three places from the route, each rounded to about 11&nbsp;km, and the date; the <strong>elevation lookup</strong> for the Climbs tab sends points along the route, about 100&nbsp;m apart and rounded to about 10&nbsp;m, which is in effect the shape of the route. Both go straight to <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. The map tiles are requested as you look at the map. The privacy policy lists all of it.</p>
         
           <h3>The forecast</h3>
           <p>In forecast mode the app asks <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> for hourly values, for the date you pick. It sends up to three places from your route (the start, the middle and the end), each rounded to 0.1&deg; (about 11&nbsp;km), never the route itself. You give only a <strong>start time</strong>. The ride then lasts as long as the route takes at your cruising speed, and each stretch gets its own clock time:</p>
@@ -1962,14 +1989,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <li><strong>Not used elsewhere.</strong> Hills do not change the wind classes, the ride time at steady power or the feels-like temperature. There is no elevation chart, because the profile of a surface model is rougher than the ones you know from Strava or a bike computer.</li>
         </ul>
 
-        <h2 id="how-cold">8. Cold: wind chill</h2>
+        <h2 id="how-rain">8. Rain</h2>
+        <p>The Rain tab shows where and when it is expected to rain along your route. Like the temperature and the wind it comes from the forecast, so it needs <strong>From forecast</strong> and a tap on <strong>Get forecast</strong> under Weather for the ride. It changes nothing in the wind, temperature or ride-time calculations.</p>
+        <h3>What you see</h3>
+        <ul>
+          <li>The <strong>map</strong>: wet stretches are thick and coloured by intensity, dry stretches a thin grey line. A choice between <strong>as recorded and in reverse</strong> sets which direction is coloured.</li>
+          <li>A <strong>summary</strong> with the distance in rain, the peak intensity, the highest chance of rain, and how much rain falls on you during the ride, for the chosen direction and, in one line, for the other.</li>
+          <li>A <strong>chart</strong> of the intensity (mm per hour) and the chance of rain against the time of day, with both directions on it and a map marker while you hover or touch it, as in the Wind and Temperature tabs.</li>
+          <li>A <strong>table</strong> of the stretches where it rains, in the order you ride them, one row for each intensity class.</li>
+        </ul>
+        <h3>Where the numbers come from</h3>
+        <p>The forecast request already made for the wind and temperature also asks for two more hourly values (from the same places, so nothing extra leaves your device): the <strong>precipitation</strong>, in millimetres, and the <strong>probability of precipitation</strong>. Open-Meteo defines the first as the total (rain, showers and snow, as water) of the <em>preceding hour</em>, and the second as the probability of more than 0.1&nbsp;mm in the preceding hour. The probability comes from an ensemble of 30 model runs at a coarse resolution (0.25&deg;), so it is a much blurrier number than the amount.</p>
+        <h3>How each stretch gets its rain</h3>
+        <ul>
+          <li>A value stamped 09:00 describes the hour from 08:00 to 09:00. So at any moment the rain is the value of the first stamp at or after it: a <strong>step</strong> in time, not a slope, unlike the temperature and the wind, which are interpolated between hours.</li>
+          <li>Each stretch is read at the moment you would get there (start time plus distance over speed, or your real speed with steady power) and at its place: between the sample places along the route the amount changes in a straight line with the distance.</li>
+          <li>Riding in reverse meets the same places at other moments, so it has its own rain. That is often the point of the tab: one direction can stay dry.</li>
+          <li>The rain that falls on you is the sum, over the stretches, of the intensity times the time you spend on them. It is a depth (about one puddle&rsquo;s worth), not a volume.</li>
+        </ul>
+        <h3>The classes and colours</h3>
+        <p>Intensity is sorted into five classes (mm per hour): <strong>dry</strong> (under 0.1), <strong>very light</strong> (0.1 to 0.5), <strong>light</strong> (0.5 to 2.5), <strong>moderate</strong> (2.5 to 7.6) and <strong>heavy</strong> (7.6 and up). The upper two edges follow the usual rain-rate classes (light up to about 2.5&nbsp;mm/h, moderate to about 7.6, heavy above, in the American Meteorological Society&rsquo;s glossary and the WMO scale). The split at 0.1 and 0.5 is mine, chosen for cycling: 0.1 is the wettest a forecast &ldquo;dry&rdquo; can be, and drizzle below 0.5 is often ridden without a jacket. The colours are one teal hue in four steps, darker for heavier, with dry drawn in the same grey as the other maps. The ramp was checked for both themes.</p>
+        <h3>Limits</h3>
+        <ul>
+          <li><strong>Showers are placed roughly.</strong> Forecast models put rain within a few kilometres and about an hour, so the boundary of a wet stretch is not exact, and a small shower can be missed altogether or shown where it does not fall.</li>
+          <li><strong>Three places at most.</strong> As for the wind, the forecast is read at up to three places along the route, and the rain in between is a straight-line blend of them.</li>
+          <li><strong>Hourly, not minute by minute.</strong> A shower that lasts twenty minutes is averaged over its hour.</li>
+          <li><strong>Wet does not change the feels-like.</strong> Wet clothing makes cold feel colder, and the temperature model has no correction for it.</li>
+          <li><strong>Forecast range.</strong> The amounts reach as far as the forecast does (about two weeks); the probability is often missing for the days furthest out, and the tab then shows the amount only.</li>
+        </ul>
+
+        <h2 id="how-cold">9. Cold: wind chill</h2>
           <p>For cold weather the app uses the standard wind chill formula that Environment Canada and the US National Weather Service have used since 2001. It comes from Osczevski and Bluestein (2005), who based it on a model of heat flow from the upwind side of a head-sized cylinder moving at walking speed into the wind. With <code>T</code> in &deg;C and <code>V</code> the airspeed in km/h:</p>
           <div class="how-formula">wind chill  =  13.12  +  0.6215 T  &minus;  11.37 V<sup>0.16</sup>  +  0.3965 T V<sup>0.16</sup></div>
           <p>It is officially defined only for <strong>T &le; 10&nbsp;&deg;C</strong> and <strong>V &gt; 4.8&nbsp;km/h</strong> (the 3&nbsp;mph limit in the US version). Below 4.8&nbsp;km/h of airspeed there is no wind chill, which is why a tailwind that matches your speed brings no cooling at all.</p>
           <p><strong>Example.</strong> At &minus;10&nbsp;&deg;C it feels like &minus;15.3&nbsp;&deg;C at 10&nbsp;km/h of airspeed, &minus;18.8&nbsp;&deg;C at 25&nbsp;km/h and &minus;21.3&nbsp;&deg;C at 45&nbsp;km/h.</p>
           <p><strong>Caveats.</strong> The formula describes how fast exposed skin on the face cools, in steady conditions, for someone walking. Using a cyclist&rsquo;s airspeed is the usual approximation and not what it was calibrated for. The authors themselves point out the steady-state character of the concept.</p>
         
-          <h2 id="how-warm">9. Mild and hot: apparent temperature</h2>
+          <h2 id="how-warm">10. Mild and hot: apparent temperature</h2>
           <p>Wind chill is not defined for mild weather, and it ignores humidity. From 20&nbsp;&deg;C up the app uses the <strong>apparent temperature</strong> of Robert Steadman, in the form used by the Australian Bureau of Meteorology. It combines temperature, humidity and wind. With <code>T</code> in &deg;C, <code>RH</code> the relative humidity in % and <code>v</code> the wind in metres per second:</p>
           <div class="how-formula">apparent temperature  =  T  +  0.33 &middot; e  &minus;  0.70 &middot; v  &minus;  4.00
         
@@ -1989,7 +2045,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
           <p>Steadman&rsquo;s own analysis found that, for normal midday climates in the US, humidity, wind and sun move the apparent temperature by between &minus;5 and +7&nbsp;K from the dry-bulb temperature. That is the scale of effect to expect.</p>
         
-          <h2 id="how-blend">10. Putting the two together</h2>
+          <h2 id="how-blend">11. Putting the two together</h2>
           <p>The two models are not the same physics, and they disagree by a few degrees in the middle, so switching between them at a single temperature would make the result jump. Instead the app fades from one to the other between <strong>10&nbsp;&deg;C</strong> (where the official wind chill ends) and <strong>20&nbsp;&deg;C</strong>:</p>
           <div class="how-formula">x  =  (T &minus; 10) / 10                     (limited to 0 &hellip; 1)
         weight  =  3x&sup2; &minus; 2x&sup3;                      (a smooth S-curve)
@@ -2006,13 +2062,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p>Note the small dip in the cooling between 10 and 20&nbsp;&deg;C. It is the seam between the two models, not a real effect. The absolute feels-like temperature still rises steadily with the air temperature.</p>
           <p><strong>A known limit.</strong> In the fade zone, in very dry air (20&nbsp;% humidity or less) at high airspeed (40&nbsp;km/h or more), a slightly warmer air temperature can feel up to 1&nbsp;&deg;C colder, and up to about 3&nbsp;&deg;C in the extreme corner of bone-dry air at 60&nbsp;km/h. It never happens up to 25&nbsp;km/h of airspeed or in humid air.</p>
         
-          <h2 id="how-still">11. Standing still: the heat index</h2>
+          <h2 id="how-still">12. Standing still: the heat index</h2>
           <p>The apparent temperature includes the cooling from riding. If you stop, or crawl up a steep hill with no breeze, that cooling disappears. For that case the app shows the <strong>heat index</strong> of the US National Weather Service, which uses only temperature and humidity. It comes from Steadman&rsquo;s work and Rothfusz&rsquo;s regression fit (1990): a simple formula for milder conditions, and a longer regression once the result reaches 80&nbsp;&deg;F (about 27&nbsp;&deg;C), with two extra adjustments for very dry or very humid air. The regression is published at the National Weather Service; the page linked under Sources lists every coefficient.</p>
           <p>The published algorithm has small <strong>steps</strong> where it switches between its parts (up to about 1.3&nbsp;&deg;C in humid air), the same kind of jump the wind chill cutoff would cause. The app smooths them: it blends the simple formula into the regression over 78&ndash;82&nbsp;&deg;F, fades the two humidity adjustments in over 78&ndash;80&nbsp;&deg;F, and ramps the whole effect in between 22 and 26&nbsp;&deg;C. From about 29&nbsp;&deg;C upwards the result is exactly the published value.</p>
           <p><strong>Example.</strong> At 32&nbsp;&deg;C and 70&nbsp;% humidity the heat index is 40.4&nbsp;&deg;C, 8.4&nbsp;&deg;C above the air temperature and far above the 34.1&nbsp;&deg;C you would feel riding at 25&nbsp;km/h.</p>
           <p>The heat index assumes shade, and the National Weather Service notes that direct sunlight can add up to 15&nbsp;&deg;F (about 8&nbsp;&deg;C). It also carries the Weather Service&rsquo;s heat-illness categories, which the app quotes when the standing-still value is high: from 103&nbsp;&deg;F (39&nbsp;&deg;C) heat cramps or heat exhaustion are likely and heat stroke is possible, and from 125&nbsp;&deg;F (52&nbsp;&deg;C) heat stroke is highly likely.</p>
         
-          <h2 id="how-colours">12. From numbers to colours</h2>
+          <h2 id="how-colours">13. From numbers to colours</h2>
           <p>The map on the Temperature tab colours each stretch by <strong>feels like minus air temperature</strong> at that moment on that stretch. The steps are fixed, so a colour means the same thing on every route and every day:</p>
           <div class="how-table-wrap">
             <table>
@@ -2034,7 +2090,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <p>Each colour arm is one hue running from light to dark, so a stronger effect is always more intense: darker in the light theme, lighter in the dark theme, so it always stands out against the map. The swatches below follow your current theme. Colours are compared with the air temperature <em>at that moment</em>, so a morning that warms up does not read as chill. In Fahrenheit the same steps are used and shown converted.</p>
           <p>The &ldquo;coldest tenth&rdquo; and &ldquo;hottest tenth&rdquo; figures are the average feels-like over the coldest or hottest 10&nbsp;% of the <em>distance</em>, not the single most extreme stretch, so one stray GPS point cannot set the headline number.</p>
         
-          <h2 id="how-limits">13. What this is not</h2>
+          <h2 id="how-limits">14. What this is not</h2>
           <ul>
             <li><strong>Not a measurement.</strong> It is a model of an average person. Individuals differ a lot, and what a cyclist feels is subjective.</li>
             <li><strong>No sun.</strong> Neither formula includes solar radiation. Full sun feels hotter (the heat index notes up to about 8&nbsp;&deg;C).</li>
@@ -2046,11 +2102,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li><strong>Not medical or safety advice.</strong> The heat-illness categories quoted are the National Weather Service&rsquo;s for the standing-still heat index. Use your own judgement and local guidance.</li>
           </ul>
         
-          <h2 id="how-check">14. How it is checked</h2>
-          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, reverse riding, the number of a climb landing on the right stretch of the route, the points of the ride charts being in ride order with a clock that only increases in both directions, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared with the live service on the South Limburg route and on two long rides (one flat, one hilly); the flat one showed the treetop effect described in section 7. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
+          <h2 id="how-check">15. How it is checked</h2>
+          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, reverse riding, the number of a climb landing on the right stretch of the route, rain that steps by the hour it describes and blends between places, and per-direction rain distances, classes and runs, the points of the ride charts being in ride order with a clock that only increases in both directions, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared with the live service on the South Limburg route and on two long rides (one flat, one hilly); the flat one showed the treetop effect described in section 7. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
           <p>If you find a case where a number looks wrong, please say so on the <a href="https://github.com/ubrowz/tailwind-tally/issues" target="_blank" rel="noopener">issue tracker</a> with the temperature, humidity, speed and wind you used.</p>
         
-          <h2 id="how-sources">15. Sources</h2>
+          <h2 id="how-sources">16. Sources</h2>
           <ul class="how-refs">
             <li>Osczevski, R. and Bluestein, M. (2005). The new wind chill equivalent temperature chart. <em>Bulletin of the American Meteorological Society</em>, 86(10), 1453&ndash;1458. <a href="https://journals.ametsoc.org/view/journals/bams/86/10/bams-86-10-1453.xml" target="_blank" rel="noopener">journals.ametsoc.org</a></li>
             <li>US National Weather Service. Wind chill: formula, validity range and chart. <a href="https://www.weather.gov/safety/cold-wind-chill-chart" target="_blank" rel="noopener">weather.gov/safety/cold-wind-chill-chart</a></li>
@@ -2059,6 +2115,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li>Rothfusz, L. P. (1990). The heat index equation (or, more than you ever wanted to know about heat index). NWS Southern Region Technical Attachment SR/SSD 90-23. <a href="https://www.weather.gov/media/ffc/ta_htindx.PDF" target="_blank" rel="noopener">weather.gov (PDF)</a> &middot; <a href="https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml" target="_blank" rel="noopener">the equation with all coefficients</a></li>
             <li>US National Weather Service. Heat index: what it is, shade assumption, and the heat-illness categories. <a href="https://www.weather.gov/ama/heatindex" target="_blank" rel="noopener">weather.gov/ama/heatindex</a></li>
             <li>Australian Bureau of Meteorology: thermal comfort and apparent temperature. <a href="http://www.bom.gov.au/info/thermal_stress/" target="_blank" rel="noopener">bom.gov.au</a></li>
+            <li>Open-Meteo. Weather forecast API documentation: the hourly precipitation (sum of the preceding hour) and precipitation probability variables. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">open-meteo.com/en/docs</a></li>
+            <li>American Meteorological Society. Glossary of Meteorology: rain, with the light, moderate and heavy rain rates. <a href="https://glossary.ametsoc.org/wiki/Rains" target="_blank" rel="noopener">glossary.ametsoc.org</a></li>
             <li>Weather forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li>
             <li>Elevation lookup: Copernicus DEM GLO-90 (&copy; DLR e.V. 2010-2014 and &copy; Airbus Defence and Space GmbH 2014-2018, provided under COPERNICUS by the European Union and ESA), DOI <a href="https://doi.org/10.5270/ESA-c5d3d65" target="_blank" rel="noopener">10.5270/ESA-c5d3d65</a>, served by <a href="https://open-meteo.com/en/docs/elevation-api" target="_blank" rel="noopener">Open-Meteo</a>.</li>
           </ul>
@@ -2670,7 +2728,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // increases), thinned to at most maxPoints. Every array is indexed by route segment
   // in the order the route was recorded; riding in reverse walks it backwards.
   // o: { lengths, reverse, t (clock minutes), windKmh, windDir (from, deg), airC, feelsC, maxPoints }
-  // windKmh, windDir, airC and feelsC may be null when not known.
+  // windKmh, windDir, airC, feelsC, rainMm and rainProb may be null when not known.
   function buildRideSeries(o) {
     var n = o.lengths.length, km = [], run = 0, k;
     for (k = 0; k < n; k++) {
@@ -2683,7 +2741,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     for (var j = 0; j < count; j++) {
       k = count === 1 ? 0 : Math.round(j * (n - 1) / (count - 1));
       var idx = o.reverse ? n - 1 - k : k;
-      out.push({ i: idx, t: o.t[idx], km: km[k], windKmh: at(o.windKmh, idx), windDir: at(o.windDir, idx), airC: at(o.airC, idx), feelsC: at(o.feelsC, idx) });
+      out.push({ i: idx, t: o.t[idx], km: km[k], windKmh: at(o.windKmh, idx), windDir: at(o.windDir, idx), airC: at(o.airC, idx), feelsC: at(o.feelsC, idx),
+                 rainMm: at(o.rainMm, idx), rainProb: at(o.rainProb, idx) });
     }
     return out;
   }
@@ -2697,6 +2756,85 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return t - pts[lo].t <= pts[hi].t - t ? lo : hi;
   }
   // END series-pure
+
+  // ---- Rain along the ride ----------------------------------------------------
+  // BEGIN rain-pure
+  // The forecast gives, per hour, the precipitation SUM OF THE PRECEDING HOUR (mm) and
+  // the probability of more than 0.1 mm in that hour. So a value stamped H o'clock
+  // describes the hour that ends at H: at any moment in between it is the value of the
+  // first stamp at or after that moment (a step, not a slope).
+  var RAIN_EDGES = [0.1, 0.5, 2.5, 7.6];             // mm per hour: classes 0 dry, 1 very light, 2 light, 3 moderate, 4 heavy
+  var RAIN_CLASS_LABELS = ["Dry", "Very light", "Light", "Moderate", "Heavy"];
+  function rainClass(mmPerHour) {
+    var c = 0;
+    if (!(mmPerHour >= RAIN_EDGES[0])) return 0;
+    while (c < RAIN_EDGES.length && mmPerHour >= RAIN_EDGES[c]) c++;
+    return c;
+  }
+  // One place's hourly rain as a minute-stamped series {t, mm, prob}; hours without an amount are dropped,
+  // a missing probability stays null.
+  function forecastRainSeries(loc, dateStr) {
+    var h = loc.hourly, out = { t: [], mm: [], prob: [] };
+    if (!h || !h.precipitation) return out;
+    for (var i = 0; i < h.time.length; i++) {
+      if (h.precipitation[i] == null) continue;
+      out.t.push(forecastMinutes(h.time[i], dateStr));
+      out.mm.push(h.precipitation[i]);
+      out.prob.push(h.precipitation_probability && h.precipitation_probability[i] != null ? h.precipitation_probability[i] : null);
+    }
+    return out;
+  }
+  function rainStepAt(series, t) {
+    var ts = series.t, n = ts.length;
+    if (!n) return null;
+    var lo = 0, hi = n - 1;
+    if (t > ts[hi]) lo = hi;
+    else {
+      while (lo < hi) { var mid = (lo + hi) >> 1; if (ts[mid] >= t) hi = mid; else lo = mid + 1; }
+    }
+    return { mm: series.mm[lo], prob: series.prob[lo] };
+  }
+  // locs: [{ frac, rain: series }] in route order. Rain at a place (fraction of the route) and a moment:
+  // the step value at each sample place, then linear in distance between neighbouring places.
+  function rainAtPlace(locs, frac, tMin) {
+    var pts = [];
+    locs.forEach(function (l) { var r = l.rain ? rainStepAt(l.rain, tMin) : null; if (r) pts.push({ f: l.frac, mm: r.mm, prob: r.prob }); });
+    if (!pts.length) return null;
+    function lerpAt(key) {
+      var a = pts.filter(function (q) { return q[key] !== null; });
+      if (!a.length) return null;
+      if (frac <= a[0].f) return a[0][key];
+      for (var i = 1; i < a.length; i++) {
+        if (frac <= a[i].f) {
+          var span = a[i].f - a[i - 1].f;
+          return span <= 0 ? a[i][key] : a[i - 1][key] + (frac - a[i - 1].f) / span * (a[i][key] - a[i - 1][key]);
+        }
+      }
+      return a[a.length - 1][key];
+    }
+    return { mm: lerpAt("mm"), prob: lerpAt("prob") };
+  }
+  // What the ride meets in one direction. mm, prob (or null) and dtMin (minutes spent on the segment) are indexed by
+  // recorded segment; reverse walks them backwards. Wet = at least 0.1 mm/h. runs: stretches of one class, in ride order.
+  function rainDirectionStats(lengths, mm, prob, dtMin, reverse) {
+    var n = lengths.length, classM = [0, 0, 0, 0, 0], total = 0, wetM = 0, peak = 0, peakProb = null, accum = 0, minutes = 0, wetMinutes = 0, runs = [], run = null, km = 0, k;
+    for (k = 0; k < n; k++) {
+      var i = reverse ? n - 1 - k : k, c = rainClass(mm[i]), len = lengths[i];
+      classM[c] += len; total += len; minutes += dtMin[i];
+      accum += mm[i] * dtMin[i] / 60;
+      if (mm[i] > peak) peak = mm[i];
+      if (prob[i] !== null && (peakProb === null || prob[i] > peakProb)) peakProb = prob[i];
+      if (c > 0) {
+        wetM += len; wetMinutes += dtMin[i];
+        if (!run || run.cls !== c) { run = { fromKm: km / 1000, toKm: (km + len) / 1000, peakMm: mm[i], cls: c }; runs.push(run); }   // a run is one class, as on the map
+        else { run.toKm = (km + len) / 1000; if (mm[i] > run.peakMm) run.peakMm = mm[i]; }
+      } else run = null;
+      km += len;
+    }
+    return { totalM: total, wetM: wetM, wetPct: total > 0 ? 100 * wetM / total : 0, classM: classM, peakMm: peak, peakProb: peakProb,
+             accumMm: accum, minutes: minutes, wetMinutes: wetMinutes, runs: runs };
+  }
+  // END rain-pure
 
   // ---------------------------------------------------------------------
   // Wind chill ("feels like") for a moving rider. Pure maths again.
@@ -3191,7 +3329,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
   }
 
-  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh, timeline, windTimeline, ride, terrainOpts, demProfile) {
+  function analyze(points, windFromDeg, resampleM, neutralDeg, veryDeg, windSpeedBeaufort, cruiseSpeedKmh, tempC, rh, timeline, windTimeline, ride, terrainOpts, demProfile, rainTimeline) {
     var proj = projectToEnu(points);
     var xy = resamplePolyline(proj.xy, resampleM);
     var latLon = enuToLatLon(xy, proj.lat0, proj.lon0, proj.cosLat0);
@@ -3250,7 +3388,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       rider = ride.rider || RIDER_DEFAULTS;
       powerW = powerForSpeed(cruiseSpeedKmh / 3.6, airDensity(tempC), rider);
       var steadyKmh = beaufortToKmh(windSpeedBeaufort);
-      var clockStart = windTimeline ? windTimeline.startMin : (timeline ? timeline.startMin : 0);
+      var clockStart = windTimeline ? windTimeline.startMin : (timeline ? timeline.startMin : (rainTimeline ? rainTimeline.startMin : 0));
       var windAtFn = function (frac, t) {
         var w = windTimeline ? windAtPlace(windTimeline.locations, frac, t) : null;
         return w ? { speedKmh: w.sp, dirFromDeg: w.dir } : { speedKmh: steadyKmh, dirFromDeg: windFromDeg };
@@ -3338,10 +3476,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     var fwdStats = feelsStats(lengths, cosphiFwd, vF, wFwd, environment(false, "tempC", tempC), environment(false, "rh", rh));
     var revStats = feelsStats(lengths, cosphiRev, vR, wRev, environment(true, "tempC", tempC), environment(true, "rh", rh));
-    // Wind and temperature as the rider meets them, for the charts (forecast mode only).
+    // Rain as the rider meets it, per direction: at each segment, the rain expected there when the
+    // rider arrives (same clock and places as the temperature and the wind).
+    var rain = null;
+    if (rainTimeline) {
+      var rainFor = function (reverse) {
+        var pr = reverse ? profR : profF, t, dt;
+        if (powerMode) { t = pr.tMid; dt = pr.dtMin; }
+        else {
+          t = segmentClock(lengths, rainTimeline.startMin, cruiseSpeedKmh, reverse).t;
+          dt = lengths.map(function (len) { return len / (Math.max(cruiseSpeedKmh, 1) * 1000 / 60); });
+        }
+        var mm = [], prob = [];
+        for (var q = 0; q < lengths.length; q++) {
+          var r = rainAtPlace(rainTimeline.locations, fracs[q], t[q]);
+          mm.push(r && r.mm !== null ? r.mm : 0); prob.push(r ? r.prob : null);
+        }
+        return { mm: mm, prob: prob, cls: mm.map(rainClass), stats: rainDirectionStats(lengths, mm, prob, dt, reverse) };
+      };
+      rain = { fwd: rainFor(false), rev: rainFor(true) };
+    }
+    // Wind, temperature and rain as the rider meets them, for the charts (forecast mode only).
     var rideSeries = null;
-    if (timeline || windTimeline) {
-      var seriesStart = windTimeline ? windTimeline.startMin : timeline.startMin;
+    if (timeline || windTimeline || rainTimeline) {
+      var seriesStart = windTimeline ? windTimeline.startMin : (timeline ? timeline.startMin : rainTimeline.startMin);
       var seriesFor = function (reverse) {
         var t, wKmh = null, wDir = null;
         if (powerMode) {
@@ -3354,10 +3512,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
             wDir = (reverse ? wr : wf).dirFromDeg.map(function (d) { return d === null ? windFromDeg : d; });
           }
         }
-        var st = reverse ? revStats : fwdStats;
-        return buildRideSeries({ lengths: lengths, reverse: reverse, t: t, windKmh: wKmh, windDir: wDir, airC: st.airSeg, feelsC: st.perSeg, maxPoints: 140 });
+        var st = reverse ? revStats : fwdStats, rn = rain ? (reverse ? rain.rev : rain.fwd) : null;
+        return buildRideSeries({ lengths: lengths, reverse: reverse, t: t, windKmh: wKmh, windDir: wDir, airC: timeline ? st.airSeg : null, feelsC: timeline ? st.perSeg : null,
+                                 rainMm: rn ? rn.mm : null, rainProb: rn ? rn.prob : null, maxPoints: 140 });
       };
-      rideSeries = { fwd: seriesFor(false), rev: seriesFor(true), hasWind: !!windTimeline, hasTemp: !!timeline };
+      rideSeries = { fwd: seriesFor(false), rev: seriesFor(true), hasWind: !!windTimeline, hasTemp: !!timeline, hasRain: !!rainTimeline };
     }
     var chill = {
       timeline: !!timeline,
@@ -3405,6 +3564,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ride: rideInfo,
       terrain: terrain,
       rideSeries: rideSeries,
+      rain: rain,
       windRide: steadyWind ? null : rideWindSummary(totalLength, windTimeline.locations, windTimeline.startMin,
         powerMode && rideInfo.forward.avgKmh > 0 ? rideInfo.forward.avgKmh : cruiseSpeedKmh),
       fwd: fwd, rev: rev, identityGap: identityGap, identityOk: identityOk,
@@ -3649,6 +3809,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       climbClassColors().forEach(function (c, k) { colorFor[k] = c; });
       weightFor = function (c) { return c >= 0 ? 6 : 3; };
       cats = result.terrain.available ? result.terrain.segClass[state.climbDir] : result.fiveWay.categories.map(function () { return -1; });
+    } else if (state.view === "rain") {
+      // Wet stretches thick and coloured by intensity, dry ones a thin grey line.
+      colorFor = {};
+      rainClassColors().forEach(function (c, k) { colorFor[k] = c; });
+      weightFor = function (c) { return c > 0 ? 6 : 3; };
+      cats = result.rain ? result.rain[state.rainDir].cls : result.fiveWay.categories.map(function () { return 0; });
     } else if (state.view === "temp") {
       // Same runs-of-one-colour drawing as the wind view, but the "category"
       // of each segment is its feels-like class.
@@ -3683,6 +3849,78 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     leafletMap.invalidateSize();
     leafletMap.fitBounds(L.latLngBounds(latLon), { padding: [20, 20] });
+  }
+
+  // ---- Rain tab ---------------------------------------------------------------
+  // Classes 1 to 4 (very light to heavy) in one teal-blue hue, validated as an ordinal ramp for
+  // both themes; dry (class 0) is the neutral grey of the other maps.
+  var RAIN_LIGHT = ["#1bbbd8", "#0999b2", "#0d778b", "#0d5665"];
+  var RAIN_DARK = ["#095d6c", "#067e93", "#1aa0b9", "#1ec5e4"];
+  var RAIN_RANGE_LABELS = ["under 0.1 mm/h", "0.1 to 0.5 mm/h", "0.5 to 2.5 mm/h", "2.5 to 7.6 mm/h", "7.6 mm/h and more"];
+  function rainClassColors() { return [FEELS_NEUTRAL].concat(prefersDarkTheme() ? RAIN_DARK : RAIN_LIGHT); }
+  function kmText(m) { return (m / 1000).toFixed(1); }
+
+  function renderRain(result) {
+    var summary = document.getElementById("rainSummary"), table = document.getElementById("rainTable"), listCard = document.getElementById("rainListCard");
+    var rn = result.rain;
+    if (!rn) {
+      summary.innerHTML = "Rain comes from the forecast. Under <b>Weather for the ride</b>, choose <b>From forecast</b> and tap <b>Get forecast</b>.";
+      listCard.hidden = true;
+      return;
+    }
+    listCard.hidden = false;
+    var dir = state.rainDir, other = dir === "fwd" ? "rev" : "fwd", a = rn[dir].stats, b = rn[other].stats;
+    var name = dir === "fwd" ? "As recorded" : "In reverse", otherName = dir === "fwd" ? "in reverse" : "as recorded";
+    var probText = a.peakProb === null ? "" : "chance up to " + Math.round(a.peakProb) + "%";
+    summary.innerHTML = a.wetM <= 0
+      ? "<b>" + name + ": dry all the way.</b>" + (probText ? " The highest " + probText.replace("chance up to", "chance of rain on the route is") + "." : "")
+      : "<b>" + name + ": rain on " + kmText(a.wetM) + " of " + kmText(a.totalM) + " km (" + Math.round(a.wetPct) + "%).</b> Peak " + a.peakMm.toFixed(1) + " mm/h" + (probText ? ", " + probText : "") +
+        ". About " + a.accumMm.toFixed(1) + " mm falls on you during the ride.";
+    summary.innerHTML += " Ridden the other way (" + otherName + "): " + (b.wetM <= 0 ? "dry" : "rain on " + kmText(b.wetM) + " km (" + Math.round(b.wetPct) + "%), about " + b.accumMm.toFixed(1) + " mm") + ".";
+
+    var colors = rainClassColors();
+    var head = '<thead><tr><th>Rain</th><th>From</th><th>Length</th><th>Peak</th></tr></thead>';
+    var rows = a.runs.map(function (r) {
+      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[r.cls] + '"></span>' + RAIN_CLASS_LABELS[r.cls] + "</td><td>km " + r.fromKm.toFixed(1) + "</td><td>" +
+        fmtLen((r.toKm - r.fromKm) * 1000) + "</td><td>" + r.peakMm.toFixed(1) + " mm/h</td></tr>";
+    }).join("");
+    if (!a.runs.length) rows = '<tr><td colspan="4" style="text-align:left">No rain expected along the route in this direction.</td></tr>';
+    table.innerHTML = head + "<tbody>" + rows + "</tbody>";
+  }
+
+  function renderRainLegend(result) {
+    var wrap = document.getElementById("routeStats");
+    wrap.innerHTML = "";
+    if (!result.rain) return;
+    var st = result.rain[state.rainDir].stats, colors = rainClassColors();
+    var block = document.createElement("div");
+    block.className = "route-stats-block";
+    var h = document.createElement("div");
+    h.className = "route-stats-heading";
+    h.textContent = "Rain intensity, " + (state.rainDir === "fwd" ? "as recorded" : "in reverse");
+    block.appendChild(h);
+    var bar = document.createElement("div");
+    bar.className = "route-stats-bar";
+    st.classM.forEach(function (m, k) {
+      if (m <= 0) return;
+      var seg = document.createElement("div");
+      seg.className = "route-stats-bar-seg";
+      seg.style.backgroundColor = colors[k];
+      seg.style.flex = (st.totalM > 0 ? m / st.totalM : 0).toFixed(4);
+      bar.appendChild(seg);
+    });
+    block.appendChild(bar);
+    var grid = document.createElement("div");
+    grid.className = "route-stats-grid temp-legend";
+    st.classM.forEach(function (m, k) {
+      if (m <= 0) return;
+      var el = document.createElement("div");
+      el.className = "route-stats-item";
+      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + RAIN_CLASS_LABELS[k] + " (" + RAIN_RANGE_LABELS[k] + ") " + (m / 1000).toFixed(2) + " km";
+      grid.appendChild(el);
+    });
+    block.appendChild(grid);
+    wrap.appendChild(block);
   }
 
   // ---- Climbs tab ------------------------------------------------------
@@ -3764,7 +4002,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function drawRideChart(kind, result) {
     var box = document.getElementById(kind + "RideChart"), svg = document.getElementById(kind + "RideSvg");
     var rs = result.rideSeries, readout = document.getElementById(kind + "RideReadout");
-    if (!rs || !(kind === "wind" ? rs.hasWind : rs.hasTemp) || !rs.fwd.length) { box.hidden = true; clearRideMarkers(); return; }
+    if (!rs || !(kind === "wind" ? rs.hasWind : kind === "temp" ? rs.hasTemp : rs.hasRain) || !rs.fwd.length) { box.hidden = true; clearRideMarkers(); return; }
     box.hidden = false;
     var NS = "http://www.w3.org/2000/svg", ml = 64, mr = 12, mt = 8, mb = 24;
     var W = Math.max(280, Math.round(svg.getBoundingClientRect().width)) || 320, plotW = W - ml - mr;
@@ -3776,7 +4014,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     function el(tag, attrs, text, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; (parent || svg).appendChild(e); return e; }
     while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-    var H, panelTop, panelH = 88, valueOf, yMin, yMax, unitLabel, ticks = [], t;
+    var H, panelTop, panelH = 88, gridBottom, p2Top = 0, p2H = 0, valueOf, yMin, yMax, unitLabel, ticks = [], t;
     if (kind === "wind") {
       var rowH = 22, rows = 2 * rowH;
       panelTop = mt + rows + 10; H = panelTop + panelH + mb;
@@ -3785,7 +4023,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.windKmh !== null) yMax = Math.max(yMax, p.windKmh); }); });
       yMax = Math.max(yMax * 1.1, 5);
       unitLabel = "km/h";
-    } else {
+    } else if (kind === "temp") {
       panelTop = mt + 4; H = panelTop + panelH + 28 + mb;
       panelH = panelH + 28;
       valueOf = function (p) { return p.feelsC === null ? null : cToDisplay(p.feelsC); };
@@ -3794,7 +4032,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var padV = Math.max(1, 0.12 * (yMax - yMin));
       yMin -= padV; yMax += padV;
       unitLabel = "\u00b0" + state.tempUnit;
+    } else {
+      // Rain: intensity (mm per hour) above, the chance of rain (%) below, on one clock.
+      panelTop = mt + 14; panelH = 78; p2Top = panelTop + panelH + 34; p2H = 58;
+      H = p2Top + p2H + mb;
+      valueOf = function (p) { return p.rainMm; };
+      yMin = 0; yMax = 0;
+      S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.rainMm !== null) yMax = Math.max(yMax, p.rainMm); }); });
+      yMax = Math.max(yMax * 1.15, 1);
+      unitLabel = "mm/h";
     }
+    gridBottom = kind === "rain" ? p2Top + p2H : panelTop + panelH;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     var sy = function (v) { return panelTop + panelH - (v - yMin) / (yMax - yMin) * panelH; };
     // y grid + labels
@@ -3808,7 +4056,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var steps = [5, 10, 15, 20, 30, 60, 120, 180, 360], tstep = steps[steps.length - 1];
     for (var q = 0; q < steps.length; q++) if ((t1 - t0) / steps[q] <= Math.max(3, plotW / 64)) { tstep = steps[q]; break; }
     for (t = Math.ceil(t0 / tstep) * tstep; t <= t1 + 1e-9; t += tstep) {
-      el("line", { "class": "rc-grid", x1: sx(t).toFixed(1), x2: sx(t).toFixed(1), y1: panelTop, y2: panelTop + panelH });
+      el("line", { "class": "rc-grid", x1: sx(t).toFixed(1), x2: sx(t).toFixed(1), y1: panelTop, y2: gridBottom });
       el("text", { x: sx(t).toFixed(1), y: H - 7, "text-anchor": "middle" }, fmtHM(t));
     }
     function linePoints(pts, fn) {
@@ -3834,7 +4082,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       S.forEach(function (ser) {
         el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
       });
-    } else {
+    } else if (kind === "temp") {
       // shading: the gap between air and feels-like, as recorded
       var up = [], dn = [];
       rs.fwd.forEach(function (p) { if (p.airC !== null && p.feelsC !== null) { up.push(sx(p.t).toFixed(1) + "," + sy(cToDisplay(p.airC)).toFixed(1)); dn.push(sx(p.t).toFixed(1) + "," + sy(cToDisplay(p.feelsC)).toFixed(1)); } });
@@ -3845,10 +4093,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
       S.forEach(function (ser) {
         el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
       });
+    } else {
+      // intensity, as recorded shaded under its line
+      var area = [];
+      rs.fwd.forEach(function (p) { if (p.rainMm !== null) area.push(sx(p.t).toFixed(1) + "," + sy(p.rainMm).toFixed(1)); });
+      if (area.length > 1) el("polygon", { points: area.join(" ") + " " + sx(rs.fwd[rs.fwd.length - 1].t).toFixed(1) + "," + sy(0).toFixed(1) + " " + sx(rs.fwd[0].t).toFixed(1) + "," + sy(0).toFixed(1), fill: RIDE_SERIES_COLORS.fwd, opacity: 0.15 });
+      S.forEach(function (ser) {
+        el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
+      });
+      // the chance of rain, 0 to 100 %
+      var sy2 = function (v) { return p2Top + p2H - v / 100 * p2H; };
+      [0, 50, 100].forEach(function (v) {
+        el("line", { "class": "rc-grid", x1: ml, x2: W - mr, y1: sy2(v).toFixed(1), y2: sy2(v).toFixed(1) });
+        el("text", { x: ml - 6, y: (sy2(v) + 4).toFixed(1), "text-anchor": "end" }, String(v));
+      });
+      el("text", { x: ml - 6, y: p2Top - 10, "text-anchor": "end" }, "chance %");
+      S.forEach(function (ser) {
+        var pts2 = [];
+        ser.pts.forEach(function (p) { if (p.rainProb !== null) pts2.push(sx(p.t).toFixed(1) + "," + sy2(p.rainProb).toFixed(1)); });
+        if (pts2.length) el("polyline", { points: pts2.join(" "), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
+      });
     }
-    var cursor = el("line", { "class": "rc-cursor", x1: 0, x2: 0, y1: kind === "wind" ? mt : panelTop, y2: panelTop + panelH, visibility: "hidden" });
+    var cursor = el("line", { "class": "rc-cursor", x1: 0, x2: 0, y1: kind === "wind" ? mt : panelTop, y2: gridBottom, visibility: "hidden" });
 
-    document.getElementById(kind + "RideLegend").innerHTML = kind === "wind"
+    document.getElementById(kind + "RideLegend").innerHTML = kind !== "temp"
       ? rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "As recorded" }, { color: RIDE_SERIES_COLORS.rev, dash: "5 4", label: "In reverse" }])
       : rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "Feels like, as recorded" }, { color: RIDE_SERIES_COLORS.rev, dash: "5 4", label: "Feels like, in reverse" }, { color: "var(--ink-muted)", w: 1.3, label: "Air temperature" }]);
 
@@ -3859,6 +4127,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (ta > ser.pts[ser.pts.length - 1].t + 1) return ser.name + ": finished";
       var p = ser.pts[seriesIndexAtTime(ser.pts, ta)];
       if (kind === "wind") return ser.name + ": km " + p.km.toFixed(1) + ", " + Math.round(p.windKmh) + " km/h from " + degreesToCompass16(p.windDir);
+      if (kind === "rain") return ser.name + ": km " + p.km.toFixed(1) + ", " + (p.rainMm < 0.05 ? "dry" : p.rainMm.toFixed(1) + " mm/h") + (p.rainProb === null ? "" : " (chance " + Math.round(p.rainProb) + "%)");
       return ser.name + ": km " + p.km.toFixed(1) + ", air " + fmtTemp(p.airC) + ", feels like " + fmtTemp(p.feelsC);
     }
     function showAt(ta) {
@@ -3877,7 +4146,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     svg.onpointermove = move;
     svg.onpointerleave = function (e) { if (e.pointerType === "mouse") hide(); };
   }
-  function renderRideCharts(result) { drawRideChart("wind", result); drawRideChart("temp", result); }
+  function renderRideCharts(result) { drawRideChart("wind", result); drawRideChart("temp", result); drawRideChart("rain", result); }
   window.addEventListener("resize", function () { if (lastResult) renderRideCharts(lastResult); });
 
   // A temperature DIFFERENCE as a bare number in the chosen unit (9/5 only,
@@ -4322,6 +4591,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       lines.push("Ascent " + Math.round(tr.ascentM) + " m, descent " + Math.round(tr.descentM) + " m as recorded (rises and falls under " + tr.options.deadbandM + " m ignored; elevation smoothed over about " + tr.options.smoothWindowM + " m).");
     }
     lines.push("");
+    if (result.rain) {
+      lines.push("=== Rain ===");
+      [["As recorded", "fwd"], ["In reverse", "rev"]].forEach(function (d) {
+        var st = result.rain[d[1]].stats;
+        lines.push(d[0] + ": " + (st.wetM > 0 ? "rain on " + kmText(st.wetM) + " of " + kmText(st.totalM) + " km (" + Math.round(st.wetPct) + "%), peak " + st.peakMm.toFixed(1) + " mm/h" +
+          (st.peakProb === null ? "" : ", chance up to " + Math.round(st.peakProb) + "%") + ", about " + st.accumMm.toFixed(1) + " mm falls on the rider" : "dry" + (st.peakProb === null ? "" : " (chance of rain up to " + Math.round(st.peakProb) + "%)")));
+        st.runs.forEach(function (r) { lines.push("  " + RAIN_CLASS_LABELS[r.cls].toLowerCase() + " rain from km " + r.fromKm.toFixed(1) + " to km " + r.toKm.toFixed(1) + ", peak " + r.peakMm.toFixed(1) + " mm/h"); });
+      });
+      lines.push("");
+    }
     lines.push("=== Conclusion ===");
     lines.push("Forward: " + (result.fwd.easy / 1000).toFixed(2) + " km easy vs " + (result.fwd.hard / 1000).toFixed(2) + " km hard");
     lines.push("Reverse: " + (result.rev.easy / 1000).toFixed(2) + " km easy vs " + (result.rev.hard / 1000).toFixed(2) + " km hard");
@@ -4385,6 +4664,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     rideStyle: "speed",           // "speed" (constant speed) or "power" (constant power, flat road)
     rider: { massKg: 85, cda: 0.32, crr: 0.005, eta: 0.975 },   // used by steady power
     windTimeline: null,           // the forecast WIND along the ride ({locations}); null when the wind is set by hand
+    rainTimeline: null,           // the forecast RAIN along the ride ({locations, startMin}); null without a forecast
+    rainDir: "fwd",                // Rain tab: which direction the map and table show
     fetchedThroughMin: 1440,      // how far the fetched forecast reaches on the ride's clock (1440 = end of the ride's day)
     rh: 50,                       // relative humidity, %; only matters on hot days
     rhFromForecast: false,
@@ -4577,6 +4858,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var routeCard = document.getElementById("routeCard");
   var routeSlotWind = document.getElementById("routeSlotWind"), routeSlotTemp = document.getElementById("routeSlotTemp"), routeSlotClimbs = document.getElementById("routeSlotClimbs");
   var tabClimbs = document.getElementById("tabClimbs"), panelClimbs = document.getElementById("panelClimbs");
+  var tabRain = document.getElementById("tabRain"), panelRain = document.getElementById("panelRain"), routeSlotRain = document.getElementById("routeSlotRain");
   var saveRouteBtnEl = document.getElementById("saveRouteBtn");
 
   // The "How it works" tab is for larger screens. It is left out
@@ -4618,19 +4900,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // underneath, so coming back to Wind or Temperature is exactly as it was.
   function setView(view, focusTab) {
     var how = view === "how" && !tabHow.hidden;
-    if (!how) state.view = view === "temp" ? "temp" : view === "climbs" ? "climbs" : "wind";
+    if (!how) state.view = view === "temp" ? "temp" : view === "rain" ? "rain" : view === "climbs" ? "climbs" : "wind";
     state.showHow = how;
     var v = state.view;
     panelWind.hidden = how || v !== "wind";
     panelTemp.hidden = how || v !== "temp";
     panelClimbs.hidden = how || v !== "climbs";
+    panelRain.hidden = how || v !== "rain";
     panelHow.hidden = !how;
-    [[tabWind, !how && v === "wind"], [tabTemp, !how && v === "temp"], [tabClimbs, !how && v === "climbs"], [tabHow, how]].forEach(function (pair) {
+    [[tabWind, !how && v === "wind"], [tabTemp, !how && v === "temp"], [tabRain, !how && v === "rain"], [tabClimbs, !how && v === "climbs"], [tabHow, how]].forEach(function (pair) {
       pair[0].setAttribute("aria-selected", String(pair[1]));
       pair[0].tabIndex = pair[1] ? 0 : -1;
     });
     if (!how) {
-      (v === "temp" ? routeSlotTemp : v === "climbs" ? routeSlotClimbs : routeSlotWind).appendChild(routeCard);
+      (v === "temp" ? routeSlotTemp : v === "rain" ? routeSlotRain : v === "climbs" ? routeSlotClimbs : routeSlotWind).appendChild(routeCard);
       // The image export is built around the wind colours and wind statistics,
       // so it only makes sense on the wind view.
       saveRouteBtnEl.hidden = v !== "wind";
@@ -4638,10 +4921,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       paintHowSwatches();
     }
     try { history.replaceState(null, "", how ? "#how-it-works" : window.location.pathname + window.location.search); } catch (e) { /* e.g. some file:// contexts */ }
-    if (focusTab) (how ? tabHow : (v === "temp" ? tabTemp : v === "climbs" ? tabClimbs : tabWind)).focus();
+    if (focusTab) (how ? tabHow : (v === "temp" ? tabTemp : v === "rain" ? tabRain : v === "climbs" ? tabClimbs : tabWind)).focus();
     scheduleRender();
   }
-  var TAB_VIEWS = [[tabWind, "wind"], [tabTemp, "temp"], [tabClimbs, "climbs"], [tabHow, "how"]];
+  var TAB_VIEWS = [[tabWind, "wind"], [tabTemp, "temp"], [tabRain, "rain"], [tabClimbs, "climbs"], [tabHow, "how"]];
   TAB_VIEWS.forEach(function (pair) {
     pair[0].addEventListener("click", function () { setView(pair[1]); });
     pair[0].addEventListener("keydown", function (e) {
@@ -4774,6 +5057,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return { locations: state.timeline.locations, startMin: startMin === null ? state.timeline.startMin : startMin };
   }
 
+  // The rain the ride meets, or null without a forecast.
+  function currentRainTimeline() {
+    if (!state.rainTimeline) return null;
+    var startMin = parseClock(fcStart.value);
+    return { locations: state.rainTimeline.locations, startMin: startMin === null ? state.rainTimeline.startMin : startMin };
+  }
+
   function fmtClock(min) {
     var m = Math.round(min), day = Math.floor(m / 1440), r = m - day * 1440;
     return pad2(Math.floor(r / 60)) + ":" + pad2(r % 60) + (day > 0 ? " the next day" : "");
@@ -4843,7 +5133,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var url = FORECAST_API +
       "?latitude=" + unique.map(function (p) { return p.lat.toFixed(1); }).join(",") +
       "&longitude=" + unique.map(function (p) { return p.lon.toFixed(1); }).join(",") +
-      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
+      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation,precipitation_probability&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
       "&start_date=" + dateStr + "&end_date=" + endDate;
     return fetch(url).then(function (res) {
       return res.json().then(function (data) { return { ok: res.ok, data: data }; }, function () { return { ok: false, data: {} }; });
@@ -4893,8 +5183,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var locations = r.plan.samples.map(function (smp) {
         var res = r.results[smp.unique];
         return { frac: smp.frac, temp: forecastSeries(res, "temperature_2m", dateStr), rh: forecastSeries(res, "relative_humidity_2m", dateStr),
-                 wind: forecastWindSeries(res, dateStr) };
+                 wind: forecastWindSeries(res, dateStr), rain: forecastRainSeries(res, dateStr) };
       });
+      // Rain follows the clock and the place as well (own timeline: typing a wind or a
+      // temperature does not touch it).
+      state.rainTimeline = locations.every(function (l) { return l.rain.t.length > 0; }) ? { locations: locations, startMin: startMin } : null;
       // The wind follows the clock and the place too: each stretch is judged against
       // the wind expected when the rider gets there. The compass and Beaufort fields
       // then show the ride's average of it.
@@ -4941,9 +5234,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
           : ", air temperature about " + fmtTemp1(env.meanC);
         if (env.meanC >= HUMIDITY_SHOW_C && env.meanRh !== null) tempText += ", humidity about " + Math.round(env.meanRh) + "%";
       }
+      var rainText = "";
+      if (state.rainTimeline) {          // the hours that overlap the ride by 10 minutes or more (a stamp describes the hour before it)
+        var mx = 0, mp = null;
+        locations.forEach(function (l) { l.rain.t.forEach(function (tt, q) {
+          if (Math.min(tt, startMin + rideMin) - Math.max(tt - 60, startMin) >= 10) { mx = Math.max(mx, l.rain.mm[q]); if (l.rain.prob[q] !== null && (mp === null || l.rain.prob[q] > mp)) mp = l.rain.prob[q]; }
+        }); });
+        rainText = mx < 0.1 ? ", dry" + (mp !== null ? " (chance of rain up to " + Math.round(mp) + "%)" : "") : ", rain up to " + mx.toFixed(1) + " mm/h" + (mp !== null ? " (chance up to " + Math.round(mp) + "%)" : "");
+      }
       forecastNoteText.textContent =
         "Forecast for " + day + ", riding " + fcStart.value + "\u2013" + fmtClock(startMin + rideMin) + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + windNoteText + ", gusts up to " + sm.gustKmh.toFixed(0) + " km/h" +
-        tempText + ". Wind, temperature and humidity follow the clock, at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
+        tempText + rainText + ". Wind, temperature, humidity and rain follow the clock, at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
       forecastNote.hidden = false;
     }).catch(showForecastError).then(function () {
       fcGetBtn.disabled = false;
@@ -4982,6 +5283,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     state.isExample = false;
     state.timeline = null;                 // the forecast was for the previous route
     state.windTimeline = null;
+    state.rainTimeline = null;
     state.dem = null;                      // so was any looked-up elevation
     forecastNote.hidden = true;
     forecastStale.hidden = true;
@@ -5192,7 +5494,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     try {
       result = analyze(state.points, state.windFromDeg, state.resampleM, state.neutralDeg, state.veryDeg, state.windSpeedBeaufort, state.cruiseSpeedKmh, state.tempC, state.rh, currentTimeline(), currentWindTimeline(),
         { mode: state.rideStyle, rider: state.rider }, { minGainM: state.climbMinGain, minAvgPct: state.climbMinAvg },
-        state.dem && state.dem.points === state.points ? state.dem : null);
+        state.dem && state.dem.points === state.points ? state.dem : null, currentRainTimeline());
     } catch (e) {
       fileError.textContent = e.message;
       fileError.classList.add("show");
@@ -5228,14 +5530,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
       banner.innerHTML = checkSvg + "<span>Roughly symmetric for this wind &mdash; neither direction has a clear advantage.</span>";
     }
 
-    document.getElementById("planSummary").textContent = state.view === "climbs"
+    document.getElementById("planSummary").textContent = state.view === "rain"
+      ? (result.rain ? "Each stretch coloured by the rain expected when you get there, " + (state.rainDir === "fwd" ? "as recorded." : "in reverse.") : "Rain comes from the forecast, so nothing is coloured yet.")
+      : state.view === "climbs"
       ? "Climbs of at least " + state.climbMinGain + " m, " + (state.climbDir === "fwd" ? "as recorded" : "in reverse") + ", numbered as in the table."
       : state.view === "temp"
       ? "Each stretch coloured by how much colder (blue) or hotter (red) it feels than the air."
       : (result.steadyWind
           ? "Tailwind and headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)."
           : "Tailwind and headwind for the forecast wind, which changes during the ride.");
-    document.getElementById("planCaption").textContent = state.view === "climbs"
+    document.getElementById("planCaption").textContent = state.view === "rain"
+      ? (result.rain ? "Coloured by how hard it is expected to rain on each stretch at the moment you would be there, " + (state.rainDir === "fwd" ? "riding as recorded" : "riding in reverse") +
+          ": dry stretches grey, then very light to heavy in darker teal. The forecast follows the clock, so the two directions meet different rain (choose the direction above)."
+        : "Rain comes from the forecast. Get a forecast under Weather for the ride to see it here.")
+      : state.view === "climbs"
       ? "Climbs of at least " + state.climbMinGain + " m (average " + state.climbMinAvg + "% or steeper), " + (state.climbDir === "fwd" ? "as recorded" : "ridden in reverse") +
         ", coloured by their steepest 100 m and numbered as in the table; the rest of the route is grey." + (result.terrain.available ? "" : " The elevation has not been looked up, so nothing is coloured.")
       : state.view === "temp"
@@ -5245,7 +5553,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           : "Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there (as recorded from the start time).");
     renderPolarSweep(result);
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
-    if (state.view === "temp") renderTempLegend(result); else if (state.view === "climbs") document.getElementById("routeStats").innerHTML = ""; else renderRouteStats(result);
+    if (state.view === "temp") renderTempLegend(result); else if (state.view === "rain") renderRainLegend(result); else if (state.view === "climbs") document.getElementById("routeStats").innerHTML = ""; else renderRouteStats(result);
+    renderRain(result);
     renderClimbs(result);
     if (!isPhone) buildSweepTable(result);
 
@@ -5623,6 +5932,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeInfo(); });
+
+  // Rain tab: which direction the map, the summary and the table show.
+  var rainDirFwd = document.getElementById("rainDirFwd"), rainDirRev = document.getElementById("rainDirRev");
+  function setRainDir(d) {
+    state.rainDir = d;
+    rainDirFwd.setAttribute("aria-pressed", String(d === "fwd"));
+    rainDirRev.setAttribute("aria-pressed", String(d === "rev"));
+    scheduleRender();
+  }
+  rainDirFwd.addEventListener("click", function () { setRainDir("fwd"); });
+  rainDirRev.addEventListener("click", function () { setRainDir("rev"); });
 
   // Climbs tab controls: direction and the two detection thresholds.
   var climbDirFwd = document.getElementById("climbDirFwd"), climbDirRev = document.getElementById("climbDirRev");

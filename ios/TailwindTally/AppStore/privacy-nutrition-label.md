@@ -39,7 +39,8 @@ Diagnostics — should be left **unselected**.
   stack associating route content with a persistent user record — nothing
   is stored at all.
 - **Coarse Location** (added with the "From forecast" wind option): tapping
-  "Get forecast" sends up to three points from the route (start, middle, end),
+  "Get forecast" (wind, temperature, humidity and, since the Rain tab, precipitation: same request, same
+  points, so no new data type) sends up to three points from the route (start, middle, end),
   rounded to 0.1° (~11 km), plus a date, to Open-Meteo, a third party. That is
   data leaving the device, so it has to be declared even though it is not
   the device's own location and nothing is stored on our side. Not linked to
