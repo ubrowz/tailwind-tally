@@ -2061,8 +2061,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <footer>
-    Geometry: equirectangular projection about the route centroid, resampled to fixed arc-length spacing before heading is measured. Elevation, gradient and speed are out of scope.
+    Geometry: equirectangular projection about the route centroid, resampled to fixed arc-length spacing before heading is measured.
     <div style="margin-top: 8px;"><a href="privacy.html" style="color: inherit;">Privacy Policy</a></div>
+    <div style="margin-top: 8px;" id="howFooterLink" hidden><a href="#how-it-works" target="_blank" rel="noopener" style="color: inherit;">How it works</a> (a long read, best on a larger screen)</div>
   </footer>
 </div>
 
@@ -4564,16 +4565,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var tabClimbs = document.getElementById("tabClimbs"), panelClimbs = document.getElementById("panelClimbs");
   var saveRouteBtnEl = document.getElementById("saveRouteBtn");
 
-  // The "How it works" tab is web-only. Inside the iOS app's embedded web view
-  // (no "Safari/" in its user agent, unlike Safari and Chrome on iOS) it is left
-  // out: a long reference page with formulas and tables does not suit an app
-  // that has no address bar or back button. On the web it can be opened directly
-  // with the address ...#how-it-works, which is also what the App Store Support
-  // URL can point at. Any other embedded iOS web view is treated the same way.
+  // The "How it works" tab is for larger screens. It is left out
+  //  - inside the iOS app's embedded web view (no "Safari/" in its user agent, unlike Safari
+  //    and Chrome on iOS): a long reference page with formulas and tables does not suit an
+  //    app that has no address bar or back button; any other embedded iOS web view is treated
+  //    the same way;
+  //  - in a phone's browser: too much text for the screen. There the footer offers a link
+  //    that opens it in a new tab.
+  // Opening the page at ...#how-it-works always shows the tab in a browser, which is also what
+  // the App Store Support URL can point at.
   var ua = navigator.userAgent || "";
   var embeddedIos = /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari\//.test(ua);
+  var phoneBrowser = !embeddedIos && /iPhone|iPod|Android.*Mobile/.test(ua);
   var tabHow = document.getElementById("tabHow"), panelHow = document.getElementById("panelHow");
-  tabHow.hidden = embeddedIos;
+  var howDirect = window.location.hash === "#how-it-works";
+  tabHow.hidden = embeddedIos || (phoneBrowser && !howDirect);
+  var howFooterLink = document.getElementById("howFooterLink");
+  if (howFooterLink) howFooterLink.hidden = !(phoneBrowser && !howDirect);
 
   // The colour table in the explanation is painted from the app's own scale, so
   // it always shows the colours the map really uses, in the current theme.
@@ -4588,7 +4596,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // is a page alongside them. Showing it leaves the last data view untouched
   // underneath, so coming back to Wind or Temperature is exactly as it was.
   function setView(view, focusTab) {
-    var how = view === "how" && !embeddedIos;
+    var how = view === "how" && !tabHow.hidden;
     if (!how) state.view = view === "temp" ? "temp" : view === "climbs" ? "climbs" : "wind";
     state.showHow = how;
     var v = state.view;
