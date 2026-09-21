@@ -2066,7 +2066,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="reportCard">
     <div class="card-head">
       <h2>Full report</h2>
       <button class="copy-btn" id="copyBtn">Copy</button>
@@ -4590,7 +4590,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // the App Store Support URL can point at.
   var ua = navigator.userAgent || "";
   var embeddedIos = /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari\//.test(ua);
-  var phoneBrowser = !embeddedIos && /iPhone|iPod|Android.*Mobile/.test(ua);
+  var isPhone = /iPhone|iPod|Android.*Mobile/.test(ua);           // the app on an iPhone included
+  var phoneBrowser = !embeddedIos && isPhone;
+  // The full text report is for larger screens too: a wall of monospaced text on a phone.
+  document.getElementById("reportCard").hidden = isPhone;
   var tabHow = document.getElementById("tabHow"), panelHow = document.getElementById("panelHow");
   var howDirect = window.location.hash === "#how-it-works";
   tabHow.hidden = embeddedIos || (phoneBrowser && !howDirect);
@@ -5267,7 +5270,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ? "About " + Math.round(result.ride.powerW) + " W at the pedals holds " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h on a calm, flat day (" + result.ride.rider.massKg + " kg, CdA " + result.ride.rider.cda + ", Crr " + result.ride.rider.crr + ")."
       : "";
 
-    document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
+    if (!isPhone) document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
     lastResult = result;
   }
 
