@@ -1514,7 +1514,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </svg>
     <div class="masthead-text">
       <h1>Tailwind Tally</h1>
-      <p>Upload a ride's GPX track and a wind direction &mdash; set by hand, or taken from the forecast for your ride &mdash; to see how many kilometres are tailwind ("easy") versus headwind ("hard") &mdash; ridden as recorded, and in reverse.</p>
+      <p id="mastheadIntro">Upload a ride's GPX track and a wind direction &mdash; set by hand, or taken from the forecast for your ride &mdash; to see how many kilometres are tailwind ("easy") versus headwind ("hard") &mdash; ridden as recorded, and in reverse.</p>
     </div>
   </div>
 
@@ -4594,6 +4594,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var phoneBrowser = !embeddedIos && isPhone;
   // The full text report is for larger screens too: a wall of monospaced text on a phone.
   document.getElementById("reportCard").hidden = isPhone;
+  // ... and so is the introduction under the title: on a phone it pushes the first card off the screen.
+  document.getElementById("mastheadIntro").hidden = isPhone;
   var tabHow = document.getElementById("tabHow"), panelHow = document.getElementById("panelHow");
   var howDirect = window.location.hash === "#how-it-works";
   tabHow.hidden = embeddedIos || (phoneBrowser && !howDirect);
