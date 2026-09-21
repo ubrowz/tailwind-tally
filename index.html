@@ -792,6 +792,20 @@
   }
   .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
   .copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  /* The buttons that fetch something from another service (forecast, elevation): the main
+     action of their card, so filled and larger than the small utility buttons above. */
+  .action-btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 40px;
+    font-family: var(--font-body); font-size: 14px; font-weight: 600; letter-spacing: 0.01em;
+    color: var(--accent-ink); background: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    padding: 9px 20px; cursor: pointer; box-shadow: var(--shadow-card);
+    transition: filter 0.12s ease, transform 0.06s ease;
+  }
+  .action-btn:hover:not(:disabled) { filter: brightness(1.1); }
+  .action-btn:active:not(:disabled) { transform: translateY(1px); }
+  .action-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .action-btn:disabled { opacity: 0.65; cursor: progress; }
+  @media (max-width: 480px) { .action-btn { width: 100%; } }
   pre.report {
     background: var(--panel-raised);
     border: 1px solid var(--border);
@@ -1590,7 +1604,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <p class="ride-timing" id="rideTiming"></p>
       <div class="forecast-actions">
-        <button type="button" class="copy-btn" id="fcGetBtn">Get forecast</button>
+        <button type="button" class="action-btn" id="fcGetBtn">Get forecast</button>
       </div>
       <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></p>
       <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, or the ride now runs past the hours that were fetched. The temperature, humidity and wind follow a changed start time and speed on their own; tap Get forecast again to pick up a different date or later hours.</p>
@@ -1768,7 +1782,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <p class="climb-summary" id="climbSummary"></p>
       <div class="dem-offer" id="demOffer" hidden>
         <p id="demOfferText"></p>
-        <button type="button" class="copy-btn" id="demGetBtn">Look up elevation online</button>
+        <button type="button" class="action-btn" id="demGetBtn">Look up elevation online</button>
         <p class="error-text" id="demError"></p>
       </div>
     </div>
@@ -5198,13 +5212,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var checkSvg = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     if (diffPp > 1) {
       banner.className = "verdict-banner fwd";
-      banner.innerHTML = checkSvg + "Easier ridden <b>forward</b> (as recorded) &mdash; " + Math.abs(diffPp).toFixed(1) + " points more easy distance than in reverse.";
+      banner.innerHTML = checkSvg + "<span>Easier ridden <b>forward</b> (as recorded) &mdash; " + Math.abs(diffPp).toFixed(1) + " points more easy distance than in reverse.</span>";
     } else if (diffPp < -1) {
       banner.className = "verdict-banner rev";
-      banner.innerHTML = checkSvg + "Easier ridden in <b>reverse</b> &mdash; " + Math.abs(diffPp).toFixed(1) + " points more easy distance than forward.";
+      banner.innerHTML = checkSvg + "<span>Easier ridden in <b>reverse</b> &mdash; " + Math.abs(diffPp).toFixed(1) + " points more easy distance than forward.</span>";
     } else {
       banner.className = "verdict-banner tie";
-      banner.innerHTML = checkSvg + "Roughly symmetric for this wind &mdash; neither direction has a clear advantage.";
+      banner.innerHTML = checkSvg + "<span>Roughly symmetric for this wind &mdash; neither direction has a clear advantage.</span>";
     }
 
     document.getElementById("planSummary").textContent = state.view === "climbs"
