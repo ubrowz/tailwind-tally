@@ -439,11 +439,6 @@
   .route-btn:hover { color: var(--accent); border-color: var(--accent); }
   .route-btn[aria-pressed="true"] { background: var(--accent-wash); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); border-color: var(--accent); }
   .route-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .map-key { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--ink-secondary); }
-  .map-key span { display: inline-flex; align-items: center; gap: 6px; }
-  .map-key i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
-  .map-key .mk-start { background: var(--accent); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--ink-muted); }
-  .map-key .mk-finish { border: 3px solid var(--ink); background: transparent; }
   .forecast-panel { margin-bottom: 18px; }
 
 
@@ -1687,7 +1682,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="map-wrap">
         <div id="leafletMapDiv"></div>
       </div>
-      <div class="map-key" aria-hidden="true"><span><i class="mk-start"></i> Start</span><span><i class="mk-finish"></i> Finish</span></div>
       <div class="route-stats" id="routeStats"></div>
     </div>
     </div>
@@ -1901,7 +1895,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p>Air resistance grows with the <em>square</em> of the airspeed, not in proportion to the wind. On a stretch the drag effort is proportional to the airspeed squared (the formula in section 3). The effort estimate is the distance-weighted average of that over the route, divided by the value for riding the same route at the same speed on a calm day. So 1.0&times; means the same as a calm day and 1.6&times; means 60&nbsp;% more aerodynamic effort.</p>
         <p>Because of the square, a headwind costs more than an equal tailwind saves. At 25&nbsp;km/h in a 20&nbsp;km/h wind, the airspeed is 45&nbsp;km/h against (3.24&times; the calm effort) and 5&nbsp;km/h with (0.04&times;). A route that is half headwind and half tailwind therefore averages 1.64&times;, more than a calm day. The estimate counts drag only: not rolling resistance, gradient or changes of speed, and it assumes you hold your cruising speed whatever the wind. If you ride at steady power, the effort figure is replaced by ride times (section 6).</p>
         <h3>The last half, reversing, and the sweep</h3>
-        <p>The app analyses the route in the direction it is now: the first point is the start (the blue dot on the map) and the last point the finish (the ring). The last 50&nbsp;% by distance is shown separately, since it is often the part that decides how a ride feels. <strong>Reverse route</strong> flips the route, so start and finish swap and everything on the page is worked out for the other way round; pressing it again restores the original. The app does not compare the two directions for you: press the button and look. Whatever you have fetched stays valid, because the same places are met from the other end: the forecast, the rain and the elevation are turned around with the route, without asking the services again.</p>
+        <p>The app analyses the route in the direction it is now: the first point is the start (the blue dot on the map). The last 50&nbsp;% by distance is shown separately, since it is often the part that decides how a ride feels. <strong>Reverse route</strong> flips the route, so the start moves to the other end and everything on the page is worked out for the other way round; pressing it again restores the original. The app does not compare the two directions for you: press the button and look. Whatever you have fetched stays valid, because the same places are met from the other end: the forecast, the rain and the elevation are turned around with the route, without asking the services again.</p>
         <p>The wind-direction sweep chart tries every steady wind direction from 0&deg; to 359&deg; and shows the tailwind share for each; it is a what-if for a steady wind and does not use the forecast. With one steady wind, the app also checks its own arithmetic: the push of the wind along the route must add up to what the gap between the start and the finish allows (the balance check in the full report).</p>
 
         <h2 id="how-changing">5. A wind that changes during the ride</h2>
@@ -3809,8 +3803,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       L.polyline(pts, { color: colorFor[cat], weight: weightFor(cat), opacity: 0.9, interactive: false }).addTo(leafletRouteLayer);
       i = j;
     }
-    // Finish: a ring in the ink colour (around the start dot on a loop); start: the blue dot on top.
-    L.circleMarker(latLon[latLon.length - 1], { radius: 9, color: "var(--ink)", weight: 3, fillOpacity: 0, interactive: false }).addTo(leafletRouteLayer);
     L.circleMarker(latLon[0], { radius: 6, color: "var(--panel)", weight: 2, fillColor: "var(--accent)", fillOpacity: 1, interactive: false }).addTo(leafletRouteLayer);
     if (state.view === "climbs" && result.terrain.available) {
       // The climb's number, half way along it, matching the table.
@@ -5198,7 +5190,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     fileError.classList.remove("show");
     scheduleRender();
   }
-  // Reverse route: the route is flipped (start and finish swap), so everything on the page is
+  // Reverse route: the route is flipped (the start moves to the other end), so everything on the page is
   // about the direction you would ride. The forecast, rain and elevation already fetched are kept:
   // the same places are met from the other end.
   var reverseBtn = document.getElementById("reverseBtn");
