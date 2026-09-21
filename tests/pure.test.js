@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
-  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -415,26 +415,22 @@ const warming = [{ frac: 0, temp: { t: [0, 1440], v: [10 - 10, 10 - 10 + 24] }, 
 const T_at = (min) => min / 60;
 const segs = Array(100).fill(250);                                 // 25 km in 100 segments
 t("segmentEnvironment: forward - each segment gets the temperature at the moment the rider arrives", () => {
-  const env = segmentEnvironment(segs, warming, 600, 25, false);   // start 10:00 at 25 km/h: the ride takes 60 min
+  const env = segmentEnvironment(segs, warming, 600, 25);   // start 10:00 at 25 km/h: the ride takes 60 min
   assert(Math.abs(env.tempC[0] - T_at(600 + 0.3)) < 0.01, String(env.tempC[0]));          // first segment: ~0.3 min in
   assert(Math.abs(env.tempC[99] - T_at(600 + 59.7)) < 0.01, String(env.tempC[99]));
   for (let i = 1; i < 100; i++) assert(env.tempC[i] > env.tempC[i - 1]);                  // warms all the way
 });
-t("segmentEnvironment: reverse - same places, mirrored moments (the far end is reached first)", () => {
-  const f = segmentEnvironment(segs, warming, 600, 25, false), r = segmentEnvironment(segs, warming, 600, 25, true);
-  for (let i = 0; i < 100; i++) assert(Math.abs(r.tempC[i] - f.tempC[99 - i]) < 1e-9, `segment ${i}`);
-});
 t("segmentEnvironment: speed sets how fast the clock runs (slower = more warming over the same route)", () => {
-  const fast = segmentEnvironment(segs, warming, 600, 25, false), slow = segmentEnvironment(segs, warming, 600, 12.5, false);
+  const fast = segmentEnvironment(segs, warming, 600, 25), slow = segmentEnvironment(segs, warming, 600, 12.5);
   assert(slow.tempC[99] - slow.tempC[0] > 1.9 * (fast.tempC[99] - fast.tempC[0]));
 });
 t("segmentEnvironment: start time shifts everything by the same amount", () => {
-  const a = segmentEnvironment(segs, warming, 600, 25, false), b = segmentEnvironment(segs, warming, 660, 25, false);
+  const a = segmentEnvironment(segs, warming, 600, 25), b = segmentEnvironment(segs, warming, 660, 25);
   for (let i = 0; i < 100; i += 11) assert(Math.abs((b.tempC[i] - a.tempC[i]) - 1) < 1e-9);
 });
 t("segmentEnvironment: places differ too - cold start, warm middle, cold end, read at the same clock", () => {
   const locs = [{ frac: 0, temp: { t: [0], v: [10] }, rh: { t: [0], v: [50] } }, { frac: 0.5, temp: { t: [0], v: [20] }, rh: { t: [0], v: [50] } }, { frac: 1, temp: { t: [0], v: [10] }, rh: { t: [0], v: [50] } }];
-  const env = segmentEnvironment(segs, locs, 600, 25, false);
+  const env = segmentEnvironment(segs, locs, 600, 25);
   assert(env.tempC[0] < 10.3 && env.tempC[49] > 19.7 && env.tempC[99] < 10.3);
 });
 t("ride summary: start, end and mean of a steadily warming ride", () => {
@@ -472,7 +468,7 @@ t("classes: colour is relative to the air temperature at that segment (a warming
 t("ride summary ends agree with the per-segment ones (what the note and the card each show)", () => {
   const locs = [{ frac: 0, temp: { t: [0, 1440], v: [4, 28] }, rh: { t: [0], v: [50] } }, { frac: 1, temp: { t: [0, 1440], v: [8, 32] }, rh: { t: [0], v: [50] } }];
   const lens = Array(1030).fill(25);                                            // the app's 25 m segments
-  const sum = rideEnvSummary(25750, locs, 400, 15), env = segmentEnvironment(lens, locs, 400, 15, false);
+  const sum = rideEnvSummary(25750, locs, 400, 15), env = segmentEnvironment(lens, locs, 400, 15);
   assert(Math.abs(sum.startC - env.tempC[0]) < 0.005, `${sum.startC} vs ${env.tempC[0]}`);
   assert(Math.abs(sum.endC - env.tempC[1029]) < 0.005, `${sum.endC} vs ${env.tempC[1029]}`);
 });
@@ -515,22 +511,18 @@ t("windAtPlace: between places by distance along the route, held beyond the ends
 // a wind that swings steadily from 270 (west) at 10:00 to 0/360 (north) at 12:00, 12 -> 24 km/h
 const swing = [{ frac: 0, wind: { t: [600, 720], sp: [12, 24], dir: [270, 360] } }];
 t("segmentWind forward: each segment gets the wind at the moment the rider arrives", () => {
-  const w = segmentWind(segs, swing, 600, 25, false);                                // 25 km in 100 x 250 m, 60 min ride
+  const w = segmentWind(segs, swing, 600, 25);                                // 25 km in 100 x 250 m, 60 min ride
   assert(near(w.speedKmh[0], 12 + (0.3 / 120) * 12, 0.01) && near(w.dirFromDeg[0], 270 + (0.3 / 120) * 90, 0.1));
   assert(near(w.speedKmh[99], 12 + (59.7 / 120) * 12, 0.01) && near(w.dirFromDeg[99], 270 + (59.7 / 120) * 90, 0.1));
   for (let i = 1; i < 100; i++) assert(w.speedKmh[i] > w.speedKmh[i - 1] && w.dirFromDeg[i] > w.dirFromDeg[i - 1]);
 });
-t("segmentWind reverse: same places, mirrored moments", () => {
-  const f = segmentWind(segs, swing, 600, 25, false), r = segmentWind(segs, swing, 600, 25, true);
-  for (let i = 0; i < 100; i++) assert(near(r.speedKmh[i], f.speedKmh[99 - i]) && near(r.dirFromDeg[i], f.dirFromDeg[99 - i]));
-});
-t("segmentWind: a constant wind is the same on every segment, in both directions", () => {
+t("segmentWind: a constant wind is the same on every segment", () => {
   const steady = [{ frac: 0, wind: { t: [0], sp: [17], dir: [225] } }];
-  for (const rev of [false, true]) { const w = segmentWind(segs, steady, 600, 25, rev); assert(w.speedKmh.every((v) => v === 17) && w.dirFromDeg.every((d) => d === 225)); }
+  const w = segmentWind(segs, steady, 600, 25); assert(w.speedKmh.every((v) => v === 17) && w.dirFromDeg.every((d) => d === 225));
 });
-t("segmentClock: matches what segmentEnvironment used (forward and reverse)", () => {
-  const c = segmentClock(segs, 600, 25, false), r = segmentClock(segs, 600, 25, true);
-  assert(near(c.t[0], 600 + 0.3, 1e-6) && near(c.frac[0], 0.005)); assert(near(r.t[99], 600 + 0.3, 1e-6));
+t("segmentClock: matches what segmentEnvironment used", () => {
+  const c = segmentClock(segs, 600, 25);
+  assert(near(c.t[0], 600 + 0.3, 1e-6) && near(c.frac[0], 0.005)); assert(near(c.t[99], 600 + 59.7, 1e-6));
 });
 t("rideWindSummary: exact start and end, mean speed, and a vector-mean direction across north", () => {
   const r = rideWindSummary(25000, swing, 600, 25);
@@ -609,7 +601,7 @@ const eLens = Array(100).fill(200), eHead = Array(100).fill([1, 0]);
 const towardOf = (dirFrom) => { const a = ((dirFrom + 180) % 360) * Math.PI / 180; return [Math.sin(a), Math.cos(a)]; };
 const P25 = powerForSpeed(kmh(25), RHO, RIDER);
 function profile(over) {
-  return ridePowerProfile(Object.assign({ lengths: eLens, headings: eHead, reverse: false, startMin: 600, powerW: P25, rider: RIDER, toward: towardOf,
+  return ridePowerProfile(Object.assign({ lengths: eLens, headings: eHead, startMin: 600, powerW: P25, rider: RIDER, toward: towardOf,
     windAt: () => ({ speedKmh: 0, dirFromDeg: 0 }), tempAt: () => 20 }, over));
 }
 t("profile, no wind: the same speed on every stretch, time = length / speed", () => {
@@ -625,19 +617,15 @@ t("profile: total minutes is the sum of the stretch times, and the clock only mo
 });
 t("profile, wind from the WEST: eastbound has a tailwind, so it is faster than westbound", () => {
   const w = { windAt: () => ({ speedKmh: 20, dirFromDeg: 270 }) };
-  const east = profile(w), west = profile({ ...w, reverse: true });
+  const east = profile(w), west = profile({ ...w, headings: eHead.map(() => [-1, 0]) });      // the same road ridden westbound
   assert(east.minutes < west.minutes);
   assert(east.cosphi.every((c) => near(c, 1, 1e-9)) && west.cosphi.every((c) => near(c, -1, 1e-9)));
   assert(near(east.windKmh[10], 20) && near(east.windDir[10], 270));
 });
 t("profile: any wind costs time overall on a there-and-back route (headwind loses more than tailwind gains)", () => {
   const w = { windAt: () => ({ speedKmh: 20, dirFromDeg: 270 }) };
-  const calm = profile({}), east = profile(w), west = profile({ ...w, reverse: true });
+  const calm = profile({}), east = profile(w), west = profile({ ...w, headings: eHead.map(() => [-1, 0]) });
   assert(east.minutes + west.minutes > 2 * calm.minutes);
-});
-t("profile, reverse visits the far end first: the LAST route index is ridden first", () => {
-  const r = profile({ reverse: true, windAt: () => ({ speedKmh: 10, dirFromDeg: 270 }) });
-  for (let i = 1; i < 100; i++) assert(r.tMid[i] < r.tMid[i - 1]);
 });
 t("profile: the clock follows the REAL speed - a wind that flips at 30 min flips where the rider actually is then", () => {
   // eastbound, wind from the west (tailwind, fast) until 10:00 + 30 min, then from the east (headwind, slow)
@@ -732,23 +720,24 @@ t("detect: two ramps split by a small dip are one climb; split by a big dip they
   const big = prof([[800, 5], [400, -5], [800, 5]]);                                              // 40 m up, 20 m down (> 25% of 40), 40 m up
   assert.strictEqual(detectClimbs(big, RAW).length, 2);
 });
-t("reverse: the recorded descent becomes the climb, ridden in the other direction", () => {
+t("a reversed profile: the recorded descent becomes the climb (what pressing Reverse route does)", () => {
   const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -3], [1000, 0]]);                      // up 50, down 30
   const fwd = detectClimbs(z, RAW), rev = detectClimbs(z.slice().reverse(), RAW);
   assert(fwd.length === 1 && near(fwd[0].gainM, 50, 1e-6)); assert(rev.length === 1 && Math.abs(rev[0].gainM - 30) <= 2 && Math.abs(rev[0].avgPct - 3) < 0.15, JSON.stringify(rev));   // within the end-trim (<= 1 m per end) of the exact 30 m at 3%
 });
-t("segment classes: forward climbs land on the recorded route, reverse climbs on the other end of it", () => {
+t("segment classes: a climb lands on the stretch of the route where it is", () => {
   const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -5], [1000, 0]]), gridM = (z.length - 1) * 25, lens = Array(z.length - 1).fill(25);
-  const f = climbSegmentClasses(detectClimbs(z, RAW), "fwd", gridM, lens), r = climbSegmentClasses(detectClimbs(z.slice().reverse(), RAW), "rev", gridM, lens);
+  const f = climbSegmentClasses(detectClimbs(z, RAW), gridM, lens);
   const idx = (a) => a.map((c, i) => (c >= 0 ? i : -1)).filter((i) => i >= 0);
-  assert(Math.min(...idx(f)) >= 39 && Math.max(...idx(f)) <= 81, "forward climb is km 1-2");
-  assert(Math.min(...idx(r)) >= 119 && Math.max(...idx(r)) <= 161, "reverse climb is the recorded descent at km 3-4");
-  assert(idx(f).every((i) => f[i] === 1) && idx(r).every((i) => r[i] === 1));
+  assert(Math.min(...idx(f)) >= 39 && Math.max(...idx(f)) <= 81, "the climb is km 1-2");
+  assert(idx(f).every((i) => f[i] === 1));
+  const rr = climbSegmentClasses(detectClimbs(z.slice().reverse(), RAW), gridM, lens);
+  assert(Math.min(...idx(rr)) >= 39 && Math.max(...idx(rr)) <= 81, "on the reversed profile the recorded descent (km 3-4) is the climb, now at km 1-2");
 });
 t("noise: +/-2 m random elevation on a 40 km flat route gives no climbs and almost no ascent (through the whole pipeline)", () => {
   for (let seed = 1; seed <= 10; seed++) {
     const r = rng(seed * 101), s = Array.from({ length: 1601 }, (_, i) => i * 25), e = s.map(() => 30 + (r() - 0.5) * 4);
-    const a = analyzeTerrain(s, e); assert(a.available && a.fwd.length === 0 && a.rev.length === 0, `seed ${seed}`); assert(a.ascentM < 5, `ascent ${a.ascentM}`);
+    const a = analyzeTerrain(s, e); assert(a.available && a.fwd.length === 0, `seed ${seed}`); assert(a.ascentM < 5, `ascent ${a.ascentM}`);
   }
 });
 t("noise on top of a real climb: the climb is still found, with about the right gain", () => {
@@ -820,26 +809,22 @@ t("a looked-up profile (integer metres, no noise handling of its own) gives the 
   assert.deepStrictEqual(analyzeTerrain(s, e).fwd.map((c) => Math.round(c.gainM / 5)), analyzeTerrain(s, fx.elevation).fwd.map((c) => Math.round(c.gainM / 5)));
 });
 
-t("climbMidSegment: the segment half way along a climb, forward and reverse, and the last segment as a fallback", () => {
+t("climbMidSegment: the segment half way along a climb, and the last segment as a fallback", () => {
   const lengths = Array(100).fill(25), gridM = 2500, c = { startM: 500, endM: 1000 };      // km 0.5 - 1.0 of a 2.5 km route
-  assert.strictEqual(climbMidSegment(c, "fwd", gridM, lengths), 30);                          // 750 m -> segment 30
-  assert.strictEqual(climbMidSegment(c, "rev", gridM, lengths), 70);                          // ridden backwards it is 1750 m from the recorded start
-  assert.strictEqual(climbMidSegment({ startM: 2400, endM: 2500 }, "fwd", gridM, lengths), 98);
-  assert.strictEqual(climbMidSegment({ startM: 2500, endM: 2500 }, "fwd", gridM, lengths), 99);
+  assert.strictEqual(climbMidSegment(c, gridM, lengths), 30);                                 // 750 m -> segment 30
+  assert.strictEqual(climbMidSegment({ startM: 2400, endM: 2500 }, gridM, lengths), 98);
+  assert.strictEqual(climbMidSegment({ startM: 2500, endM: 2500 }, gridM, lengths), 99);
 });
 
 // the "During the ride" series
-t("buildRideSeries: ride order, the clock ascends both ways, km counted along the ride, thinned evenly, ends included", () => {
-  const lengths = Array(100).fill(25), tt = lengths.map((_, i) => 600 + i * 0.5), tr = lengths.map((_, i) => 600 + (99 - i) * 0.5);
-  const f = buildRideSeries({ lengths, reverse: false, t: tt, windKmh: lengths.map((_, i) => i), windDir: null, airC: null, feelsC: null, maxPoints: 10 });
+t("buildRideSeries: km counted along the ride, the clock ascends, thinned evenly, ends included", () => {
+  const lengths = Array(100).fill(25), tt = lengths.map((_, i) => 600 + i * 0.5);
+  const f = buildRideSeries({ lengths, t: tt, windKmh: lengths.map((_, i) => i), windDir: null, airC: null, feelsC: null, maxPoints: 10 });
   assert.strictEqual(f.length, 10); assert.strictEqual(f[0].i, 0); assert.strictEqual(f[9].i, 99);
   assert(near(f[0].km, 0.0125, 1e-12) && near(f[9].km, 2.4875, 1e-12)); for (let k = 1; k < 10; k++) assert(f[k].t > f[k - 1].t && f[k].km > f[k - 1].km);
-  const r = buildRideSeries({ lengths, reverse: true, t: tr, windKmh: lengths.map((_, i) => i), windDir: null, airC: null, feelsC: null, maxPoints: 10 });
-  assert.strictEqual(r[0].i, 99); assert.strictEqual(r[9].i, 0); assert(near(r[0].km, 0.0125, 1e-12), "km restarts at the far end");
-  for (let k = 1; k < 10; k++) assert(r[k].t > r[k - 1].t && r[k].km > r[k - 1].km);
-  assert.strictEqual(r[0].windKmh, 99); assert.strictEqual(f[0].windDir, null);
-  assert.strictEqual(buildRideSeries({ lengths: [25], reverse: false, t: [1], windKmh: null, windDir: null, airC: [3], feelsC: [1], maxPoints: 140 }).length, 1);
-  assert.strictEqual(buildRideSeries({ lengths, reverse: false, t: tt, windKmh: null, windDir: null, airC: null, feelsC: null }).length, 100, "default keeps up to 140");
+  assert.strictEqual(f[9].windKmh, 99); assert.strictEqual(f[0].windDir, null);
+  assert.strictEqual(buildRideSeries({ lengths: [25], t: [1], windKmh: null, windDir: null, airC: [3], feelsC: [1], maxPoints: 140 }).length, 1);
+  assert.strictEqual(buildRideSeries({ lengths, t: tt, windKmh: null, windDir: null, airC: null, feelsC: null }).length, 100, "default keeps up to 140");
 });
 t("seriesIndexAtTime: nearest point, clamped at both ends", () => {
   const pts = [10, 20, 30, 50].map((tm) => ({ t: tm }));
@@ -878,20 +863,43 @@ t("rainAtPlace: step in time at each place, linear along the route between place
 t("rainDirectionStats: wet distance, classes, runs in ride order, and the rain that falls on the rider", () => {
   const lengths = Array(10).fill(1000), dt = Array(10).fill(3);                  // 10 km at 20 km/h
   const mm = [0, 0, 0.3, 1.0, 3.0, 0, 0, 0, 0, 9.0], prob = mm.map((v) => (v > 0 ? 70 : 10));
-  const f = rainDirectionStats(lengths, mm, prob, dt, false), r = rainDirectionStats(lengths, mm, prob, dt, true);
+  const f = rainDirectionStats(lengths, mm, prob, dt), r = rainDirectionStats(lengths, mm.slice().reverse(), prob.slice().reverse(), dt.slice().reverse());   // r: the same rain met from the other end
   assert.strictEqual(f.wetM, 4000); assert(near(f.wetPct, 40, 1e-9)); assert.deepStrictEqual(f.classM, [6000, 1000, 1000, 1000, 1000]);
   assert.deepStrictEqual(f.runs.map((x) => [x.fromKm, x.toKm, x.peakMm, x.cls]), [[2, 3, 0.3, 1], [3, 4, 1, 2], [4, 5, 3, 3], [9, 10, 9, 4]], "one run per class, as coloured on the map");
-  assert.deepStrictEqual(r.runs.map((x) => [x.fromKm, x.toKm, x.peakMm, x.cls]), [[0, 1, 9, 4], [5, 6, 3, 3], [6, 7, 1, 2], [7, 8, 0.3, 1]], "the other way round: the heavy stretch comes first");
-  const twoOfOne = rainDirectionStats([1000, 1000, 1000], [0.3, 0.4, 0.2], [null, null, null], [1, 1, 1], false).runs; assert.strictEqual(twoOfOne.length, 1); assert.strictEqual(twoOfOne[0].peakMm, 0.4); assert.strictEqual(twoOfOne[0].toKm, 3);
-  assert(near(f.accumMm, (0.3 + 1 + 3 + 9) * 3 / 60, 1e-12) && near(r.accumMm, f.accumMm, 1e-12), "time-weighted rain is the same sum either way here (equal times)");
+  assert.deepStrictEqual(r.runs.map((x) => [x.fromKm, x.toKm, x.peakMm, x.cls]), [[0, 1, 9, 4], [5, 6, 3, 3], [6, 7, 1, 2], [7, 8, 0.3, 1]], "from the other end: the heavy stretch comes first");
+  const twoOfOne = rainDirectionStats([1000, 1000, 1000], [0.3, 0.4, 0.2], [null, null, null], [1, 1, 1]).runs; assert.strictEqual(twoOfOne.length, 1); assert.strictEqual(twoOfOne[0].peakMm, 0.4); assert.strictEqual(twoOfOne[0].toKm, 3);
+  assert(near(f.accumMm, (0.3 + 1 + 3 + 9) * 3 / 60, 1e-12) && near(r.accumMm, f.accumMm, 1e-12), "the rain that falls on the rider is the same sum from either end here (equal times)");
   assert.strictEqual(f.peakMm, 9); assert.strictEqual(f.peakProb, 70); assert(near(f.minutes, 30, 1e-12) && near(f.wetMinutes, 12, 1e-12));
-  const dry = rainDirectionStats(lengths, Array(10).fill(0), Array(10).fill(null), dt, false); assert.strictEqual(dry.wetM, 0); assert.strictEqual(dry.runs.length, 0); assert.strictEqual(dry.peakProb, null);
+  const dry = rainDirectionStats(lengths, Array(10).fill(0), Array(10).fill(null), dt); assert.strictEqual(dry.wetM, 0); assert.strictEqual(dry.runs.length, 0); assert.strictEqual(dry.peakProb, null);
 });
-t("buildRideSeries carries the rain along, in ride order", () => {
+t("buildRideSeries carries the rain along", () => {
   const lengths = Array(10).fill(100), tt = lengths.map((_, i) => i), mm = lengths.map((_, i) => i), pr = lengths.map((_, i) => 10 * i);
-  const f = buildRideSeries({ lengths, reverse: false, t: tt, rainMm: mm, rainProb: pr, maxPoints: 5 }), r = buildRideSeries({ lengths, reverse: true, t: tt.slice().reverse(), rainMm: mm, rainProb: pr, maxPoints: 5 });
-  assert.strictEqual(f[0].rainMm, 0); assert.strictEqual(f[4].rainMm, 9); assert.strictEqual(r[0].rainMm, 9); assert.strictEqual(r[4].rainProb, 0);
-  assert.strictEqual(buildRideSeries({ lengths, reverse: false, t: tt, maxPoints: 3 })[0].rainMm, null);
+  const f = buildRideSeries({ lengths, t: tt, rainMm: mm, rainProb: pr, maxPoints: 5 });
+  assert.strictEqual(f[0].rainMm, 0); assert.strictEqual(f[4].rainMm, 9); assert.strictEqual(f[4].rainProb, 90);
+  assert.strictEqual(buildRideSeries({ lengths, t: tt, maxPoints: 3 })[0].rainMm, null);
+});
+
+// reversing the route: what was fetched for it stays valid, seen from the other end
+t("mirrorLocations: places turn around (fractions 1 - f, order reversed), everything else is kept, the input is untouched", () => {
+  const a = { frac: 0, temp: { t: [1], v: [5] } }, b = { frac: 0.4, temp: { t: [1], v: [6] } }, c = { frac: 1, temp: { t: [1], v: [7] } }, locs = [a, b, c];
+  const m = mirrorLocations(locs);
+  assert.deepStrictEqual(m.map((l) => l.frac), [0, 0.6, 1]); assert.deepStrictEqual(m.map((l) => l.temp.v[0]), [7, 6, 5]);
+  assert.strictEqual(b.frac, 0.4, "the original is not modified"); assert.strictEqual(locs[0], a);
+  assert.deepStrictEqual(mirrorLocations(mirrorLocations(locs)).map((l) => [l.frac, l.temp.v[0]]), locs.map((l) => [l.frac, l.temp.v[0]]), "twice is the identity");
+});
+t("mirrorTimeline: keeps the start time, mirrors the places, and null stays null", () => {
+  const tl = { locations: [{ frac: 0, x: 1 }, { frac: 1, x: 2 }], startMin: 480 }, m = mirrorTimeline(tl);
+  assert.strictEqual(m.startMin, 480); assert.deepStrictEqual(m.locations.map((l) => l.x), [2, 1]); assert.strictEqual(mirrorTimeline(null), null);
+});
+t("mirrorProfile: distances measured from the other end, elevations reversed, points replaced; twice is the identity", () => {
+  const dem = { points: "old", s: [0, 100, 250, 400], ele: [10, 20, 35, 30], spacingM: 100 }, pts = ["new"], m = mirrorProfile(dem, pts);
+  assert.deepStrictEqual(m.s, [0, 150, 300, 400]); assert.deepStrictEqual(m.ele, [30, 35, 20, 10]); assert.strictEqual(m.points, pts); assert.strictEqual(m.spacingM, 100);
+  const back = mirrorProfile(m, "old"); assert.deepStrictEqual(back.s, dem.s); assert.deepStrictEqual(back.ele, dem.ele); assert.strictEqual(mirrorProfile(null, pts), null);
+});
+t("a wind and a rain series read on mirrored places give the mirrored answer", () => {
+  const mk = (mm) => ({ t: [600], mm: [mm], prob: [null] });
+  const locs = [{ frac: 0, rain: mk(0) }, { frac: 0.5, rain: mk(2) }, { frac: 1, rain: mk(8) }], m = mirrorLocations(locs);
+  for (const f of [0, 0.1, 0.3, 0.5, 0.8, 1]) assert(near(rainAtPlace(locs, f, 590).mm, rainAtPlace(m, 1 - f, 590).mm, 1e-12), `at ${f}`);
 });
 
 console.log(`\n${n} tests passed`);
