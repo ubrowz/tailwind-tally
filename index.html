@@ -1702,7 +1702,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="sweep-layout">
         <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of easy fraction versus wind direction, for the route as ridden"></svg>
     <div class="wind-sensitivity" id="sweepCallout"></div>
-    <details class="table-toggle">
+    <details class="table-toggle" id="sweepTableToggle">
       <summary>View sweep as a table</summary>
       <div class="sweep-table-wrap">
         <table class="sweep-table" id="sweepTable">
@@ -4596,6 +4596,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   document.getElementById("reportCard").hidden = isPhone;
   // ... and so is the introduction under the title: on a phone it pushes the first card off the screen.
   document.getElementById("mastheadIntro").hidden = isPhone;
+  // The 360-row sweep table is another wall of numbers for a phone.
+  document.getElementById("sweepTableToggle").hidden = isPhone;
   var tabHow = document.getElementById("tabHow"), panelHow = document.getElementById("panelHow");
   var howDirect = window.location.hash === "#how-it-works";
   tabHow.hidden = embeddedIos || (phoneBrowser && !howDirect);
@@ -5245,7 +5247,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
     if (state.view === "temp") renderTempLegend(result); else if (state.view === "climbs") document.getElementById("routeStats").innerHTML = ""; else renderRouteStats(result);
     renderClimbs(result);
-    buildSweepTable(result);
+    if (!isPhone) buildSweepTable(result);
 
     var bestFwdDeg = 0;
     for (var bd = 1; bd < 360; bd++) {
