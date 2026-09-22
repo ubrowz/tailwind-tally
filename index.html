@@ -1560,6 +1560,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="card" id="rideCard">
     <h2>Your ride <span class="info-pop" data-about="your ride">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the temperature, humidity and wind you meet, and with your speed it sets how it feels.</span></h2>
+    <div class="mode-toggle" role="group" aria-label="Units" id="unitsToggle">
+      <button type="button" id="unitsMetric" aria-pressed="true">Metric (km, &deg;C)</button>
+      <button type="button" id="unitsUS" aria-pressed="false">US (mi, &deg;F)</button>
+    </div>
+    <p class="field-hint">Set from the route&rsquo;s own location; change it here any time. Speed, temperature, distance, climbing and rain all follow it.</p>
     <div class="two-col-grid">
       <div class="field">
         <label for="cruiseSpeedInput" id="cruiseSpeedLabel">Cruising speed (km/h)</label>
@@ -1727,18 +1732,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="tabpanel" id="panelTemp" role="tabpanel" aria-labelledby="tabTemp" hidden>
   <div class="card">
     <h2>Temperature</h2>
-    <div class="two-col-grid">
-          <div class="field">
-            <label for="tempInput">Air temperature <span class="info-pop" data-about="the air temperature">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels.</span></label>
-            <input type="number" id="tempInput" min="-80" max="140" step="1">
-          </div>
-          <div class="field">
-            <label for="tempUnitInput">Unit</label>
-            <select id="tempUnitInput">
-              <option value="C">&deg;C</option>
-              <option value="F">&deg;F</option>
-            </select>
-          </div>
+        <div class="field">
+          <label for="tempInput">Air temperature <span class="info-pop" data-about="the air temperature">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels. Change the unit in Your ride, above the tabs.</span></label>
+          <input type="number" id="tempInput" min="-80" max="140" step="1">
         </div>
     <p class="field-hint" id="tempTimelineHint" hidden></p>
     <div class="field" id="humidityField" hidden>
@@ -1795,7 +1791,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <h2>Climbs <span class="info-pop" data-about="how climbs are found">A climb is a rise of at least the minimum climb, at least as steep as the minimum average slope, in the smoothed elevation of your route. The average slope keeps long, gentle rises from counting.</span></h2>
       <div class="two-col-grid">
         <div class="field">
-          <label for="climbMinGain">Minimum climb (m)</label>
+          <label for="climbMinGain" id="climbMinGainLabel">Minimum climb (m)</label>
           <input type="number" id="climbMinGain" value="25" min="5" max="500" step="5">
         </div>
         <div class="field">
@@ -1879,6 +1875,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li><strong>The route</strong>: your GPX track, resampled to 25&nbsp;metre stretches, each with a heading.</li>
             <li><strong>Elevation</strong>, for the Climbs tab only: looked up online when you ask for it (section 7). The elevation in your GPX file is not used.</li>
           </ul>
+          <h3>Units</h3>
+          <p>Speed, temperature, distance, climbing and rain all use one setting, metric or US, shown in <strong>Your ride</strong> above the tabs. It starts from the route&rsquo;s own start point (a simple box around the United States, checked on your device, with no location service asked), and switches automatically when you load a different route &mdash; until you pick one yourself, which then sticks for the rest of the visit. Rider mass, drag area and rolling resistance under Advanced stay in kilograms and square metres either way, since they describe your equipment rather than the ride&rsquo;s result.</p>
           <h3>What leaves your device</h3>
           <p>Your GPX file is read in your browser and never uploaded. Two optional features contact a service, and only when you ask: the <strong>forecast</strong> (wind, temperature, humidity and rain) sends up to three places from the route, each rounded to about 11&nbsp;km, and the date; the <strong>elevation lookup</strong> for the Climbs tab sends points along the route, about 100&nbsp;m apart and rounded to about 10&nbsp;m, which is in effect the shape of the route. Both go straight to <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. The map tiles are requested as you look at the map. The privacy policy lists all of it.</p>
         
@@ -2843,6 +2841,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return { points: points, s: dem.s.map(function (v) { return total - v; }).reverse(), ele: dem.ele.slice().reverse(), spacingM: dem.spacingM };
   }
   // END mirror-pure
+
+  // ---- Units: metric or US, from the route's own location -------------------------------
+  // BEGIN units-pure
+  // No geocoding service is asked (nothing new would leave the device just to pick a unit):
+  // a simple bounding box around the United States (mainland, Alaska, Hawaii) decides.
+  // Everywhere else defaults to metric. Real-world exceptions (the UK's mph-with-Celsius,
+  // Canada's km/h close to the US border) are not modelled.
+  var KM_TO_MI = 0.6213711922, M_TO_FT = 3.2808398950, MM_TO_IN = 1 / 25.4;
+  function isUSLocation(lat, lon) {
+    if (lat >= 24.5 && lat <= 49.5 && lon >= -125 && lon <= -66.9) return true;   // mainland
+    if (lat >= 51 && lat <= 71.5 && lon >= -180 && lon <= -129) return true;      // Alaska
+    if (lat >= 18.5 && lat <= 22.5 && lon >= -160.5 && lon <= -154.5) return true; // Hawaii
+    return false;
+  }
+  // END units-pure
 
   // ---------------------------------------------------------------------
   // Wind chill ("feels like") for a moving rider. Pure maths again.
@@ -3834,9 +3847,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // both themes; dry (class 0) is the neutral grey of the other maps.
   var RAIN_LIGHT = ["#1bbbd8", "#0999b2", "#0d778b", "#0d5665"];
   var RAIN_DARK = ["#095d6c", "#067e93", "#1aa0b9", "#1ec5e4"];
-  var RAIN_RANGE_LABELS = ["under 0.1 mm/h", "0.1 to 0.5 mm/h", "0.5 to 2.5 mm/h", "2.5 to 7.6 mm/h", "7.6 mm/h and more"];
+  // Built from RAIN_EDGES rather than written out, so the US/metric unit always matches
+  // the numbers actually used to classify the rain (see rain-pure).
+  function rainRangeLabels() {
+    var d = isUS() ? 3 : 1, e = RAIN_EDGES.map(function (v) { return rainToDisplay(v).toFixed(d); }), u = rainUnitLabel() + "/h";
+    return ["under " + e[0] + " " + u, e[0] + " to " + e[1] + " " + u, e[1] + " to " + e[2] + " " + u, e[2] + " to " + e[3] + " " + u, e[3] + " " + u + " and more"];
+  }
   function rainClassColors() { return [FEELS_NEUTRAL].concat(prefersDarkTheme() ? RAIN_DARK : RAIN_LIGHT); }
-  function kmText(m) { return (m / 1000).toFixed(1); }
+  function kmText(m) { var km = m / 1000; return (isUS() ? km * KM_TO_MI : km).toFixed(1); }
 
   function renderRain(result) {
     var summary = document.getElementById("rainSummary"), table = document.getElementById("rainTable"), listCard = document.getElementById("rainListCard");
@@ -3851,14 +3869,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var probText = a.peakProb === null ? "" : "chance up to " + Math.round(a.peakProb) + "%";
     summary.innerHTML = a.wetM <= 0
       ? "<b>Dry all the way.</b>" + (probText ? " The highest " + probText.replace("chance up to", "chance of rain on the route is") + "." : "")
-      : "<b>Rain on " + kmText(a.wetM) + " of " + kmText(a.totalM) + " km (" + Math.round(a.wetPct) + "%).</b> Peak " + a.peakMm.toFixed(1) + " mm/h" + (probText ? ", " + probText : "") +
-        ". About " + a.accumMm.toFixed(1) + " mm falls on you during the ride.";
+      : "<b>Rain on " + kmText(a.wetM) + " of " + kmText(a.totalM) + " " + distUnitLabel() + " (" + Math.round(a.wetPct) + "%).</b> Peak " + fmtRainRate(a.peakMm, 1) + (probText ? ", " + probText : "") +
+        ". About " + fmtRainMm(a.accumMm, 1) + " falls on you during the ride.";
 
     var colors = rainClassColors();
     var head = '<thead><tr><th>Rain</th><th>From</th><th>Length</th><th>Peak</th></tr></thead>';
     var rows = a.runs.map(function (r) {
-      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[r.cls] + '"></span>' + RAIN_CLASS_LABELS[r.cls] + "</td><td>km " + r.fromKm.toFixed(1) + "</td><td>" +
-        fmtLen((r.toKm - r.fromKm) * 1000) + "</td><td>" + r.peakMm.toFixed(1) + " mm/h</td></tr>";
+      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[r.cls] + '"></span>' + RAIN_CLASS_LABELS[r.cls] + "</td><td>" + fmtKmLabel(r.fromKm) + "</td><td>" +
+        fmtLen((r.toKm - r.fromKm) * 1000) + "</td><td>" + fmtRainRate(r.peakMm, 1) + "</td></tr>";
     }).join("");
     if (!a.runs.length) rows = '<tr><td colspan="4" style="text-align:left">No rain expected along the route.</td></tr>';
     table.innerHTML = head + "<tbody>" + rows + "</tbody>";
@@ -3868,7 +3886,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var wrap = document.getElementById("routeStats");
     wrap.innerHTML = "";
     if (!result.rain) return;
-    var st = result.rain.fwd.stats, colors = rainClassColors();
+    var st = result.rain.fwd.stats, colors = rainClassColors(), rangeLabels = rainRangeLabels();
     var block = document.createElement("div");
     block.className = "route-stats-block";
     var h = document.createElement("div");
@@ -3892,7 +3910,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (m <= 0) return;
       var el = document.createElement("div");
       el.className = "route-stats-item";
-      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + RAIN_CLASS_LABELS[k] + " (" + RAIN_RANGE_LABELS[k] + ") " + (m / 1000).toFixed(2) + " km";
+      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + RAIN_CLASS_LABELS[k] + " (" + rangeLabels[k] + ") " + fmtDistKm(m / 1000, 2);
       grid.appendChild(el);
     });
     block.appendChild(grid);
@@ -3900,7 +3918,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
 
   // ---- Climbs tab ------------------------------------------------------
-  function fmtLen(m) { return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m"; }
   function renderClimbs(result) {
     var tr = result.terrain;
     var summary = document.getElementById("climbSummary"), table = document.getElementById("climbTable");
@@ -3921,8 +3938,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var climbs = tr.fwd, up = tr.ascentM, down = tr.descentM, total = 0;
     climbs.forEach(function (c) { total += c.gainM; });
     summary.innerHTML = 'Elevation looked up online: the Copernicus 90&nbsp;m terrain model via <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (one value about every ' + Math.round(tr.spacingM) + " m), smoothed over about " + tr.options.smoothWindowM + " m. " +
-      "<b>Ascent " + Math.round(up) + " m, descent " + Math.round(down) + " m</b> (rises and falls under " + tr.options.deadbandM + " m are ignored). " +
-      "<b>" + climbs.length + " climb" + (climbs.length === 1 ? "" : "s") + "</b> of at least " + state.climbMinGain + " m" + (climbs.length ? ", " + Math.round(total) + " m of climbing in them." : ".");
+      "<b>Ascent " + fmtElevM(up) + ", descent " + fmtElevM(down) + "</b> (rises and falls under " + fmtElevM(tr.options.deadbandM) + " are ignored). " +
+      "<b>" + climbs.length + " climb" + (climbs.length === 1 ? "" : "s") + "</b> of at least " + fmtElevM(state.climbMinGain) + (climbs.length ? ", " + fmtElevM(total) + " of climbing in them." : ".");
 
     var colors = climbClassColors();
     document.getElementById("climbLegend").innerHTML = "<span>Steepest 100 m:</span>" + CLIMB_CLASS_LABELS.map(function (l, k) {
@@ -3930,11 +3947,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }).join("");
     var head = '<thead><tr><th>Climb</th><th>From</th><th>Length</th><th>Gain</th><th title="Average slope">Avg</th><th title="Steepest 100 m of the smoothed profile">Max</th></tr></thead>';
     var rows = climbs.map(function (c, i) {
-      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[c.cls] + '"></span>' + (i + 1) + "</td><td>km " + (c.startM / 1000).toFixed(1) + "</td><td>" + fmtLen(c.lengthM) +
-        "</td><td>" + Math.round(c.gainM) + " m</td><td>" + c.avgPct.toFixed(1) + "%</td><td>" + c.maxPct.toFixed(1) + "%</td></tr>";
+      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[c.cls] + '"></span>' + (i + 1) + "</td><td>" + fmtKmLabel(c.startM / 1000) + "</td><td>" + fmtLen(c.lengthM) +
+        "</td><td>" + fmtElevM(c.gainM) + "</td><td>" + c.avgPct.toFixed(1) + "%</td><td>" + c.maxPct.toFixed(1) + "%</td></tr>";
     }).join("");
-    if (!climbs.length) rows = '<tr><td colspan="6" style="text-align:left">No climbs of at least ' + state.climbMinGain + " m at an average of " + state.climbMinAvg + "% or more" +
-      (up < state.climbMinGain ? " (the whole route only climbs " + Math.round(up) + " m)" : ": its rises are longer and gentler than that, so lower the minimum average slope to count them") + ".</td></tr>";
+    if (!climbs.length) rows = '<tr><td colspan="6" style="text-align:left">No climbs of at least ' + fmtElevM(state.climbMinGain) + " at an average of " + state.climbMinAvg + "% or more" +
+      (up < state.climbMinGain ? " (the whole route only climbs " + fmtElevM(up) + ")" : ": its rises are longer and gentler than that, so lower the minimum average slope to count them") + ".</td></tr>";
     table.innerHTML = head + "<tbody>" + rows + "</tbody>";
     document.getElementById("climbNote").textContent = "Max is the steepest 100 m of the smoothed profile. The more a profile is smoothed the gentler a short, sharp ramp looks, so read it together with the average. " +
       "A 90 m terrain model shows the land as mapped, not the road: bridges, tunnels and cuttings are not in it, and steep ramps shorter than about 100 m are flattened.";
@@ -3987,11 +4004,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (kind === "wind") {
       var rowH = 22, rows = rowH;
       panelTop = mt + rows + 10; H = panelTop + panelH + mb;
-      valueOf = function (p) { return p.windKmh; };
+      valueOf = function (p) { return p.windKmh === null ? null : speedToDisplay(p.windKmh); };
       yMin = 0; yMax = 0;
-      S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.windKmh !== null) yMax = Math.max(yMax, p.windKmh); }); });
-      yMax = Math.max(yMax * 1.1, 5);
-      unitLabel = "km/h";
+      S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.windKmh !== null) yMax = Math.max(yMax, speedToDisplay(p.windKmh)); }); });
+      yMax = Math.max(yMax * 1.1, speedToDisplay(5));
+      unitLabel = speedUnitLabel();
     } else if (kind === "temp") {
       panelTop = mt + 4; H = panelTop + panelH + 28 + mb;
       panelH = panelH + 28;
@@ -4005,11 +4022,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       // Rain: intensity (mm per hour) above, the chance of rain (%) below, on one clock.
       panelTop = mt + 14; panelH = 78; p2Top = panelTop + panelH + 34; p2H = 58;
       H = p2Top + p2H + mb;
-      valueOf = function (p) { return p.rainMm; };
+      valueOf = function (p) { return p.rainMm === null ? null : rainToDisplay(p.rainMm); };
       yMin = 0; yMax = 0;
-      S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.rainMm !== null) yMax = Math.max(yMax, p.rainMm); }); });
-      yMax = Math.max(yMax * 1.15, 1);
-      unitLabel = "mm/h";
+      S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.rainMm !== null) yMax = Math.max(yMax, rainToDisplay(p.rainMm)); }); });
+      yMax = Math.max(yMax * 1.15, rainToDisplay(1));
+      unitLabel = rainUnitLabel() + "/h";
     }
     gridBottom = kind === "rain" ? p2Top + p2H : panelTop + panelH;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
@@ -4065,7 +4082,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     } else {
       // intensity, shaded under its line
       var area = [];
-      rs.pts.forEach(function (p) { if (p.rainMm !== null) area.push(sx(p.t).toFixed(1) + "," + sy(p.rainMm).toFixed(1)); });
+      rs.pts.forEach(function (p) { if (p.rainMm !== null) area.push(sx(p.t).toFixed(1) + "," + sy(rainToDisplay(p.rainMm)).toFixed(1)); });
       if (area.length > 1) el("polygon", { points: area.join(" ") + " " + sx(rs.pts[rs.pts.length - 1].t).toFixed(1) + "," + sy(0).toFixed(1) + " " + sx(rs.pts[0].t).toFixed(1) + "," + sy(0).toFixed(1), fill: RIDE_SERIES_COLORS.fwd, opacity: 0.15 });
       S.forEach(function (ser) {
         el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
@@ -4091,9 +4108,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var idleText = "Move over the chart, or touch it, to see the values and where you would be on the map.";
     readout.textContent = idleText;
     function describe(pt) {
-      if (kind === "wind") return "km " + pt.km.toFixed(1) + ", " + Math.round(pt.windKmh) + " km/h from " + degreesToCompass16(pt.windDir);
-      if (kind === "rain") return "km " + pt.km.toFixed(1) + ", " + (pt.rainMm < 0.05 ? "dry" : pt.rainMm.toFixed(1) + " mm/h") + (pt.rainProb === null ? "" : " (chance " + Math.round(pt.rainProb) + "%)");
-      return "km " + pt.km.toFixed(1) + ", air " + fmtTemp(pt.airC) + ", feels like " + fmtTemp(pt.feelsC);
+      if (kind === "wind") return fmtKmLabel(pt.km) + ", " + fmtSpeed(pt.windKmh, 0) + " from " + degreesToCompass16(pt.windDir);
+      if (kind === "rain") return fmtKmLabel(pt.km) + ", " + (pt.rainMm < 0.05 ? "dry" : fmtRainRate(pt.rainMm, 1)) + (pt.rainProb === null ? "" : " (chance " + Math.round(pt.rainProb) + "%)");
+      return fmtKmLabel(pt.km) + ", air " + fmtTemp(pt.airC) + ", feels like " + fmtTemp(pt.feelsC);
     }
     function showAt(ta) {
       var x = sx(ta).toFixed(1), pt = rs.pts[seriesIndexAtTime(rs.pts, ta)];
@@ -4162,7 +4179,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (c.dist <= 0) return;
       var el = document.createElement("div");
       el.className = "route-stats-item";
-      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + feelsClassLabel(k, c) + " " + (c.dist / 1000).toFixed(2) + " km";
+      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + feelsClassLabel(k, c) + " " + fmtDistKm(c.dist / 1000, 2);
       grid.appendChild(el);
     });
     block.appendChild(grid);
@@ -4217,7 +4234,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       CATS.forEach(function (item) {
         var el = document.createElement("div");
         el.className = "route-stats-item";
-        el.innerHTML = '<span class="route-stats-swatch ' + item[0] + '"></span>' + item[1] + " " + (stats[item[0]] / 1000).toFixed(2) + " km";
+        el.innerHTML = '<span class="route-stats-swatch ' + item[0] + '"></span>' + item[1] + " " + fmtDistKm(stats[item[0]] / 1000, 2);
         grid.appendChild(el);
       });
       container.appendChild(grid);
@@ -4252,8 +4269,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // How the speed is described in captions: a number, or the steady power.
   function speedPhrase(result) {
     return result.ride.mode === "power"
-      ? "at steady power (about " + Math.round(result.ride.powerW) + " W, the effort that holds " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h on a calm, flat day)"
-      : "at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h";
+      ? "at steady power (about " + Math.round(result.ride.powerW) + " W, the effort that holds " + fmtSpeed(result.effort.cruiseSpeedKmh, 0) + " on a calm, flat day)"
+      : "at " + fmtSpeed(result.effort.cruiseSpeedKmh, 0);
   }
 
   // Steady power: the price of the wind is TIME, so this card replaces the effort
@@ -4262,7 +4279,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var r = result.ride, ef = result.effort, calm = r.calmMinutes;
     document.getElementById("effortTitle").textContent = "Ride time at steady power";
     document.getElementById("halfCaption").innerHTML =
-      "Holding about <b>" + Math.round(r.powerW) + " W</b> at the pedals, the effort that gives <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> on a calm, flat day, " +
+      "Holding about <b>" + Math.round(r.powerW) + " W</b> at the pedals, the effort that gives <b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b> on a calm, flat day, " +
       "your speed on each stretch is worked out from the wind on it. A headwind slows you more than the same tailwind speeds you up, so the wind costs time. " +
       "Flat road only: hills, drafting, cornering and braking are not modelled.";
     function cell(title, d) {
@@ -4271,14 +4288,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
           '<div class="half-title">' + title + '</div>' +
           '<div class="half-multiplier">' + fmtDuration(d.minutes) + '</div>' +
           '<div class="half-net">' + (Math.abs(diff) < 0.5 ? "About the same as a calm day." : "<b>" + fmtDuration(Math.abs(diff)) + (diff > 0 ? " longer" : " shorter") + "</b> than a calm day (" + (diff > 0 ? "+" : "\u2212") + Math.abs(100 * diff / calm).toFixed(0) + "%).") +
-            " Average <b>" + d.avgKmh.toFixed(1) + " km/h</b>; slowest stretch " + d.vminKmh.toFixed(1) + ", fastest " + d.vmaxKmh.toFixed(1) + " km/h. " +
+            " Average <b>" + fmtSpeed(d.avgKmh, 1) + "</b>; slowest stretch " + fmtSpeed(d.vminKmh, 1) + ", fastest " + fmtSpeed(d.vmaxKmh, 1) + ". " +
             "<b>" + (100 * d.timeShare.hard).toFixed(0) + "%</b> of the time is into a headwind, " + (100 * d.timeShare.easy).toFixed(0) + "% with a tailwind.</div>" +
         '</div>';
     }
     document.getElementById("halfGrid").innerHTML =
       cell("Your ride", r.forward) +
       '<div class="half-card"><div class="half-title">Calm day</div><div class="half-multiplier">' + fmtDuration(calm) + '</div>' +
-        '<div class="half-net">' + ef.cruiseSpeedKmh.toFixed(1) + ' km/h all the way, at the same power.</div></div>';
+        '<div class="half-net">' + fmtSpeed(ef.cruiseSpeedKmh, 1) + ' all the way, at the same power.</div></div>';
     document.getElementById("halfVerdict").innerHTML = "";
   }
 
@@ -4288,10 +4305,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var lh = result.lastHalf, ef = result.effort;
     var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
     document.getElementById("halfCaption").innerHTML =
-      "Split at the route's distance midpoint (" + lh.splitKm.toFixed(1) + " km in). " +
-      "At <b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b> cruising speed into " +
-      (result.steadyWind ? "a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h)</b> wind: "
-                         : "a wind that changes during the ride, averaging <b>" + ef.windSpeedKmh.toFixed(1) + " km/h</b>: ") +
+      "Split at the route's distance midpoint (" + fmtDistKm(lh.splitKm, 1) + " in). " +
+      "At <b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b> cruising speed into " +
+      (result.steadyWind ? "a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + fmtSpeed(ef.windSpeedKmh, 1) + ")</b> wind: "
+                         : "a wind that changes during the ride, averaging <b>" + fmtSpeed(ef.windSpeedKmh, 1) + "</b>: ") +
       "aerodynamic drag scales with relative-airspeed <i>squared</i>, not with the wind component directly, so this is shown as a multiple of the effort a completely calm day at the same speed would take.";
 
     var fwdEffort = ef.lastHalf.forward;
@@ -4307,7 +4324,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           '<div class="half-title">' + title + '</div>' +
           '<div class="half-multiplier ' + (good ? "good" : "bad") + '">' + mult.toFixed(2) + '&times; <span class="unit">calm-day aero effort</span></div>' +
           '<div class="half-bar"><div class="half-bar-fill ' + (good ? "good" : "bad") + '" style="width:' + fillPct.toFixed(1) + '%"></div><div class="half-bar-ref" style="left:' + refPct.toFixed(1) + '%"></div></div>' +
-          '<div class="half-net">Effective wind-in-your-face speed: <b>' + eff.avgRelSpeedKmh.toFixed(1) + ' km/h</b> (vs. ' + ef.cruiseSpeedKmh.toFixed(0) + ' km/h on a calm day).</div>' +
+          '<div class="half-net">Effective wind-in-your-face speed: <b>' + fmtSpeed(eff.avgRelSpeedKmh, 1) + '</b> (vs. ' + fmtSpeed(ef.cruiseSpeedKmh, 0) + ' on a calm day).</div>' +
         '</div>';
     }
 
@@ -4341,6 +4358,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // Cooling smaller than this (deg C) is not worth reporting as "colder".
   var CHILL_NEGLIGIBLE_C = 0.5;
 
+  // ---------------------------------------------------------------------
+  // Units for everything else (speed, distance, climbing, rain): one
+  // metric/US choice, held in state.unitSystem (see applyUnitsForRoute).
+  // Every internal number stays in its metric form (km/h, km, m, mm); only
+  // these display helpers convert, the same pattern as cToDisplay above.
+  // ---------------------------------------------------------------------
+  function isUS() { return state.unitSystem === "us"; }
+  function speedUnitLabel() { return isUS() ? "mph" : "km/h"; }
+  function speedToDisplay(kmh) { return isUS() ? kmh * KM_TO_MI : kmh; }
+  function speedFromDisplay(v) { return isUS() ? v / KM_TO_MI : v; }
+  function fmtSpeed(kmh, decimals) { return speedToDisplay(kmh).toFixed(decimals) + " " + speedUnitLabel(); }
+  function distUnitLabel() { return isUS() ? "mi" : "km"; }
+  function fmtDistKm(km, decimals) { return (isUS() ? km * KM_TO_MI : km).toFixed(decimals) + " " + distUnitLabel(); }
+  // A route/climb/rain length: metres if short, km/mi once it is long enough that the other
+  // unit reads more naturally (the same idea in both systems, just a different threshold).
+  function fmtLen(m) {
+    if (isUS()) { var ft = m * M_TO_FT; return ft >= 1000 ? (ft / 5280).toFixed(2) + " mi" : Math.round(ft) + " ft"; }
+    return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";
+  }
+  function elevUnitLabel() { return isUS() ? "ft" : "m"; }
+  function fmtElevM(m) { return Math.round(isUS() ? m * M_TO_FT : m) + " " + elevUnitLabel(); }
+  function rainUnitLabel() { return isUS() ? "in" : "mm"; }
+  function rainToDisplay(mm) { return isUS() ? mm * MM_TO_IN : mm; }
+  function elevToDisplay(m) { return isUS() ? m * M_TO_FT : m; }
+  function fmtRainMm(mm, decimals) { return rainToDisplay(mm).toFixed(decimals) + " " + rainUnitLabel(); }
+  function fmtRainRate(mmPerHour, decimals) { return fmtRainMm(mmPerHour, decimals) + "/h"; }
+  // A "km 12.3" / "mi 7.6" progress marker, the label style already used along the route.
+  function fmtKmLabel(km) { return distUnitLabel() + " " + (isUS() ? (km * KM_TO_MI).toFixed(1) : km.toFixed(1)); }
+
   // Word scale for humidity, so nobody has to know a percentage. Same idea
   // as the Beaufort scale for wind.
   var HUMIDITY_STEPS = [[30, "Dry"], [50, "Normal"], [70, "Humid"], [90, "Very humid"]];
@@ -4365,9 +4411,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var caption =
       "At <b>" + fmtTemp(ch.tempC) + "</b>" +
       (warm ? " and about <b>" + Math.round(ch.rh) + "%</b> relative humidity (" + (state.rhFromForecast ? "from the forecast" : "your setting") + ")" : "") +
-      ", riding " + (result.ride.mode === "power" ? speedPhrase(result) : "<b>" + ef.cruiseSpeedKmh.toFixed(0) + " km/h</b>") + " in " +
+      ", riding " + (result.ride.mode === "power" ? speedPhrase(result) : "<b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b>") + " in " +
       (result.steadyWind ? "a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufort + ")</b> wind. "
-                         : "a wind that changes during the ride, averaging <b>" + ef.windSpeedKmh.toFixed(0) + " km/h</b>. ") +
+                         : "a wind that changes during the ride, averaging <b>" + fmtSpeed(ef.windSpeedKmh, 0) + "</b>. ") +
       "Your speed and the wind combine into the wind on you, so how it feels is worked out for every segment and averaged by distance. ";
     if (ch.model === "windchill") {
       caption += "It uses the standard wind chill formula (Environment Canada and the US National Weather Service), which describes how fast exposed skin cools. ";
@@ -4438,22 +4484,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
       lines.push("Wind from: " + result.windFromDeg.toFixed(1) + " deg (" + degreesToCompass16(result.windFromDeg) + ")");
     } else {
       var wr = result.windRide;
-      lines.push("Wind: forecast, changing during the ride (follows the clock from the start time " + fcStart.value + " at " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h).");
-      lines.push("  at the start: from " + degreesToCompass16(wr.start.dir) + " (" + wr.start.dir.toFixed(0) + " deg) at " + wr.start.sp.toFixed(1) + " km/h");
-      lines.push("  at the end:   from " + degreesToCompass16(wr.end.dir) + " (" + wr.end.dir.toFixed(0) + " deg) at " + wr.end.sp.toFixed(1) + " km/h");
-      lines.push("  average: " + (wr.meanDir === null ? "no single direction describes it (it changes too much)" : "from " + degreesToCompass16(wr.meanDir) + " (" + wr.meanDir.toFixed(0) + " deg)") + ", " + wr.meanSp.toFixed(1) + " km/h");
+      lines.push("Wind: forecast, changing during the ride (follows the clock from the start time " + fcStart.value + " at " + fmtSpeed(result.effort.cruiseSpeedKmh, 0) + ").");
+      lines.push("  at the start: from " + degreesToCompass16(wr.start.dir) + " (" + wr.start.dir.toFixed(0) + " deg) at " + fmtSpeed(wr.start.sp, 1));
+      lines.push("  at the end:   from " + degreesToCompass16(wr.end.dir) + " (" + wr.end.dir.toFixed(0) + " deg) at " + fmtSpeed(wr.end.sp, 1));
+      lines.push("  average: " + (wr.meanDir === null ? "no single direction describes it (it changes too much)" : "from " + degreesToCompass16(wr.meanDir) + " (" + wr.meanDir.toFixed(0) + " deg)") + ", " + fmtSpeed(wr.meanSp, 1));
     }
     lines.push("Raw points: " + result.rawCount + "  ->  resampled to " + (result.segCount + 1) + " points / " + result.segCount + " segments (spacing " + result.resampleM + " m)");
-    lines.push("Total route length: " + totalKm.toFixed(2) + " km");
-    lines.push("Closure gap (last point to first): " + result.closureGap.toFixed(1) + " m (" + (100 * result.closureGap / result.totalLength).toFixed(2) + "% of total length)");
+    lines.push("Total route length: " + fmtDistKm(totalKm, 2));
+    lines.push("Closure gap (last point to first): " + fmtElevM(result.closureGap) + " (" + (100 * result.closureGap / result.totalLength).toFixed(2) + "% of total length)");
     lines.push("");
     function dirBlock(label, s) {
-      lines.push(label + ": easy " + (s.easy / 1000).toFixed(2) + " km, hard " + (s.hard / 1000).toFixed(2) + " km, neutral " + (s.neutral / 1000).toFixed(2) + " km (easy = " + s.easyPct.toFixed(1) + "% of total)");
+      lines.push(label + ": easy " + fmtDistKm(s.easy / 1000, 2) + ", hard " + fmtDistKm(s.hard / 1000, 2) + ", neutral " + fmtDistKm(s.neutral / 1000, 2) + " (easy = " + s.easyPct.toFixed(1) + "% of total)");
     }
     dirBlock(state.reversed ? "Route (reversed)" : "Route", result.fwd);
     lines.push("");
     if (result.steadyWind) {
-      lines.push("Balance check Sum(L_i * cosphi_i) = " + result.balance.sum.toFixed(2) + " m (tolerance " + result.balance.tolerance.toFixed(2) + " m, tied to closure gap) -> " + (result.balance.ok ? "OK" : "WARN"));
+      lines.push("Balance check Sum(L_i * cosphi_i) = " + fmtElevM(result.balance.sum) + " (tolerance " + fmtElevM(result.balance.tolerance) + ", tied to closure gap) -> " + (result.balance.ok ? "OK" : "WARN"));
     } else {
       lines.push("Balance check: not applicable. It assumes one steady wind.");
     }
@@ -4468,20 +4514,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (result.ride.mode === "power") {
       var rp = result.ride;
       lines.push("=== Ride at steady power (flat road) ===");
-      lines.push("Power: about " + Math.round(rp.powerW) + " W at the pedals (holds " + ef.cruiseSpeedKmh.toFixed(0) + " km/h on a calm, flat day; " + rp.rider.massKg + " kg, CdA " + rp.rider.cda + ", Crr " + rp.rider.crr + ").");
-      lines.push(result.steadyWind ? "Wind speed: Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h)."
-                                    : "Wind speed: " + ef.windSpeedKmh.toFixed(1) + " km/h on average, changing during the ride.");
+      lines.push("Power: about " + Math.round(rp.powerW) + " W at the pedals (holds " + fmtSpeed(ef.cruiseSpeedKmh, 0) + " on a calm, flat day; " + rp.rider.massKg + " kg, CdA " + rp.rider.cda + ", Crr " + rp.rider.crr + ").");
+      lines.push(result.steadyWind ? "Wind speed: Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + fmtSpeed(ef.windSpeedKmh, 1) + ")."
+                                    : "Wind speed: " + fmtSpeed(ef.windSpeedKmh, 1) + " on average, changing during the ride.");
       [["Ride", rp.forward]].forEach(function (d) {
-        lines.push(d[0] + ": " + fmtDuration(d[1].minutes) + " (calm day " + fmtDuration(rp.calmMinutes) + "), average " + d[1].avgKmh.toFixed(1) + " km/h, slowest " + d[1].vminKmh.toFixed(1) + ", fastest " +
-          d[1].vmaxKmh.toFixed(1) + " km/h; " + (100 * d[1].timeShare.hard).toFixed(0) + "% of the time into a headwind, " + (100 * d[1].timeShare.easy).toFixed(0) + "% with a tailwind");
+        lines.push(d[0] + ": " + fmtDuration(d[1].minutes) + " (calm day " + fmtDuration(rp.calmMinutes) + "), average " + fmtSpeed(d[1].avgKmh, 1) + ", slowest " + fmtSpeed(d[1].vminKmh, 1) + ", fastest " +
+          fmtSpeed(d[1].vmaxKmh, 1) + "; " + (100 * d[1].timeShare.hard).toFixed(0) + "% of the time into a headwind, " + (100 * d[1].timeShare.easy).toFixed(0) + "% with a tailwind");
       });
     } else {
-    lines.push("=== Last 50% of the route (split at " + result.lastHalf.splitKm.toFixed(1) + " km) ===");
+    lines.push("=== Last 50% of the route (split at " + fmtDistKm(result.lastHalf.splitKm, 1) + ") ===");
     lines.push(result.steadyWind
-      ? "Wind speed: Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + ef.windSpeedKmh.toFixed(1) + " km/h). Cruising speed: " + ef.cruiseSpeedKmh.toFixed(0) + " km/h."
-      : "Wind speed: " + ef.windSpeedKmh.toFixed(1) + " km/h on average, changing during the ride. Cruising speed: " + ef.cruiseSpeedKmh.toFixed(0) + " km/h.");
+      ? "Wind speed: Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + fmtSpeed(ef.windSpeedKmh, 1) + "). Cruising speed: " + fmtSpeed(ef.cruiseSpeedKmh, 0) + "."
+      : "Wind speed: " + fmtSpeed(ef.windSpeedKmh, 1) + " on average, changing during the ride. Cruising speed: " + fmtSpeed(ef.cruiseSpeedKmh, 0) + ".");
     lines.push("Effort here is relative-airspeed-based (drag ~ airspeed^2), shown as a multiple of calm-day effort at the same cruising speed - not a linear tailwind/headwind sum.");
-    lines.push("Last 50%: " + ef.lastHalf.forward.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + ef.lastHalf.forward.avgRelSpeedKmh.toFixed(1) + " km/h)");
+    lines.push("Last 50%: " + ef.lastHalf.forward.powerMultiplier.toFixed(2) + "x calm-day aero effort (effective wind-in-your-face speed " + fmtSpeed(ef.lastHalf.forward.avgRelSpeedKmh, 1) + ")");
     }
     lines.push("");
     var ch = result.chill;
@@ -4511,28 +4557,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
       [["Climbs", "fwd"]].forEach(function (d) {
         var cl = tr[d[1]], gain = 0;
         cl.forEach(function (c) { gain += c.gainM; });
-        lines.push(d[0] + ": " + cl.length + " climb" + (cl.length === 1 ? "" : "s") + " of at least " + state.climbMinGain + " m (average " + state.climbMinAvg + "% or steeper), " + Math.round(gain) + " m of climbing in them" +
+        lines.push(d[0] + ": " + cl.length + " climb" + (cl.length === 1 ? "" : "s") + " of at least " + fmtElevM(state.climbMinGain) + " (average " + state.climbMinAvg + "% or steeper), " + fmtElevM(gain) + " of climbing in them" +
           (cl.length ? ":" : "."));
         cl.forEach(function (c, i) {
-          lines.push("  " + (i + 1) + ". from km " + (c.startM / 1000).toFixed(1) + ", " + fmtLen(c.lengthM) + ", +" + Math.round(c.gainM) + " m, average " + c.avgPct.toFixed(1) + "%, max (100 m) " + c.maxPct.toFixed(1) + "%");
+          lines.push("  " + (i + 1) + ". from " + fmtKmLabel(c.startM / 1000) + ", " + fmtLen(c.lengthM) + ", +" + fmtElevM(c.gainM) + ", average " + c.avgPct.toFixed(1) + "%, max (100 m) " + c.maxPct.toFixed(1) + "%");
         });
       });
       lines.push("Elevation source: looked up online (Copernicus GLO-90 via Open-Meteo, one value about every " + Math.round(tr.spacingM) + " m)");
-      lines.push("Ascent " + Math.round(tr.ascentM) + " m, descent " + Math.round(tr.descentM) + " m (rises and falls under " + tr.options.deadbandM + " m ignored; elevation smoothed over about " + tr.options.smoothWindowM + " m).");
+      lines.push("Ascent " + fmtElevM(tr.ascentM) + ", descent " + fmtElevM(tr.descentM) + " (rises and falls under " + fmtElevM(tr.options.deadbandM) + " ignored; elevation smoothed over about " + tr.options.smoothWindowM + " m).");
     }
     lines.push("");
     if (result.rain) {
       lines.push("=== Rain ===");
       [["Rain", "fwd"]].forEach(function (d) {
         var st = result.rain[d[1]].stats;
-        lines.push(d[0] + ": " + (st.wetM > 0 ? "rain on " + kmText(st.wetM) + " of " + kmText(st.totalM) + " km (" + Math.round(st.wetPct) + "%), peak " + st.peakMm.toFixed(1) + " mm/h" +
-          (st.peakProb === null ? "" : ", chance up to " + Math.round(st.peakProb) + "%") + ", about " + st.accumMm.toFixed(1) + " mm falls on the rider" : "dry" + (st.peakProb === null ? "" : " (chance of rain up to " + Math.round(st.peakProb) + "%)")));
-        st.runs.forEach(function (r) { lines.push("  " + RAIN_CLASS_LABELS[r.cls].toLowerCase() + " rain from km " + r.fromKm.toFixed(1) + " to km " + r.toKm.toFixed(1) + ", peak " + r.peakMm.toFixed(1) + " mm/h"); });
+        lines.push(d[0] + ": " + (st.wetM > 0 ? "rain on " + kmText(st.wetM) + " of " + kmText(st.totalM) + " " + distUnitLabel() + " (" + Math.round(st.wetPct) + "%), peak " + fmtRainRate(st.peakMm, 1) +
+          (st.peakProb === null ? "" : ", chance up to " + Math.round(st.peakProb) + "%") + ", about " + fmtRainMm(st.accumMm, 1) + " falls on the rider" : "dry" + (st.peakProb === null ? "" : " (chance of rain up to " + Math.round(st.peakProb) + "%)")));
+        st.runs.forEach(function (r) { lines.push("  " + RAIN_CLASS_LABELS[r.cls].toLowerCase() + " rain from " + fmtKmLabel(r.fromKm) + " to " + fmtKmLabel(r.toKm) + ", peak " + fmtRainRate(r.peakMm, 1)); });
       });
       lines.push("");
     }
     lines.push("=== Conclusion ===");
-    lines.push((state.reversed ? "Route (reversed): " : "Route: ") + (result.fwd.easy / 1000).toFixed(2) + " km tailwind vs " + (result.fwd.hard / 1000).toFixed(2) + " km headwind");
+    lines.push((state.reversed ? "Route (reversed): " : "Route: ") + fmtDistKm(result.fwd.easy / 1000, 2) + " tailwind vs " + fmtDistKm(result.fwd.hard / 1000, 2) + " headwind");
     return lines.join("\n");
   }
 
@@ -4579,8 +4625,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
     rh: 50,                       // relative humidity, %; only matters on hot days
     rhFromForecast: false,
     tempC: 8,
-    tempUnit: /-US$/i.test(navigator.language || "") ? "F" : "C"
+    tempUnit: "C",                // kept in sync with unitSystem; see applyUnitsForRoute
+    unitSystem: "metric",         // "metric" or "us" - set from the route's own location, see below
+    unitsManual: false            // true once the rider has picked units by hand; the route then stops choosing
   };
+  // The route's own start point decides metric vs US units (no geocoding call - see isUSLocation).
+  // Only while the rider has not chosen by hand: the very first call, for the sample route, is not
+  // a manual choice, so it always applies.
+  function applyUnitsForRoute(points) {
+    if (state.unitsManual || !points || !points.length) return;
+    state.unitSystem = isUSLocation(points[0][0], points[0][1]) ? "us" : "metric";
+    state.tempUnit = state.unitSystem === "us" ? "F" : "C";
+  }
+  applyUnitsForRoute(state.points);
 
   // Nothing Strava-related is persisted (no localStorage, no backend
   // storage) - a fresh Strava connection is a fresh OAuth round trip
@@ -4600,14 +4657,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var windSpeedInput = document.getElementById("windSpeedInput");
   var cruiseSpeedInput = document.getElementById("cruiseSpeedInput");
 
-  BEAUFORT_KMH.forEach(function (kmh, i) {
-    var opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = i + " \u2014 " + BEAUFORT_LABELS[i] + " (" + kmh + " km/h)";
-    windSpeedInput.appendChild(opt);
-  });
-  windSpeedInput.value = state.windSpeedBeaufort;
-  cruiseSpeedInput.value = state.cruiseSpeedKmh;
+  // The Beaufort dropdown's own parenthetical speed, and the cruising-speed field, show
+  // the current unit; rebuilt whenever units change (syncBeaufortOptions/syncCruiseSpeedField).
+  function syncBeaufortOptions() {
+    var v = windSpeedInput.value;
+    windSpeedInput.innerHTML = "";
+    BEAUFORT_KMH.forEach(function (kmh, i) {
+      var opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = i + " \u2014 " + BEAUFORT_LABELS[i] + " (" + fmtSpeed(kmh, 0) + ")";
+      windSpeedInput.appendChild(opt);
+    });
+    windSpeedInput.value = v || state.windSpeedBeaufort;
+  }
+  function syncCruiseSpeedField() { cruiseSpeedInput.value = String(Math.round(speedToDisplay(state.cruiseSpeedKmh) * 10) / 10); }
+  syncBeaufortOptions();
+  syncCruiseSpeedField();
   veryInput.value = state.veryDeg;
   var readoutDeg = document.getElementById("readoutDeg");
   var readoutCode = document.getElementById("readoutCode");
@@ -4680,7 +4745,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
   cruiseSpeedInput.addEventListener("change", function () {
     var v = parseFloat(cruiseSpeedInput.value);
-    state.cruiseSpeedKmh = isFinite(v) && v > 0 ? v : 25;
+    state.cruiseSpeedKmh = isFinite(v) && v > 0 ? speedFromDisplay(v) : 25;
     markForecastStale(false);
     scheduleRender();
   });
@@ -4692,7 +4757,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function syncRideStyleUI() {
     var power = state.rideStyle === "power";
     rideStyleInput.value = state.rideStyle;
-    cruiseSpeedLabel.textContent = power ? "Speed on a calm, flat day (km/h)" : "Cruising speed (km/h)";
+    cruiseSpeedLabel.textContent = (power ? "Speed on a calm, flat day (" : "Cruising speed (") + speedUnitLabel() + ")";
   }
   rideStyleInput.addEventListener("change", function () {
     state.rideStyle = rideStyleInput.value === "power" ? "power" : "speed";
@@ -4710,23 +4775,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
   syncRideStyleUI();
 
   var tempInput = document.getElementById("tempInput");
-  var tempUnitInput = document.getElementById("tempUnitInput");
   // The field shows the temperature in the chosen unit to 0.1, so a value
   // typed in one unit survives a round trip through the other.
   function showTempInField() { tempInput.value = String(Number(cToDisplay(state.tempC).toFixed(1))); }
-  tempUnitInput.value = state.tempUnit;
   showTempInField();
+
+  // Units: Metric or US, one choice for speed, temperature, distance, climbing and rain
+  // together. Set from the route's own location (applyUnitsForRoute); picking it here marks
+  // it as a manual choice, which then sticks even when a different route is loaded.
+  var unitsMetricBtn = document.getElementById("unitsMetric"), unitsUSBtn = document.getElementById("unitsUS");
+  function syncUnitsUI() {
+    var us = state.unitSystem === "us";
+    unitsMetricBtn.setAttribute("aria-pressed", String(!us));
+    unitsUSBtn.setAttribute("aria-pressed", String(us));
+  }
+  function refreshUnitsUI() {
+    syncUnitsUI();
+    showTempInField();
+    syncCruiseSpeedField();
+    syncBeaufortOptions();
+    syncRideStyleUI();
+    syncClimbMinGainField();
+  }
+  function setUnitsManually(sys) {
+    state.unitSystem = sys;
+    state.tempUnit = sys === "us" ? "F" : "C";
+    state.unitsManual = true;
+    refreshUnitsUI();
+    scheduleRender();
+  }
+  unitsMetricBtn.addEventListener("click", function () { setUnitsManually("metric"); });
+  unitsUSBtn.addEventListener("click", function () { setUnitsManually("us"); });
+  syncUnitsUI();
   tempInput.addEventListener("change", function () {
     forecastNote.hidden = true;
     state.timeline = null;                 // your number replaces the forecast's
     forecastStale.hidden = true;
     var v = parseFloat(tempInput.value);
     if (isFinite(v)) state.tempC = Math.max(-80, Math.min(60, displayToC(v)));
-    showTempInField();
-    scheduleRender();
-  });
-  tempUnitInput.addEventListener("change", function () {
-    state.tempUnit = tempUnitInput.value === "F" ? "F" : "C";
     showTempInField();
     scheduleRender();
   });
@@ -4992,12 +5078,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (result.ride.mode === "power") {
       var rp = result.ride;
       rideTiming.textContent = "Riding time at steady power: about " + fmtDuration(rp.forward.minutes) +
-        " (a calm day: " + fmtDuration(rp.calmMinutes) + ") for " + (result.totalLength / 1000).toFixed(1) + " km. You would finish around " + fmtClock(startMin + rp.forward.minutes) + ".";
+        " (a calm day: " + fmtDuration(rp.calmMinutes) + ") for " + fmtDistKm(result.totalLength / 1000, 1) + ". You would finish around " + fmtClock(startMin + rp.forward.minutes) + ".";
       return;
     }
     var mins = rideMinutes(result.totalLength, state.cruiseSpeedKmh);
-    rideTiming.textContent = "Riding time: about " + fmtDuration(mins) + " for " + (result.totalLength / 1000).toFixed(1) +
-      " km at " + state.cruiseSpeedKmh.toFixed(0) + " km/h. You would finish around " + fmtClock(startMin + mins) + ".";
+    rideTiming.textContent = "Riding time: about " + fmtDuration(mins) + " for " + fmtDistKm(result.totalLength / 1000, 1) +
+      " at " + fmtSpeed(state.cruiseSpeedKmh, 0) + ". You would finish around " + fmtClock(startMin + mins) + ".";
   }
   function updateTimelineHint(result) {
     var ch = result.chill;
@@ -5020,7 +5106,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   // A short description of how the forecast wind changes over the ride.
   function windChangeText(wr) {
-    function one(w) { return degreesToCompass16(w.dir) + " (" + Math.round(w.dir) + "\u00b0) at " + w.sp.toFixed(0) + " km/h"; }
+    function one(w) { return degreesToCompass16(w.dir) + " (" + Math.round(w.dir) + "\u00b0) at " + fmtSpeed(w.sp, 0); }
     return "from " + one(wr.start) + " at the start to " + one(wr.end) + " at the end";
   }
   function updateWindTimelineHint(result) {
@@ -5134,8 +5220,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         "from " + degreesToCompass16(wind.dir) + " (" + Math.round(wind.dir) + "\u00b0)";
       var changes = wind.ride && (Math.abs(wind.ride.end.sp - wind.ride.start.sp) >= 3 ||
         Math.abs(((wind.ride.end.dir - wind.ride.start.dir + 540) % 360) - 180) >= 15);
-      var windNoteText = (changes ? windChangeText(wind.ride) + "; on average " + dirText : dirText) + ", " + (wind.speedKmh === null ? "0" : wind.speedKmh.toFixed(0)) +
-        " km/h \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + ")";
+      var windNoteText = (changes ? windChangeText(wind.ride) + "; on average " + dirText : dirText) + ", " + (wind.speedKmh === null ? fmtSpeed(0, 0) : fmtSpeed(wind.speedKmh, 0)) +
+        " \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + ")";
       var tempText = "";
       if (env) {
         tempText = Math.abs(env.endC - env.startC) >= 0.5
@@ -5149,10 +5235,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         locations.forEach(function (l) { l.rain.t.forEach(function (tt, q) {
           if (Math.min(tt, startMin + rideMin) - Math.max(tt - 60, startMin) >= 10) { mx = Math.max(mx, l.rain.mm[q]); if (l.rain.prob[q] !== null && (mp === null || l.rain.prob[q] > mp)) mp = l.rain.prob[q]; }
         }); });
-        rainText = mx < 0.1 ? ", dry" + (mp !== null ? " (chance of rain up to " + Math.round(mp) + "%)" : "") : ", rain up to " + mx.toFixed(1) + " mm/h" + (mp !== null ? " (chance up to " + Math.round(mp) + "%)" : "");
+        rainText = mx < 0.1 ? ", dry" + (mp !== null ? " (chance of rain up to " + Math.round(mp) + "%)" : "") : ", rain up to " + fmtRainRate(mx, 1) + (mp !== null ? " (chance up to " + Math.round(mp) + "%)" : "");
       }
       forecastNoteText.textContent =
-        "Forecast for " + day + ", riding " + fcStart.value + "\u2013" + fmtClock(startMin + rideMin) + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + windNoteText + ", gusts up to " + sm.gustKmh.toFixed(0) + " km/h" +
+        "Forecast for " + day + ", riding " + fcStart.value + "\u2013" + fmtClock(startMin + rideMin) + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + windNoteText + ", gusts up to " + fmtSpeed(sm.gustKmh, 0) +
         tempText + rainText + ". Wind, temperature, humidity and rain follow the clock, at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
       forecastNote.hidden = false;
     }).catch(showForecastError).then(function () {
@@ -5188,6 +5274,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function loadGpxText(text, label) {
     var pts = parseGpxPoints(text);
     state.points = pts;
+    applyUnitsForRoute(pts);
     state.fileLabel = label;
     state.isExample = false;
     state.timeline = null;                 // the forecast was for the previous route
@@ -5198,6 +5285,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     forecastNote.hidden = true;
     forecastStale.hidden = true;
     fileError.classList.remove("show");
+    refreshUnitsUI();
     scheduleRender();
   }
   // Reverse route: the route is flipped (the start moves to the other end), so everything on the page is
@@ -5306,7 +5394,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     strava.routes.forEach(function (route) {
       var opt = document.createElement("option");
       opt.value = route.id;
-      opt.textContent = route.name + " (" + (route.distance / 1000).toFixed(1) + " km)";
+      opt.textContent = route.name + " (" + fmtDistKm(route.distance / 1000, 1) + ")";
       stravaRouteSelect.appendChild(opt);
     });
   }
@@ -5432,18 +5520,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
       btn.classList.toggle("active", Math.abs(parseFloat(btn.dataset.deg) - state.windFromDeg) < 0.01);
     });
 
-    var totalKm = result.totalLength / 1000;
     var statRow = document.getElementById("statRow");
     statRow.innerHTML =
-      '<div class="stat-tile"><div class="label">Total length</div><div class="value mono">' + totalKm.toFixed(1) + ' km</div>' +
+      '<div class="stat-tile"><div class="label">Total length</div><div class="value mono">' + fmtDistKm(result.totalLength / 1000, 1) + '</div>' +
         '<div class="sub">' + result.segCount + ' segments &middot; ' + result.rawCount + ' raw pts</div></div>' +
       '<div class="stat-tile"><div class="label">Tailwind</div><div class="value mono">' + result.fwd.easyPct.toFixed(1) + '%</div>' +
-        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + (result.fwd.easy / 1000).toFixed(1) + ' km tailwind &middot; ' + (result.fwd.hard / 1000).toFixed(1) + ' km headwind</div></div>';
+        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + fmtDistKm(result.fwd.easy / 1000, 1) + ' tailwind &middot; ' + fmtDistKm(result.fwd.hard / 1000, 1) + ' headwind</div></div>';
 
     document.getElementById("planSummary").textContent = state.view === "rain"
       ? (result.rain ? "Each stretch coloured by the rain expected when you get there." : "Rain comes from the forecast, so nothing is coloured yet.")
       : state.view === "climbs"
-      ? "Climbs of at least " + state.climbMinGain + " m, numbered as in the table."
+      ? "Climbs of at least " + fmtElevM(state.climbMinGain) + ", numbered as in the table."
       : state.view === "temp"
       ? "Each stretch coloured by how much colder (blue) or hotter (red) it feels than the air."
       : (result.steadyWind
@@ -5453,7 +5540,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ? (result.rain ? "Coloured by how hard it is expected to rain on each stretch at the moment you would be there: dry stretches grey, then very light to heavy in darker teal. The forecast follows the clock, so the rain you meet depends on the direction you ride (press Reverse route to see the other way)."
         : "Rain comes from the forecast. Get a forecast under Weather for the ride to see it here.")
       : state.view === "climbs"
-      ? "Climbs of at least " + state.climbMinGain + " m (average " + state.climbMinAvg + "% or steeper)" +
+      ? "Climbs of at least " + fmtElevM(state.climbMinGain) + " (average " + state.climbMinAvg + "% or steeper)" +
         ", coloured by their steepest 100 m and numbered as in the table; the rest of the route is grey." + (result.terrain.available ? "" : " The elevation has not been looked up, so nothing is coloured.")
       : state.view === "temp"
       ? tempViewCaption(result)
@@ -5486,7 +5573,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var styleHint = document.getElementById("rideStyleHint");
     styleHint.hidden = result.ride.mode !== "power";
     styleHint.textContent = result.ride.mode === "power"
-      ? "About " + Math.round(result.ride.powerW) + " W at the pedals holds " + result.effort.cruiseSpeedKmh.toFixed(0) + " km/h on a calm, flat day (" + result.ride.rider.massKg + " kg, CdA " + result.ride.rider.cda + ", Crr " + result.ride.rider.crr + ")."
+      ? "About " + Math.round(result.ride.powerW) + " W at the pedals holds " + fmtSpeed(result.effort.cruiseSpeedKmh, 0) + " on a calm, flat day (" + result.ride.rider.massKg + " kg, CdA " + result.ride.rider.cda + ", Crr " + result.ride.rider.crr + ")."
       : "";
 
     if (!isPhone) document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
@@ -5690,7 +5777,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ctx.fillRect(x, y - 9, 10, 10);
       ctx.fillStyle = inkColor;
       ctx.font = "12px 'IBM Plex Sans', sans-serif";
-      ctx.fillText(label + " " + (meters / 1000).toFixed(2) + " km", x + 15, y);
+      ctx.fillText(label + " " + fmtDistKm(meters / 1000, 2), x + 15, y);
     }
     function bar(x, y, w, h, stats) {
       var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard + stats.calm;
@@ -5838,8 +5925,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeInfo(); });
 
-  // Climbs tab controls: the two detection thresholds.
-  [["climbMinGain", "climbMinGain", 5, 500, 25], ["climbMinAvg", "climbMinAvg", 0, 15, 2]].forEach(function (f) {
+  // Climbs tab controls: the two detection thresholds. Minimum climb is stored in metres
+  // (analyzeTerrain's units) and shown in feet in US mode, like the elevation gain in the table.
+  var climbMinGainInput = document.getElementById("climbMinGain"), climbMinGainLabel = document.getElementById("climbMinGainLabel");
+  function syncClimbMinGainField() {
+    climbMinGainLabel.textContent = "Minimum climb (" + elevUnitLabel() + ")";
+    climbMinGainInput.value = String(Math.round(elevToDisplay(state.climbMinGain)));
+  }
+  climbMinGainInput.addEventListener("change", function () {
+    var v = parseFloat(climbMinGainInput.value);
+    state.climbMinGain = isFinite(v) ? Math.max(5, Math.min(500, isUS() ? v / M_TO_FT : v)) : 25;
+    syncClimbMinGainField();
+    scheduleRender();
+  });
+  syncClimbMinGainField();
+  [["climbMinAvg", "climbMinAvg", 0, 15, 2]].forEach(function (f) {
     var input = document.getElementById(f[0]);
     input.addEventListener("change", function () {
       var v = parseFloat(input.value);

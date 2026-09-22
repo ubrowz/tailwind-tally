@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
-  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -900,6 +900,25 @@ t("a wind and a rain series read on mirrored places give the mirrored answer", (
   const mk = (mm) => ({ t: [600], mm: [mm], prob: [null] });
   const locs = [{ frac: 0, rain: mk(0) }, { frac: 0.5, rain: mk(2) }, { frac: 1, rain: mk(8) }], m = mirrorLocations(locs);
   for (const f of [0, 0.1, 0.3, 0.5, 0.8, 1]) assert(near(rainAtPlace(locs, f, 590).mm, rainAtPlace(m, 1 - f, 590).mm, 1e-12), `at ${f}`);
+});
+
+// units: US bounding box vs metric everywhere else
+t("isUSLocation: mainland, Alaska and Hawaii are US; nearby non-US places are not", () => {
+  assert(isUSLocation(39.5, -98.35));      // Kansas, dead centre of the mainland
+  assert(isUSLocation(40.7, -74.0));       // New York
+  assert(isUSLocation(34.0, -118.2));      // Los Angeles
+  assert(isUSLocation(64.2, -149.5));      // Fairbanks, Alaska
+  assert(isUSLocation(21.3, -157.8));      // Honolulu, Hawaii
+  assert(!isUSLocation(51.3, 5.62));       // the Netherlands (the sample route)
+  assert(!isUSLocation(51.5, -0.13));      // London
+  assert(isUSLocation(45.5, -73.6), "Montreal sits inside the box too - a known limitation of a simple bounding box, documented above");
+  assert(!isUSLocation(62.45, -114.4));    // Yellowknife: right latitude for the Alaska box, wrong longitude
+  assert(!isUSLocation(19.4, -99.1));      // Mexico City, south of the mainland box
+});
+t("unit conversion constants: round trips are close to 1", () => {
+  assert(near(1 * KM_TO_MI * (1 / KM_TO_MI), 1, 1e-9));
+  assert(near(100 * M_TO_FT / 3.28084, 100, 1e-3));
+  assert(near(25.4 * MM_TO_IN, 1, 1e-9));
 });
 
 console.log(`\n${n} tests passed`);
