@@ -169,16 +169,6 @@
   .dropzone-text span { display: block; font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
   input[type="file"] { display: none; }
 
-  .file-status {
-    margin-top: 12px;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    font-size: 13px;
-    color: var(--ink-secondary);
-  }
-  .file-status .name { color: var(--ink); font-weight: 600; }
   .badge {
     display: inline-flex;
     align-items: center;
@@ -195,7 +185,7 @@
   .badge.blocked { background: var(--status-critical-wash); color: var(--status-critical); }
 
   /* ---------- Strava import ---------- */
-  .strava-divider {
+  .route-divider {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -206,12 +196,19 @@
     letter-spacing: 0.06em;
     color: var(--ink-muted);
   }
-  .strava-divider::before, .strava-divider::after {
+  .route-divider::before, .route-divider::after {
     content: "";
     flex: 1;
     height: 1px;
     background: var(--border);
   }
+  /* An empty route-divider (no "or" text) still needs a continuous line, not two
+     segments with a text-shaped gap between them. */
+  .route-divider:empty::after { display: none; }
+  .route-divider:empty::before { flex: 1 1 100%; }
+  .route-file-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .route-file-name { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .route-file-sub { font-size: 12.5px; color: var(--ink-secondary); margin-top: 2px; }
   .strava-btn {
     display: inline-flex;
     align-items: center;
@@ -1514,38 +1511,51 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="card">
     <h2>Load a route</h2>
-    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a GPX file">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 3v12M12 3l-4 4M12 3l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-      </svg>
-      <div class="dropzone-text">
-        <strong>Drop a .gpx file here, or click to browse</strong>
-        <span>Parsed entirely in your browser &mdash; the file is never uploaded anywhere.</span>
+    <div class="route-section">
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a GPX file">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3v12M12 3l-4 4M12 3l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <div class="dropzone-text">
+          <strong>Drop a .gpx file here, or click to browse</strong>
+          <span>Parsed entirely in your browser &mdash; the file is never uploaded anywhere.</span>
+        </div>
+        <input type="file" id="fileInput" accept=".gpx,application/gpx+xml,text/xml,application/xml">
       </div>
-      <input type="file" id="fileInput" accept=".gpx,application/gpx+xml,text/xml,application/xml">
     </div>
-    <div class="file-status">
-      <span><span class="name" id="fileName">Sample loop</span> &middot; <span id="filePoints">&mdash;</span></span>
-      <span class="badge example" id="fileBadge">Example route</span>
-    </div>
-    <button type="button" class="route-btn" id="reverseBtn" aria-pressed="false">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Reverse route</span>
-    </button>
-    <p class="error-text" id="fileError"></p>
 
-    <div class="strava-divider">or</div>
-    <button type="button" class="strava-btn" id="stravaConnectBtn">Connect to Strava</button>
-    <button type="button" class="copy-btn" id="stravaDisconnectBtn" hidden>Disconnect</button>
-    <div class="strava-panel" id="stravaPanel" hidden>
-      <p class="strava-status" id="stravaStatus"></p>
-      <div class="strava-route-row">
-        <select id="stravaRouteSelect"></select>
-        <button type="button" class="copy-btn" id="stravaLoadBtn">Load route</button>
+    <div class="route-divider">or</div>
+
+    <div class="route-section">
+      <button type="button" class="strava-btn" id="stravaConnectBtn">Connect to Strava</button>
+      <button type="button" class="copy-btn" id="stravaDisconnectBtn" hidden>Disconnect</button>
+      <div class="strava-panel" id="stravaPanel" hidden>
+        <p class="strava-status" id="stravaStatus"></p>
+        <div class="strava-route-row">
+          <select id="stravaRouteSelect"></select>
+          <button type="button" class="copy-btn" id="stravaLoadBtn">Load route</button>
+        </div>
       </div>
+      <p class="error-text" id="stravaError"></p>
     </div>
-    <p class="error-text" id="stravaError"></p>
+
+    <div class="route-divider"></div>
+
+    <div class="route-section">
+      <div class="route-file">
+        <div class="route-file-head">
+          <span class="route-file-name" id="fileName">Sample loop</span>
+          <span class="badge example" id="fileBadge">Example route</span>
+        </div>
+        <div class="route-file-sub" id="filePoints">&mdash;</div>
+      </div>
+      <button type="button" class="route-btn" id="reverseBtn" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Reverse route</span>
+      </button>
+      <p class="error-text" id="fileError"></p>
+    </div>
   </div>
 
   <div class="card" id="rideCard">
