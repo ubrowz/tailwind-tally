@@ -3044,11 +3044,41 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return (1 - b) * windChillC(tempC, airspeedKmh) + b * at;
   }
 
+  // Smooths a per-segment series against segment-to-segment noise that comes
+  // from position, not from the weather: e.g. the relative wind angle can
+  // swing sharply between two adjacent ~25 m segments at a bend or a GPS
+  // wobble, even though the wind and the air temperature have not changed.
+  // A plain distance-weighted moving average, window in metres, centred on
+  // each segment and clamped at the ends of the route (no data is invented
+  // past either end, so the window there is simply whatever is available -
+  // still far steadier than one raw segment). O(n) via a two-pointer sweep:
+  // both the segment midpoints and the window bounds only move forward.
+  function smoothByDistance(values, lengths, windowM) {
+    var n = values.length, out = new Array(n);
+    if (!n) return out;
+    var half = windowM / 2, mid = new Array(n), d = 0;
+    for (var i = 0; i < n; i++) { mid[i] = d + lengths[i] / 2; d += lengths[i]; }
+    var lo = 0, hi = 0, sumW = 0, sumVal = 0;
+    for (i = 0; i < n; i++) {
+      var target = mid[i];
+      while (hi < n && mid[hi] <= target + half) { sumW += lengths[hi]; sumVal += values[hi] * lengths[hi]; hi++; }
+      while (lo < hi && mid[lo] < target - half) { sumW -= lengths[lo]; sumVal -= values[lo] * lengths[lo]; lo++; }
+      out[i] = sumW > 0 ? sumVal / sumW : values[i];
+    }
+    return out;
+  }
+  // Small next to a real climb, a descent or a long straight; large next to
+  // one bend or one noisy GPS point - so genuine route-scale changes in
+  // feels-like survive while the segment-to-segment jitter cancels out.
+  var FEELS_SMOOTH_WINDOW_M = 400;
+
   // Per-segment feels-like from the relative airspeed on that segment (rider
   // speed and wind combined, same geometry as windEffortStats), averaged by
   // distance. tempC, rhPercent, wMs (wind, m/s) and vMs (the rider's speed, m/s)
   // are one number for the whole route, or an array with one value per segment
-  // (the forecast following the clock; steady power). The
+  // (the forecast following the clock; steady power). Per-segment values are
+  // smoothed (see smoothByDistance) before anything is computed from them, so
+  // the chart, the map colours and the coldest/warmest tenth all agree. The
   // "coldest / warmest tenth" is the mean over the coldest / warmest 10% of
   // the distance, not the single most extreme segment: one GPS wobble that
   // points a 25 m segment backwards would otherwise set the headline number.
@@ -3057,17 +3087,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // feels like if you stop, or crawl uphill with no breeze there.
   function feelsStats(lengths, cosphi, vMs, wMs, tempC, rhPercent) {
     var tArr = Array.isArray(tempC), rArr = Array.isArray(rhPercent), wArr = Array.isArray(wMs), vArr = Array.isArray(vMs);
-    var items = [], perSeg = [], airSeg = [], dist = 0, sum = 0, sumAir = 0, sumRh = 0;
+    var rawPerSeg = [], airSeg = [], dist = 0, sumAir = 0, sumRh = 0;
     var stillHiC = -Infinity, stillAirC = null;
     for (var i = 0; i < lengths.length; i++) {
       var ti = tArr ? tempC[i] : tempC, ri = rArr ? rhPercent[i] : rhPercent, wi = wArr ? wMs[i] : wMs, vi = vArr ? vMs[i] : vMs;
       var rel2 = vi * vi + wi * wi - 2 * vi * wi * cosphi[i];
       var c = feelsLikeC(ti, ri, Math.sqrt(Math.max(0, rel2)) * 3.6);
-      items.push([c, lengths[i]]);
-      perSeg.push(c);
+      rawPerSeg.push(c);
       airSeg.push(ti);
       dist += lengths[i];
-      sum += c * lengths[i];
       sumAir += ti * lengths[i];
       sumRh += ri * lengths[i];
       var hi = ti + heatDeltaC(ti, ri);
@@ -3076,14 +3104,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var t0 = tArr ? (tempC.length ? tempC[0] : 0) : tempC;
     if (dist <= 0) {
       return { avgFeelsC: t0, coldestFeelsC: t0, warmestFeelsC: t0, avgAirC: t0, avgRh: rArr ? 0 : rhPercent,
-               airStartC: t0, airEndC: t0, stillHiC: t0, stillDeltaC: 0, perSeg: perSeg, airSeg: airSeg };
+               airStartC: t0, airEndC: t0, stillHiC: t0, stillDeltaC: 0, perSeg: rawPerSeg, airSeg: airSeg };
+    }
+    var perSeg = smoothByDistance(rawPerSeg, lengths, FEELS_SMOOTH_WINDOW_M);
+    var items = [], sum = 0;
+    for (var j = 0; j < perSeg.length; j++) {
+      items.push([perSeg[j], lengths[j]]);
+      sum += perSeg[j] * lengths[j];
     }
     items.sort(function (a, b) { return a[0] - b[0]; });
     var target = 0.1 * dist;
     function tenth(fromEnd) {
       var taken = 0, s2 = 0;
-      for (var j = 0; j < items.length && taken < target; j++) {
-        var it = items[fromEnd ? items.length - 1 - j : j];
+      for (var k = 0; k < items.length && taken < target; k++) {
+        var it = items[fromEnd ? items.length - 1 - k : k];
         var take = Math.min(it[1], target - taken);
         s2 += it[0] * take;
         taken += take;
@@ -4544,14 +4578,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("chillCaption").innerHTML = caption;
 
     function cell(title, st) {
-      var delta = st.avgFeelsC - ch.tempC, body;
+      var delta = st.avgFeelsC - ch.tempC, avgNote;
       if (Math.abs(delta) < CHILL_NEGLIGIBLE_C) {
-        body = "About the same as the air temperature.";
+        avgNote = "About the same as the air temperature on average.";
       } else if (delta < 0) {
-        body = "That is <b>" + fmtTempDiff(delta) + " colder</b> than the air. The coldest tenth of the route feels like <b>" + fmtTemp(st.coldestFeelsC) + "</b>.";
+        avgNote = "On average <b>" + fmtTempDiff(delta) + " colder</b> than the air.";
       } else {
-        body = "That is <b>" + fmtTempDiff(delta) + " hotter</b> than the air. The hottest tenth of the route feels like <b>" + fmtTemp(st.warmestFeelsC) + "</b>.";
+        avgNote = "On average <b>" + fmtTempDiff(delta) + " hotter</b> than the air.";
       }
+      var spreadNote = "";
+      if (st.warmestFeelsC - st.coldestFeelsC >= CHILL_NEGLIGIBLE_C) {
+        spreadNote = " The coldest tenth of the route feels like <b>" + fmtTemp(st.coldestFeelsC) + "</b>, the warmest <b>" + fmtTemp(st.warmestFeelsC) + "</b>.";
+      }
+      var body = avgNote + spreadNote;
       var hasSeg = st.perSeg && st.perSeg.length;
       var feelsA = hasSeg ? st.perSeg[0] : st.avgFeelsC;
       var feelsB = hasSeg ? st.perSeg[st.perSeg.length - 1] : st.avgFeelsC;

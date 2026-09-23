@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
   new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -310,16 +310,56 @@ t("feels stats: a headwind stretch feels colder than a tailwind one, cold day AN
   }
 });
 t("feels stats: coldest / warmest tenth = mean of the coldest / warmest 10% of distance", () => {
-  const cos = Array(40).fill(0); for (let i = 0; i < 4; i++) cos[i] = -1; for (let i = 36; i < 40; i++) cos[i] = 1;   // 10% each end
-  const r = feelsStats(L, cos, ms(25), ms(20), 30, 60);
+  // 200 segments (5 km) so the 1 km headwind/tailwind runs at each end have a
+  // 600 m core beyond the 400 m smoothing window's reach - wide enough that
+  // the coldest/warmest 10% (500 m) sits entirely in undiluted core, still
+  // matching the pure value exactly.
+  const bigL = Array(200).fill(25);
+  const cos = Array(200).fill(0); for (let i = 0; i < 40; i++) cos[i] = -1; for (let i = 160; i < 200; i++) cos[i] = 1;
+  const r = feelsStats(bigL, cos, ms(25), ms(20), 30, 60);
   assert(Math.abs(r.coldestFeelsC - feelsLikeC(30, 60, 45)) < 1e-9);
   assert(Math.abs(r.warmestFeelsC - feelsLikeC(30, 60, 5)) < 1e-9);
   assert(r.coldestFeelsC < r.avgFeelsC && r.avgFeelsC < r.warmestFeelsC);
 });
 t("feels stats: a single backwards GPS blip does not set the headline", () => {
+  // Diluted twice over: smoothByDistance already blends it into its
+  // neighbours before the coldest/warmest tenth ever sees it.
   const cos = Array(40).fill(1); cos[7] = -1;                               // 1 of 40 = 2.5% of distance
   const r = feelsStats(L, cos, ms(25), ms(20), 0, 50);
   assert(r.coldestFeelsC > feelsLikeC(0, 50, 45) + 0.5, "coldest tenth should dilute one bad segment");
+});
+t("smoothByDistance: a uniform series is left unchanged", () => {
+  assert.deepStrictEqual(smoothByDistance([5, 5, 5, 5], [25, 25, 25, 25], 400), [5, 5, 5, 5]);
+});
+t("smoothByDistance: window 0 (or 1 point) is the identity", () => {
+  assert.deepStrictEqual(smoothByDistance([1, 9, 2], [25, 25, 25], 0), [1, 9, 2]);
+  assert.deepStrictEqual(smoothByDistance([7], [25], 400), [7]);
+  assert.deepStrictEqual(smoothByDistance([], [], 400), []);
+});
+t("smoothByDistance: a lone spike is pulled toward its neighbours over the window's width", () => {
+  const lengths = Array(20).fill(25);                                       // 500 m
+  const values = Array(20).fill(10); values[10] = 100;                      // one 25 m spike mid-route
+  const out = smoothByDistance(values, lengths, 400);
+  assert(out[10] > 10 && out[10] < 100, "the spike itself should soften a lot");
+  assert(out[10] < values[10], "never sharper than the input");
+  // 250 m (10 segments) from the spike, past the 200 m half-window: untouched.
+  assert.strictEqual(out[0], 10); assert.strictEqual(out[19], 10);
+});
+t("smoothByDistance: clamped at the route's ends - only forward neighbours exist there, nothing is invented", () => {
+  const values = [100, 10, 10, 10, 10, 10, 10, 10, 10, 10];                 // spike at the very first segment
+  const out = smoothByDistance(values, Array(10).fill(25), 400);
+  // The 200 m half-window from segment 0 only reaches forward (segments 0-8,
+  // 9 of them): (100 + 8*10) / 9, still exactly a length-weighted average of
+  // whatever exists, not padded with anything before the route's start.
+  assert(Math.abs(out[0] - 180 / 9) < 1e-9);
+  assert(out[0] < values[0], "the spike itself is still diluted, just by fewer neighbours");
+});
+t("smoothByDistance: it is a true distance-weighted average, not a plain sample average", () => {
+  // One long 300 m segment and one short 25 m segment, both inside each
+  // other's 400 m window: a plain sample average of the two raw values would
+  // be 50; length-weighted it sits far closer to the 300 m segment's value.
+  const out = smoothByDistance([0, 100], [300, 25], 400);
+  assert(out[0] < 25 && out[1] < 25, `expected well under the 300 m segment's weight to dominate, got ${out}`);
 });
 t("feels stats: one value per segment; empty route does not crash", () => {
   assert.strictEqual(feelsStats(L, Array(40).fill(1), ms(25), ms(20), 5, 50).perSeg.length, 40);
@@ -441,9 +481,15 @@ t("ride summary: start, end and mean of a steadily warming ride", () => {
 
 // ---- per-segment air temperature through the statistics
 t("feels stats: per-segment temperatures are used (each segment's own air temperature and humidity)", () => {
+  // perSeg is smoothed (see smoothByDistance above), so it no longer matches
+  // the raw formula segment-for-segment - but a steadily warming route must
+  // still come out steadily warming, and avgAirC/airStartC/airEndC read the
+  // raw per-segment air temperature directly, unaffected by the feels-like
+  // smoothing.
   const temps = Array.from({ length: 40 }, (_, i) => 5 + i * 0.5), rhs = Array(40).fill(60);
   const r = feelsStats(L, Array(40).fill(0), ms(25), 0, temps, rhs);
-  temps.forEach((tc, i) => assert(Math.abs(r.perSeg[i] - feelsLikeC(tc, 60, 25)) < 1e-9));
+  for (let i = 1; i < 40; i++) assert(r.perSeg[i] >= r.perSeg[i - 1], `perSeg should not dip at ${i}`);
+  assert(r.perSeg[39] > r.perSeg[0] + 10, "cold end to warm end should still show clearly");
   assert(Math.abs(r.avgAirC - (5 + 19.5 / 2)) < 1e-9, String(r.avgAirC));
   assert.strictEqual(r.airStartC, 5); assert.strictEqual(r.airEndC, 24.5); assert.strictEqual(r.avgRh, 60);
 });
