@@ -285,8 +285,6 @@
   .route-stats-bar-seg.veryhard { background-color: var(--status-critical-strong); }
   .route-stats-bar-seg.calm { background-color: var(--accent); }
   .route-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; }
-  /* Temperature legend entries are longer ("-3.0 C to -4.8 C  1.05 km"), so they get fewer, wider columns. */
-  .route-stats-grid.temp-legend { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
   .route-stats-item {
     display: flex;
     align-items: center;
@@ -522,9 +520,9 @@
   .climb-badge { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%;
     background: var(--panel); color: var(--ink); border: 2px solid var(--ink); font: 700 11px/1 var(--font-display); }
 
-  /* Wind / Temperature tabs. The panels are flex columns with the same gap
-     as .page so the cards inside keep their normal spacing; the [hidden]
-     rule is needed because display:flex would otherwise beat the attribute. */
+  /* Wind tab panel. Flex column with the same gap as .page so the cards
+     inside keep their normal spacing; the [hidden] rule is needed because
+     display:flex would otherwise beat the attribute. */
   /* The tabs are the main controls of the app: one raised strip, equal-width segments, the
      selected one filled in the accent colour. */
   .tabbar { display: flex; gap: 6px; padding: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
@@ -794,8 +792,8 @@
   }
   .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
   .copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  /* The buttons that fetch something from another service (forecast, elevation): the main
-     action of their card, so filled and larger than the small utility buttons above. */
+  /* The button that fetches the forecast: the main action of its card, so
+     filled and larger than the small utility buttons above. */
   .action-btn {
     display: inline-flex; align-items: center; justify-content: center; min-height: 40px;
     font-family: var(--font-body); font-size: 14px; font-weight: 600; letter-spacing: 0.01em;
@@ -1570,12 +1568,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card" id="rideCard">
-    <h2>Your ride <span class="info-pop" data-about="your ride">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the temperature, humidity and wind you meet, and with your speed it sets how it feels.</span></h2>
+    <h2>Your ride <span class="info-pop" data-about="your ride">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the wind you meet.</span></h2>
     <div class="mode-toggle" role="group" aria-label="Units" id="unitsToggle">
-      <button type="button" id="unitsMetric" aria-pressed="true">Metric (km, &deg;C)</button>
-      <button type="button" id="unitsUS" aria-pressed="false">US (mi, &deg;F)</button>
+      <button type="button" id="unitsMetric" aria-pressed="true">Metric (km)</button>
+      <button type="button" id="unitsUS" aria-pressed="false">US (mi)</button>
     </div>
-    <p class="field-hint">Set from the route&rsquo;s own location; change it here any time. Speed, temperature, distance, climbing and rain all follow it.</p>
+    <p class="field-hint">Set from the route&rsquo;s own location; change it here any time. Speed and distance follow it.</p>
     <div class="two-col-grid">
       <div class="field">
         <label for="cruiseSpeedInput" id="cruiseSpeedLabel">Cruising speed (km/h)</label>
@@ -1631,7 +1629,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <button type="button" class="action-btn" id="fcGetBtn">Get forecast</button>
       </div>
       <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></p>
-      <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, or the ride now runs past the hours that were fetched. The temperature, humidity and wind follow a changed start time and speed on their own; tap Get forecast again to pick up a different date or later hours.</p>
+      <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, or the ride now runs past the hours that were fetched. The wind follows a changed start time and speed on its own; tap Get forecast again to pick up a different date or later hours.</p>
       <p class="error-text" id="forecastError"></p>
     </div>
   </div>
