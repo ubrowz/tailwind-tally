@@ -89,16 +89,39 @@ its own site plus Strava's login).
 
 ## Screenshots
 
-In `Screenshots/6.5-inch-1242x2688/` and `Screenshots/6.7-inch-1284x2778/` -
-the Route map card and the Wind-direction sweep card, at the exact pixel
-dimensions App Store Connect's upload screen asked for (confirmed directly
-against the live form, not guessed - an earlier draft of these used the
-newer iPhone 15/16 Pro Max resolution, 1290x2796, which App Store Connect
-did not actually ask for at this screen; replaced with the sizes it does
-ask for). Captured against the live site in its actual mobile layout
-(device CSS viewport at 3x scale, not just the output image resized), using
-the app's built-in sample route so they show a real, computed result rather
-than an empty state.
+In `Screenshots/6.5-inch-1242x2688/` and `Screenshots/6.7-inch-1284x2778/`,
+at the exact pixel dimensions App Store Connect's upload screen asked for
+(confirmed directly against the live form, not guessed - an earlier draft
+of these used the newer iPhone 15/16 Pro Max resolution, 1290x2796, which
+App Store Connect did not actually ask for at this screen; replaced with
+the sizes it does ask for). Captured against the beta site (same UI the
+release will ship, minus the beta banner, which is stripped before
+capture) in its actual mobile layout (device CSS viewport at 3x scale via
+Chrome DevTools Protocol, not just the output image resized).
+
+Regenerated 2026-09-23 for the forecast/temperature/rain/climbs release
+(the earlier pair, Route + Wind-direction sweep, predated that redesign
+and the "if ridden reverse" comparison they showed no longer exists):
+
+1. **01-route.png** - the Wind tab's Route map, tailwind/headwind coloured,
+   using the app's own built-in sample route (flat, no rain, so it doesn't
+   suit the other three below) with a real next-day forecast.
+2. **02-temperature.png** - the Temperature tab's three feels-like cards,
+   same sample route/forecast, chosen specifically to show the new "Feels
+   like in full sun" card (a lower-bound estimate, see How it works
+   section 10).
+3. **03-rain.png** - the Rain tab's summary, chart and coloured map, using
+   a different (hillier, real) local test route on a date picked because
+   its real forecast actually shows rain there - the sample route's own
+   location had none in the available window. Uploaded under the generic
+   name "route.gpx", not its real filename.
+4. **04-climbs.png** - the Climbs tab's numbered climbs (11, 969 m of
+   climbing) on the map and the count/filters above it, same route as
+   above (it has real hills; the sample route doesn't), elevation looked
+   up live via the "Look up elevation online" button.
+
+The Wind-direction sweep screenshot was dropped this round - correct, but
+mostly empty space at this crop compared to the other four.
 
 If App Store Connect asks for a different set of sizes by the time you
 read this (Apple reshuffles required device classes over time), regenerate
