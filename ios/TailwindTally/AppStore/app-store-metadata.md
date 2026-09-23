@@ -95,9 +95,17 @@ at the exact pixel dimensions App Store Connect's upload screen asked for
 of these used the newer iPhone 15/16 Pro Max resolution, 1290x2796, which
 App Store Connect did not actually ask for at this screen; replaced with
 the sizes it does ask for). Captured against the beta site (same UI the
-release will ship, minus the beta banner, which is stripped before
-capture) in its actual mobile layout (device CSS viewport at 3x scale via
-Chrome DevTools Protocol, not just the output image resized).
+release will ship) in its actual mobile layout via Chrome DevTools
+Protocol: a device viewport at 3x scale AND a real iPhone Safari
+user-agent string, both required - the app decides what to hide on a
+phone (Full report, the How it works tab, the intro text, the sweep
+table link) by matching `navigator.userAgent` against
+`/iPhone|iPod|Android.*Mobile/`, not by screen width, so a first attempt
+that only faked the viewport size still showed phone-only content that a
+real device never would. The beta banner is hidden by loading
+`?shots` on the URL (added to `tools/publish_beta.py` for exactly this),
+not stripped from the page - simpler than removing it via a DOM script
+each time.
 
 Regenerated 2026-09-23 for the forecast/temperature/rain/climbs release
 (the earlier pair, Route + Wind-direction sweep, predated that redesign
