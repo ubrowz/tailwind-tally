@@ -4552,9 +4552,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       } else {
         body = "That is <b>" + fmtTempDiff(delta) + " hotter</b> than the air. The hottest tenth of the route feels like <b>" + fmtTemp(st.warmestFeelsC) + "</b>.";
       }
+      var hasSeg = st.perSeg && st.perSeg.length;
+      var feelsA = hasSeg ? st.perSeg[0] : st.avgFeelsC;
+      var feelsB = hasSeg ? st.perSeg[st.perSeg.length - 1] : st.avgFeelsC;
+      var feelsChanges = Math.abs(feelsB - feelsA) >= 0.5;
       return '<div class="half-card">' +
-          '<div class="half-title">' + title + '</div>' +
-          '<div class="half-multiplier">' + fmtTemp(st.avgFeelsC) + '</div>' +
+          '<div class="half-title">' + title + (feelsChanges ? ", start to end" : "") + '</div>' +
+          '<div class="half-multiplier">' + (feelsChanges ? fmtTemp1(feelsA) + " \u2192 " + fmtTemp1(feelsB) : fmtTemp(st.avgFeelsC)) + '</div>' +
           '<div class="half-net">' + body + '</div>' +
         '</div>';
     }
