@@ -2063,7 +2063,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <h3>In full sun (a separate, lower-bound estimate)</h3>
           <p>None of the above includes solar radiation. Steadman&rsquo;s own model has an extension for it: a version of apparent temperature with a radiation term <code>Q</code>, the net radiation (in W/m&sup2;) a person absorbs (Steadman, 1994, &ldquo;Norms of apparent temperature in Australia&rdquo;).</p>
           <div class="how-formula">apparent temperature in sun  =  T  +  0.348 &middot; e  &minus;  0.70 &middot; v  +  0.70 &middot; Q / (v + 10)  &minus;  4.25</div>
-          <p>The app derives <code>Q</code> from the forecast&rsquo;s <strong>shortwave radiation</strong> (the total solar energy reaching a flat horizontal square metre, in W/m&sup2; &mdash; already reduced for cloud cover by the forecast model, and exactly 0 at night) the same way Open-Meteo&rsquo;s own <code>apparent_temperature</code> field does: <code>Q = max(0, 0.1 &times; (shortwave radiation &minus; 550))</code>, only the amount above a 550&nbsp;W/m&sup2; baseline, scaled down by 0.1. Plugging the raw value straight in in an earlier version overshot badly &mdash; a single mid-level 800&nbsp;W/m&sup2; hour added over 20&nbsp;&deg;C, far past the roughly 8&nbsp;&deg;C ceiling Steadman and the NWS both report for full sun. Open-Meteo&rsquo;s maintainers hit the identical problem and added this same baseline and scaling for exactly that reason.</p>
+          <p>The app derives <code>Q</code> from the forecast&rsquo;s <strong>shortwave radiation</strong> (the total solar energy reaching a flat horizontal square metre, in W/m&sup2; &mdash; already reduced for cloud cover by the forecast model, and exactly 0 at night): <code>Q = 0.104 &times; shortwave radiation</code>, nothing subtracted first. That 0.104 is solved from two independent real numbers already used elsewhere on this page &mdash; full sun adds at most roughly 8&nbsp;&deg;C (Steadman, the NWS) and Open-Meteo&rsquo;s own observed real-world maximum for shortwave radiation is about 1100&nbsp;W/m&sup2; &mdash; so that a rider standing still (the single largest boost the formula can give) in the strongest sun ever seen still reads a little under 8&nbsp;&deg;C, tying smoothly back to 0 with no separate cutoff.</p>
+          <p>Two earlier, wronger versions of this constant are worth naming, since both looked reasonable until checked against real numbers: plugging the raw value straight in (<code>Q = 0.7 &times;</code> shortwave radiation) added over 20&nbsp;&deg;C at a common midday value, wildly past that same 8&nbsp;&deg;C ceiling. Copying Open-Meteo&rsquo;s own <code>apparent_temperature</code> formula exactly &mdash; they hit the identical overshoot and fixed it with <code>Q = max(0, 0.1 &times; (shortwave radiation &minus; 550))</code>, only the amount above a 550&nbsp;W/m&sup2; baseline &mdash; no longer overshot, but tested against a real, genuinely clear (low cloud cover) September morning it read as no boost at all: 550&nbsp;W/m&sup2; is close to that day&rsquo;s very peak, reachable only for an hour or two around solar noon at that latitude and time of year. A baseline tuned for Open-Meteo&rsquo;s own product turned out to be a bar this app&rsquo;s typical ride rarely clears.</p>
           <p>This is still cruder than Steadman&rsquo;s own <code>Q</code> (radiation absorbed by a person&rsquo;s own projected area, facing whichever way they face), applied here to a flat, ground-facing sensor reading instead &mdash; so it leaves out <strong>reflected light</strong>, <strong>long-wave heat</strong> radiating off the road and surroundings, and the <strong>extra a rider facing into a low sun</strong> would catch that a flat sensor does not. All three only ever add warmth, which is why this is shown as a deliberate <strong>lower bound</strong>, as its own figure (in the Feels-like card, and as a separate dashed line on the temperature chart) rather than folded into the feels-like number above it.</p>
           <p>It needs a forecast (<strong>From forecast</strong> and a tap on <strong>Get forecast</strong>); there is no manual sun setting. Like the wind chill, it is not applied below 10&nbsp;&deg;C, so a cold, sunny ride shows no sun boost at all &mdash; a known gap, not a claim that sun does nothing in the cold. Under Australian conditions Steadman found full sun adds up to about 8&nbsp;&deg;C at the sun&rsquo;s highest, in the same range as the heat index&rsquo;s own sun note further below.</p>
 
@@ -2138,7 +2139,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li>US National Weather Service. Heat index: what it is, shade assumption, and the heat-illness categories. <a href="https://www.weather.gov/ama/heatindex" target="_blank" rel="noopener">weather.gov/ama/heatindex</a></li>
             <li>Australian Bureau of Meteorology: thermal comfort and apparent temperature. <a href="http://www.bom.gov.au/info/thermal_stress/" target="_blank" rel="noopener">bom.gov.au</a></li>
             <li>Steadman, R. G. (1994). Norms of apparent temperature in Australia. <em>Australian Meteorological Magazine</em>, 43, 1&ndash;16. The sun-exposed apparent temperature (radiation term <code>Q</code>) behind the separate &ldquo;feels like in full sun&rdquo; figure. <a href="https://connectsci.au/es/article/43/1/1/270350/Norms-of-apparent-temperature-in-Australia" target="_blank" rel="noopener">connectsci.au</a></li>
-            <li>Open-Meteo. GitHub discussion on its own <code>apparent_temperature</code> calculation: the exact formula and the <code>Q = max(0, 0.1 &times; (shortwave_radiation &minus; 550))</code> baseline/scaling this app's sun estimate reuses. <a href="https://github.com/open-meteo/open-meteo/discussions/651" target="_blank" rel="noopener">github.com/open-meteo/open-meteo</a></li>
+            <li>Open-Meteo. GitHub discussion on its own <code>apparent_temperature</code> calculation: the same Steadman sun formula, and the maintainers' note that real-world shortwave radiation reaches about 1100&nbsp;W/m&sup2; at its strongest - the real-world maximum this app's own <code>SUN_ABSORPTION</code> constant is solved against. <a href="https://github.com/open-meteo/open-meteo/discussions/651" target="_blank" rel="noopener">github.com/open-meteo/open-meteo</a></li>
             <li>Open-Meteo. Weather forecast API documentation: the hourly precipitation (sum of the preceding hour), precipitation probability, weather code (WMO) and shortwave radiation (global horizontal irradiance, preceding-hour average) variables. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">open-meteo.com/en/docs</a></li>
             <li>American Meteorological Society. Glossary of Meteorology: rain, with the light, moderate and heavy rain rates. <a href="https://glossary.ametsoc.org/wiki/Rains" target="_blank" rel="noopener">glossary.ametsoc.org</a></li>
             <li>US National Weather Service Storm Prediction Center: CAPE and the weak/moderate/strong/extreme instability bands the two thunderstorm levels are drawn from. <a href="https://www.spc.noaa.gov/exper/mesoanalysis/help/sfcoa.html" target="_blank" rel="noopener">spc.noaa.gov</a></li>
@@ -3064,16 +3065,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
   //
   // Q is derived from the forecast's shortwave_radiation (global horizontal
   // irradiance on a flat surface, W/m^2 - already reduced for cloud cover by
-  // the forecast model, and exactly 0 at night) the same way Open-Meteo's
-  // own apparent_temperature field does it: only the amount ABOVE a
-  // SUN_RADIATION_BASELINE_WM2 baseline counts, scaled down by
-  // SUN_ABSORPTION. Plugging raw shortwave_radiation straight into Q (an
-  // earlier version of this did exactly that) overshoots wildly - a mid-
-  // level 800 W/m^2 hour, taken as Q outright, adds over 20 deg C, far past
-  // every real-world figure this file cites elsewhere (Steadman and the NWS
-  // both put full sun's effect at roughly 8 deg C at most). Open-Meteo's own
-  // maintainers hit the same overshoot and added this same baseline+scaling
-  // for exactly that reason (see Sources).
+  // the forecast model, and exactly 0 at night): Q = SUN_ABSORPTION times
+  // the raw value, nothing subtracted first.
+  //
+  // Two earlier attempts at this constant both turned out wrong when
+  // checked against real numbers, which is why this one is derived and
+  // shown working, not just asserted:
+  //  1. Q = 0.7 * shortwave_radiation outright. At a common midday value
+  //     (~800 W/m^2) that alone added over 20 deg C - far past every
+  //     real-world figure this file cites elsewhere (Steadman's own
+  //     Australian analysis and the NWS heat index both put full sun's
+  //     effect at roughly 8 deg C at MOST).
+  //  2. Copying Open-Meteo's own apparent_temperature formula exactly
+  //     (they hit the identical overshoot and fixed it the same way):
+  //     Q = max(0, 0.1 * (shortwave_radiation - 550)), only counting the
+  //     amount above a 550 W/m^2 baseline. That no longer overshoots, but
+  //     tested against a real, genuinely clear (low cloud cover) morning
+  //     in the Netherlands in late September it read as NO boost at all -
+  //     550 W/m^2 is close to that day's very peak, reachable only for an
+  //     hour or two around solar noon at this latitude and time of year.
+  //     A baseline tuned for Open-Meteo's own product turned out to be a
+  //     bar this app's typical ride rarely clears.
+  // SUN_ABSORPTION here is instead solved from two independent real
+  // numbers already used elsewhere in this file: full sun adds at most
+  // about 8 deg C (Steadman, the NWS), and the real-world maximum
+  // shortwave_radiation Open-Meteo has observed is about 1100 W/m^2 (see
+  // Sources) - solved at zero airspeed (standing still, the single
+  // largest boost the formula can produce), so a moving rider always
+  // reads a little under 8, never over it, and ties smoothly back to 0 at
+  // Q = 0 with no separate cutoff needed: SUN_ABSORPTION = 8*10/(0.70*1100).
   //
   // This is still cruder than Steadman's own Q (radiation absorbed by a
   // person's own projected area, facing whichever way they face): it leaves
@@ -3085,11 +3105,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // is added below WIND_CHILL_OFFICIAL_MAX_C - a known gap (a cold, sunny
   // ride would really feel a little warmer than this says), not a claim
   // that sun does nothing there.
-  var SUN_RADIATION_BASELINE_WM2 = 550, SUN_ABSORPTION = 0.1;
+  var SUN_ABSORPTION = 8 * 10 / (0.70 * 1100);
   function apparentTempSunC(tempC, rhPercent, airspeedKmh, qWm2) {
     var rh = Math.max(0, Math.min(100, rhPercent));
     var e = rh / 100 * 6.105 * Math.exp(17.27 * tempC / (237.7 + tempC));
-    var v = Math.max(0, airspeedKmh) / 3.6, q = Math.max(0, SUN_ABSORPTION * ((qWm2 || 0) - SUN_RADIATION_BASELINE_WM2));
+    var v = Math.max(0, airspeedKmh) / 3.6, q = SUN_ABSORPTION * Math.max(0, qWm2 || 0);
     return tempC + 0.348 * e - 0.70 * v + 0.70 * q / (v + 10) - 4.25;
   }
   function feelsLikeSunC(tempC, rhPercent, airspeedKmh, qWm2) {
