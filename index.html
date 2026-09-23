@@ -34,6 +34,8 @@
     --status-critical-strong: #7a1f1f;
     --status-neutral: #898781;
     --status-neutral-wash: rgba(137, 135, 129, 0.14);
+    --status-warning: #a15c00;
+    --status-warning-wash: rgba(191, 120, 10, 0.16);
 
     --radius-sm: 6px;
     --radius-md: 12px;
@@ -57,6 +59,8 @@
       --status-good-wash: rgba(12, 163, 12, 0.16);
       --status-critical-wash: rgba(208, 59, 59, 0.16);
       --status-neutral-wash: rgba(137, 135, 129, 0.18);
+      --status-warning: #e2a53d;
+      --status-warning-wash: rgba(226, 165, 61, 0.22);
       --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
   }
@@ -76,6 +80,8 @@
     --status-good-wash: rgba(12, 163, 12, 0.16);
     --status-critical-wash: rgba(208, 59, 59, 0.16);
     --status-neutral-wash: rgba(137, 135, 129, 0.18);
+    --status-warning: #e2a53d;
+    --status-warning-wash: rgba(226, 165, 61, 0.22);
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
@@ -1992,9 +1998,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <p>The Rain tab shows where and when it is expected to rain along your route. Like the temperature and the wind it comes from the forecast, so it needs <strong>From forecast</strong> and a tap on <strong>Get forecast</strong> under Weather for the ride. It changes nothing in the wind, temperature or ride-time calculations.</p>
         <h3>What you see</h3>
         <ul>
-          <li>The <strong>map</strong>: wet stretches are thick and coloured by intensity, dry stretches a thin grey line. </li>
-          <li>A <strong>summary</strong> with the distance in rain, the peak intensity, the highest chance of rain, and how much rain falls on you during the ride, for the chosen direction and, in one line, for the other.</li>
-          <li>A <strong>chart</strong> of the intensity (mm per hour) and the chance of rain against the time of day, with a map marker while you hover or touch it, as in the Wind and Temperature tabs.</li>
+          <li>The <strong>map</strong>: wet stretches are thick and coloured by intensity, dry stretches a thin grey line.</li>
+          <li>A <strong>summary</strong> with the distance in rain, the peak intensity, the highest chance of rain, and how much rain falls on you during the ride.</li>
+          <li>A <strong>chart</strong> of the intensity (mm per hour) and the chance of rain against the time of day, with a map marker while you hover or touch it, as in the Wind and Temperature tabs. Behind it, an amber band marks any hour a thunderstorm is forecast.</li>
           <li>A <strong>table</strong> of the stretches where it rains, in the order you ride them, one row for each intensity class.</li>
         </ul>
         <h3>Where the numbers come from</h3>
@@ -2006,6 +2012,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <li>Which way you ride the route matters: the other direction meets the same places at other moments, so it can stay dry where this one gets wet. Press Reverse route to see it.</li>
           <li>The rain that falls on you is the sum, over the stretches, of the intensity times the time you spend on them. It is a depth (about one puddle&rsquo;s worth), not a volume.</li>
         </ul>
+        <h3>Thunderstorms</h3>
+        <p>The same forecast request also asks for the <strong>weather code</strong> (a standard WMO code, one per hour, also read from the same places), and codes 95, 96 and 99 mean a thunderstorm is expected. Where one is, the chart's background turns amber over that hour, the summary names the times, and the full report lists them by distance too. Because a storm is local and sudden, this is <strong>not</strong> blended between the sample places the way rain is: if any one of them shows a thunderstorm code for that hour, the whole hour is flagged, rather than being averaged away. The weather code does not reach as far into the future as temperature and wind do; on the days it is missing, no warning is shown, which is not the same as no risk.</p>
         <h3>The classes and colours</h3>
         <p>Intensity is sorted into five classes (mm per hour): <strong>dry</strong> (under 0.1), <strong>very light</strong> (0.1 to 0.5), <strong>light</strong> (0.5 to 2.5), <strong>moderate</strong> (2.5 to 7.6) and <strong>heavy</strong> (7.6 and up). The upper two edges follow the usual rain-rate classes (light up to about 2.5&nbsp;mm/h, moderate to about 7.6, heavy above, in the American Meteorological Society&rsquo;s glossary and the WMO scale). The split at 0.1 and 0.5 is mine, chosen for cycling: 0.1 is the wettest a forecast &ldquo;dry&rdquo; can be, and drizzle below 0.5 is often ridden without a jacket. The colours are one teal hue in four steps, darker for heavier, with dry drawn in the same grey as the other maps. The ramp was checked for both themes.</p>
         <h3>Limits</h3>
@@ -2015,6 +2023,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <li><strong>Hourly, not minute by minute.</strong> A shower that lasts twenty minutes is averaged over its hour.</li>
           <li><strong>Wet does not change the feels-like.</strong> Wet clothing makes cold feel colder, and the temperature model has no correction for it.</li>
           <li><strong>Forecast range.</strong> The amounts reach as far as the forecast does (about two weeks); the probability is often missing for the days furthest out, and the tab then shows the amount only.</li>
+          <li><strong>Thunderstorm warnings are a coarse signal.</strong> A weather code names a whole hour, not a moment; it is not blended between places, so a storm forecast a little to the side of the route can still flag it; and it reaches less far ahead than the rain amount, with no warning shown once it runs out, which is not the same as a clear forecast.</li>
         </ul>
 
         <h2 id="how-cold">9. Cold: wind chill</h2>
@@ -2102,7 +2111,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </ul>
         
           <h2 id="how-check">15. How it is checked</h2>
-          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, a reversed profile turning the recorded descent into the climb, the number of a climb landing on the right stretch of the route, rain that steps by the hour it describes and blends between places, and rain distances, classes and runs, the points of the ride charts being in ride order with a clock that only increases, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared with the live service on the South Limburg route and on two long rides (one flat, one hilly); the flat one showed the treetop effect described in section 7. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. For reversing the route: the fetched places, the forecast and the elevation are turned around exactly and turning them twice gives back the original, and 32 scenarios (two routes, four winds, both riding styles, with and without a forecast) gave the same results for the reversed route as the earlier calculation of the other direction, to within about 1&nbsp;% of the route length. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
+          <p>The maths is covered by automated tests (in the <code>tests</code> folder of the repository, run with <code>node tests/pure.test.js</code>) that run against the code in this app itself: it is cut out of the page and run as it is. They include: the wind chill and heat index reproduce values published by the National Weather Service (for example 0&nbsp;&deg;F with a 15&nbsp;mph wind gives &minus;19&nbsp;&deg;F), and agree with an independent copy of the published Fahrenheit and mph formula across a grid of temperatures and speeds; the heat index equals the published algorithm from about 29&nbsp;&deg;C up, while the published algorithm is shown to have steps that the app&rsquo;s version does not; the combined result has no jump anywhere; and faster air always feels cooler. For the wind: directions turn along the shortest arc, a forecast wind that does not change gives the same answer as a steady one, and a wind that reverses halfway along a route is judged stretch by stretch. For steady power: the speed solver returns your entered speed on a calm day, satisfies the power balance exactly on every stretch (headwind, tailwind and crosswind), and matches an independent calculation on the sample loop, and the clock follows the rider&rsquo;s real speed. For climbs: slope classes at their edges, an exact 5&nbsp;% climb, noise of &plusmn;2&nbsp;m on a 40&nbsp;km flat road giving no climbs, a noisy real climb still being found, a reversed profile turning the recorded descent into the climb, the number of a climb landing on the right stretch of the route, rain that steps by the hour it describes and blends between places, rain distances, classes and runs, a thunderstorm code recognised only for 95/96/99, an hour flagged when any one sample place has it even if the others do not, and thunderstorm stretches merged in ride order, the points of the ride charts being in ride order with a clock that only increases, and a real stretch of South Limburg terrain giving the climbs expected from its raw profile. For the lookup: the points sent are evenly spaced, include the first and last point of the route, come in batches within the service&rsquo;s limit and are rounded as stated above. The lookup was also compared with the live service on the South Limburg route and on two long rides (one flat, one hilly); the flat one showed the treetop effect described in section 7. The steady-wind results were also compared with a stored set of 60 scenarios before and after the changing-wind work, and were identical. For reversing the route: the fetched places, the forecast and the elevation are turned around exactly and turning them twice gives back the original, and 32 scenarios (two routes, four winds, both riding styles, with and without a forecast) gave the same results for the reversed route as the earlier calculation of the other direction, to within about 1&nbsp;% of the route length. Those browser-level checks are done outside the repository. The source code is public at <a href="https://github.com/ubrowz/tailwind-tally" target="_blank" rel="noopener">github.com/ubrowz/tailwind-tally</a>, so all of the above can be inspected.</p>
           <p>If you find a case where a number looks wrong, please say so on the <a href="https://github.com/ubrowz/tailwind-tally/issues" target="_blank" rel="noopener">issue tracker</a> with the temperature, humidity, speed and wind you used.</p>
         
           <h2 id="how-sources">16. Sources</h2>
@@ -2114,7 +2123,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li>Rothfusz, L. P. (1990). The heat index equation (or, more than you ever wanted to know about heat index). NWS Southern Region Technical Attachment SR/SSD 90-23. <a href="https://www.weather.gov/media/ffc/ta_htindx.PDF" target="_blank" rel="noopener">weather.gov (PDF)</a> &middot; <a href="https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml" target="_blank" rel="noopener">the equation with all coefficients</a></li>
             <li>US National Weather Service. Heat index: what it is, shade assumption, and the heat-illness categories. <a href="https://www.weather.gov/ama/heatindex" target="_blank" rel="noopener">weather.gov/ama/heatindex</a></li>
             <li>Australian Bureau of Meteorology: thermal comfort and apparent temperature. <a href="http://www.bom.gov.au/info/thermal_stress/" target="_blank" rel="noopener">bom.gov.au</a></li>
-            <li>Open-Meteo. Weather forecast API documentation: the hourly precipitation (sum of the preceding hour) and precipitation probability variables. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">open-meteo.com/en/docs</a></li>
+            <li>Open-Meteo. Weather forecast API documentation: the hourly precipitation (sum of the preceding hour), precipitation probability and weather code (WMO) variables. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">open-meteo.com/en/docs</a></li>
             <li>American Meteorological Society. Glossary of Meteorology: rain, with the light, moderate and heavy rain rates. <a href="https://glossary.ametsoc.org/wiki/Rains" target="_blank" rel="noopener">glossary.ametsoc.org</a></li>
             <li>Weather forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li>
             <li>Elevation lookup: Copernicus DEM GLO-90 (&copy; DLR e.V. 2010-2014 and &copy; Airbus Defence and Space GmbH 2014-2018, provided under COPERNICUS by the European Union and ESA), DOI <a href="https://doi.org/10.5270/ESA-c5d3d65" target="_blank" rel="noopener">10.5270/ESA-c5d3d65</a>, served by <a href="https://open-meteo.com/en/docs/elevation-api" target="_blank" rel="noopener">Open-Meteo</a>.</li>
@@ -2795,6 +2804,50 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return a[a.length - 1][key];
     }
     return { mm: lerpAt("mm"), prob: lerpAt("prob") };
+  }
+  // A weather code (WMO) that means a thunderstorm is forecast: 95 plain, 96/99 with hail.
+  function isThunderstormCode(code) { return code === 95 || code === 96 || code === 99; }
+  // One place's hourly weather code as a minute-stamped series; hours without a code are dropped
+  // (the forecast does not reach as far for this field as for temperature - see How it works).
+  function forecastStormSeries(loc, dateStr) {
+    var h = loc.hourly, out = { t: [], code: [] };
+    if (!h || !h.weather_code) return out;
+    for (var i = 0; i < h.time.length; i++) {
+      if (h.weather_code[i] == null) continue;
+      out.t.push(forecastMinutes(h.time[i], dateStr));
+      out.code.push(h.weather_code[i]);
+    }
+    return out;
+  }
+  function stormStepAt(series, t) {
+    var ts = series.t, n = ts.length;
+    if (!n) return null;
+    var lo = 0, hi = n - 1;
+    if (t > ts[hi]) lo = hi;
+    else { while (lo < hi) { var mid = (lo + hi) >> 1; if (ts[mid] >= t) hi = mid; else lo = mid + 1; } }
+    return series.code[lo];
+  }
+  // Thunderstorm risk at a moment: true if ANY of the (up to three) sample places' weather code
+  // for that hour is a thunderstorm code. Unlike rain, this is not blended between places - a
+  // storm is local and sudden, so a signal from one nearby place is kept rather than smoothed away.
+  function stormAtPlace(locs, tMin) {
+    return locs.some(function (l) { var c = l.storm ? stormStepAt(l.storm, tMin) : null; return c !== null && isThunderstormCode(c); });
+  }
+  // Contiguous stretches where a thunderstorm is forecast, in ride order: both the distance
+  // (fromKm/toKm) and the clock (fromT/toT, minutes) they cover. storm[i] is a per-segment
+  // boolean; since segments are already in ride order, one run of consecutive true values is
+  // both a contiguous stretch of the route and of the ride's clock.
+  function stormRuns(lengths, t, dtMin, storm) {
+    var out = [], run = null, km = 0;
+    for (var i = 0; i < storm.length; i++) {
+      if (storm[i]) {
+        var a = t[i] - dtMin[i] / 2, b = t[i] + dtMin[i] / 2;
+        if (!run) { run = { fromKm: km / 1000, toKm: (km + lengths[i]) / 1000, fromT: a, toT: b }; out.push(run); }
+        else { run.toKm = (km + lengths[i]) / 1000; run.toT = b; }
+      } else run = null;
+      km += lengths[i];
+    }
+    return out;
   }
   // What the ride meets. mm, prob (or null) and dtMin (minutes spent on the segment) are indexed by
   // segment. Wet = at least 0.1 mm/h. runs: stretches of one class, in ride order.
@@ -3486,12 +3539,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
           t = segmentClock(lengths, rainTimeline.startMin, cruiseSpeedKmh).t;
           dt = lengths.map(function (len) { return len / (Math.max(cruiseSpeedKmh, 1) * 1000 / 60); });
         }
-        var mm = [], prob = [];
+        var mm = [], prob = [], storm = [];
         for (var q = 0; q < lengths.length; q++) {
           var r = rainAtPlace(rainTimeline.locations, fracs[q], t[q]);
           mm.push(r && r.mm !== null ? r.mm : 0); prob.push(r ? r.prob : null);
+          storm.push(stormAtPlace(rainTimeline.locations, t[q]));
         }
-        return { mm: mm, prob: prob, cls: mm.map(rainClass), stats: rainDirectionStats(lengths, mm, prob, dt) };
+        return { mm: mm, prob: prob, cls: mm.map(rainClass), stats: rainDirectionStats(lengths, mm, prob, dt), stormRuns: stormRuns(lengths, t, dt, storm) };
       };
       rain = { fwd: rainFor() };
     }
@@ -3871,6 +3925,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ? "<b>Dry all the way.</b>" + (probText ? " The highest " + probText.replace("chance up to", "chance of rain on the route is") + "." : "")
       : "<b>Rain on " + kmText(a.wetM) + " of " + kmText(a.totalM) + " " + distUnitLabel() + " (" + Math.round(a.wetPct) + "%).</b> Peak " + fmtRainRate(a.peakMm, 1) + (probText ? ", " + probText : "") +
         ". About " + fmtRainMm(a.accumMm, 1) + " falls on you during the ride.";
+    if (rn.fwd.stormRuns.length) summary.innerHTML += " <b>Thunderstorms are possible</b> around " +
+      rn.fwd.stormRuns.map(function (w) { return fmtHM(w.fromT) + "\u2013" + fmtHM(w.toT); }).join(", ") + " (see the chart below).";
 
     var colors = rainClassColors();
     var head = '<thead><tr><th>Rain</th><th>From</th><th>Length</th><th>Peak</th></tr></thead>';
@@ -3981,8 +4037,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   function rideLegendHTML(items) {
     return items.map(function (it) {
-      return '<span><svg width="24" height="8" aria-hidden="true"><line x1="1" x2="23" y1="4" y2="4" stroke="' + it.color + '" stroke-width="' + (it.w || 2) + '"' +
-        (it.dash ? ' stroke-dasharray="' + it.dash + '"' : "") + ' stroke-linecap="round"/></svg>' + it.label + "</span>";
+      var swatch = it.block
+        ? '<svg width="14" height="10" aria-hidden="true"><rect width="14" height="10" rx="2" fill="' + it.color + '"/></svg>'
+        : '<svg width="24" height="8" aria-hidden="true"><line x1="1" x2="23" y1="4" y2="4" stroke="' + it.color + '" stroke-width="' + (it.w || 2) + '"' +
+          (it.dash ? ' stroke-dasharray="' + it.dash + '"' : "") + ' stroke-linecap="round"/></svg>';
+      return "<span>" + swatch + it.label + "</span>";
     }).join("");
   }
 
@@ -4080,6 +4139,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
       });
     } else {
+      // Thunderstorm risk: a translucent band behind the data, over any hour the forecast's
+      // weather code flags (95/96/99). Not blended between places like the rain amount is - a
+      // signal from any one of the (up to three) sample places counts, so this can flag an hour
+      // even where the rain amount shown (blended) still looks small.
+      var stormRunsHere = (result.rain && result.rain.fwd.stormRuns) || [];
+      stormRunsHere.forEach(function (w) {
+        var x0 = sx(Math.max(t0, w.fromT)), x1 = sx(Math.min(t1, w.toT));
+        if (x1 > x0) el("rect", { x: x0.toFixed(1), y: panelTop, width: (x1 - x0).toFixed(1), height: (gridBottom - panelTop).toFixed(1), fill: "var(--status-warning-wash)", stroke: "none" });
+      });
       // intensity, shaded under its line
       var area = [];
       rs.pts.forEach(function (p) { if (p.rainMm !== null) area.push(sx(p.t).toFixed(1) + "," + sy(rainToDisplay(p.rainMm)).toFixed(1)); });
@@ -4102,8 +4170,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     var cursor = el("line", { "class": "rc-cursor", x1: 0, x2: 0, y1: kind === "wind" ? mt : panelTop, y2: gridBottom, visibility: "hidden" });
 
-    document.getElementById(kind + "RideLegend").innerHTML = kind !== "temp" ? ""
-      : rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "Feels like" }, { color: "var(--ink-muted)", w: 1.3, label: "Air temperature" }]);
+    document.getElementById(kind + "RideLegend").innerHTML = kind === "temp"
+      ? rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "Feels like" }, { color: "var(--ink-muted)", w: 1.3, label: "Air temperature" }])
+      : kind === "rain" && stormRunsHere.length
+      ? rideLegendHTML([{ color: "var(--status-warning)", block: true, label: "Thunderstorm possible (forecast)" }])
+      : "";
 
     var idleText = "Move over the chart, or touch it, to see the values and where you would be on the map.";
     readout.textContent = idleText;
@@ -4112,10 +4183,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (kind === "rain") return fmtKmLabel(pt.km) + ", " + (pt.rainMm < 0.05 ? "dry" : fmtRainRate(pt.rainMm, 1)) + (pt.rainProb === null ? "" : " (chance " + Math.round(pt.rainProb) + "%)");
       return fmtKmLabel(pt.km) + ", air " + fmtTemp(pt.airC) + ", feels like " + fmtTemp(pt.feelsC);
     }
+    function stormAt(ta) { return kind === "rain" && stormRunsHere.some(function (w) { return ta >= w.fromT && ta <= w.toT; }); }
     function showAt(ta) {
       var x = sx(ta).toFixed(1), pt = rs.pts[seriesIndexAtTime(rs.pts, ta)];
       cursor.setAttribute("x1", x); cursor.setAttribute("x2", x); cursor.setAttribute("visibility", "visible");
-      readout.innerHTML = "<b>" + fmtHM(ta) + "</b> &middot; " + describe(pt);
+      readout.innerHTML = "<b>" + fmtHM(ta) + "</b> &middot; " + describe(pt) + (stormAt(ta) ? " &middot; <b>thunderstorm possible</b>" : "");
       showRideMarkers(result, pt);
     }
     function hide() { cursor.setAttribute("visibility", "hidden"); readout.textContent = idleText; clearRideMarkers(); }
@@ -4574,6 +4646,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         lines.push(d[0] + ": " + (st.wetM > 0 ? "rain on " + kmText(st.wetM) + " of " + kmText(st.totalM) + " " + distUnitLabel() + " (" + Math.round(st.wetPct) + "%), peak " + fmtRainRate(st.peakMm, 1) +
           (st.peakProb === null ? "" : ", chance up to " + Math.round(st.peakProb) + "%") + ", about " + fmtRainMm(st.accumMm, 1) + " falls on the rider" : "dry" + (st.peakProb === null ? "" : " (chance of rain up to " + Math.round(st.peakProb) + "%)")));
         st.runs.forEach(function (r) { lines.push("  " + RAIN_CLASS_LABELS[r.cls].toLowerCase() + " rain from " + fmtKmLabel(r.fromKm) + " to " + fmtKmLabel(r.toKm) + ", peak " + fmtRainRate(r.peakMm, 1)); });
+        result.rain[d[1]].stormRuns.forEach(function (w) { lines.push("  thunderstorm possible from " + fmtKmLabel(w.fromKm) + " to " + fmtKmLabel(w.toKm) + ", around " + fmtHM(w.fromT) + "\u2013" + fmtHM(w.toT)); });
       });
       lines.push("");
     }
@@ -5128,7 +5201,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var url = FORECAST_API +
       "?latitude=" + unique.map(function (p) { return p.lat.toFixed(1); }).join(",") +
       "&longitude=" + unique.map(function (p) { return p.lon.toFixed(1); }).join(",") +
-      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation,precipitation_probability&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
+      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation,precipitation_probability,weather_code&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
       "&start_date=" + dateStr + "&end_date=" + endDate;
     return fetch(url).then(function (res) {
       return res.json().then(function (data) { return { ok: res.ok, data: data }; }, function () { return { ok: false, data: {} }; });
@@ -5178,7 +5251,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var locations = r.plan.samples.map(function (smp) {
         var res = r.results[smp.unique];
         return { frac: smp.frac, temp: forecastSeries(res, "temperature_2m", dateStr), rh: forecastSeries(res, "relative_humidity_2m", dateStr),
-                 wind: forecastWindSeries(res, dateStr), rain: forecastRainSeries(res, dateStr) };
+                 wind: forecastWindSeries(res, dateStr), rain: forecastRainSeries(res, dateStr), storm: forecastStormSeries(res, dateStr) };
       });
       // Rain follows the clock and the place as well (own timeline: typing a wind or a
       // temperature does not touch it).

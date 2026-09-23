@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, forecastStormSeries, stormStepAt, stormAtPlace, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
   new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, forecastStormSeries, stormStepAt, stormAtPlace, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -919,6 +919,42 @@ t("unit conversion constants: round trips are close to 1", () => {
   assert(near(1 * KM_TO_MI * (1 / KM_TO_MI), 1, 1e-9));
   assert(near(100 * M_TO_FT / 3.28084, 100, 1e-3));
   assert(near(25.4 * MM_TO_IN, 1, 1e-9));
+});
+
+// thunderstorm risk: forecast weather code (WMO 95/96/99), read the same "hour ending at the
+// stamp" way as rain, OR'd across the sample places, and merged into ride-order runs
+t("isThunderstormCode: only 95, 96 and 99 count", () => {
+  assert.deepStrictEqual([0, 1, 51, 61, 80, 94, 95, 96, 97, 98, 99, 100, null, undefined].map(isThunderstormCode), [false, false, false, false, false, false, true, true, false, false, true, false, false, false]);
+});
+t("forecastStormSeries: minute stamps, hours without a code dropped", () => {
+  const codes = Array(24).fill(0); codes[9] = 95; codes[10] = null;
+  const loc = { hourly: { time: codes.map((_, h) => `${day}T${String(h).padStart(2, "0")}:00`), weather_code: codes } };
+  const r = forecastStormSeries(loc, day);
+  assert.strictEqual(r.t.length, 23); assert.strictEqual(r.code[r.t.indexOf(540)], 95);
+  assert.strictEqual(forecastStormSeries({ hourly: { time: [] } }, day).t.length, 0); assert.strictEqual(forecastStormSeries({}, day).t.length, 0);
+});
+t("stormStepAt: a stamp describes the hour that ENDS at it, clamped at both ends", () => {
+  const ser = { t: [540, 600, 660], code: [95, 0, 3] };
+  assert.deepStrictEqual([500, 540, 541, 600, 660, 700].map((x) => stormStepAt(ser, x)), [95, 95, 0, 0, 3, 3]);
+  assert.strictEqual(stormStepAt({ t: [], code: [] }, 5), null);
+});
+t("stormAtPlace: true if ANY sample place has a thunderstorm code at that hour - not blended like rain", () => {
+  const mk = (code) => ({ t: [600], code: [code] });
+  const locs = [{ frac: 0, storm: mk(0) }, { frac: 0.5, storm: mk(95) }, { frac: 1, storm: mk(0) }];
+  assert.strictEqual(stormAtPlace(locs, 590), true);
+  assert.strictEqual(stormAtPlace([{ frac: 0, storm: mk(0) }, { frac: 1, storm: mk(3) }], 590), false);
+  assert.strictEqual(stormAtPlace([{ frac: 0, storm: mk(0) }], 590), false);
+  assert.strictEqual(stormAtPlace([], 590), false);
+});
+t("stormRuns: contiguous true stretches in ride order, with both their km and clock extent", () => {
+  const lengths = Array(10).fill(1000), t = lengths.map((_, i) => 600 + i * 3), dt = Array(10).fill(3);
+  const storm = [false, false, true, true, true, false, false, true, false, false];
+  const runs = stormRuns(lengths, t, dt, storm);
+  assert.strictEqual(runs.length, 2);
+  assert.deepStrictEqual([runs[0].fromKm, runs[0].toKm], [2, 5]); assert.deepStrictEqual([runs[1].fromKm, runs[1].toKm], [7, 8]);
+  assert(near(runs[0].fromT, t[2] - dt[2] / 2, 1e-9) && near(runs[0].toT, t[4] + dt[4] / 2, 1e-9));
+  assert.strictEqual(stormRuns(lengths, t, dt, Array(10).fill(false)).length, 0);
+  assert.strictEqual(stormRuns(lengths, t, dt, Array(10).fill(true)).length, 1);
 });
 
 console.log(`\n${n} tests passed`);
