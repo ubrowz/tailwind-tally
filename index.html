@@ -2059,7 +2059,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </table>
           </div>
           <p>Steadman&rsquo;s own analysis found that, for normal midday climates in the US, humidity, wind and sun move the apparent temperature by between &minus;5 and +7&nbsp;K from the dry-bulb temperature. That is the scale of effect to expect.</p>
-        
+
+          <h3>In full sun (a separate, lower-bound estimate)</h3>
+          <p>None of the above includes solar radiation. Steadman&rsquo;s own model has an extension for it: a version of apparent temperature with a radiation term <code>Q</code>, the net radiation (in W/m&sup2;) a person absorbs (Steadman, 1994, &ldquo;Norms of apparent temperature in Australia&rdquo;).</p>
+          <div class="how-formula">apparent temperature in sun  =  T  +  0.348 &middot; e  &minus;  0.70 &middot; v  +  0.70 &middot; Q / (v + 10)  &minus;  4.25</div>
+          <p>The app derives <code>Q</code> from the forecast&rsquo;s <strong>shortwave radiation</strong> (the total solar energy reaching a flat horizontal square metre, in W/m&sup2; &mdash; already reduced for cloud cover by the forecast model, and exactly 0 at night) the same way Open-Meteo&rsquo;s own <code>apparent_temperature</code> field does: <code>Q = max(0, 0.1 &times; (shortwave radiation &minus; 550))</code>, only the amount above a 550&nbsp;W/m&sup2; baseline, scaled down by 0.1. Plugging the raw value straight in in an earlier version overshot badly &mdash; a single mid-level 800&nbsp;W/m&sup2; hour added over 20&nbsp;&deg;C, far past the roughly 8&nbsp;&deg;C ceiling Steadman and the NWS both report for full sun. Open-Meteo&rsquo;s maintainers hit the identical problem and added this same baseline and scaling for exactly that reason.</p>
+          <p>This is still cruder than Steadman&rsquo;s own <code>Q</code> (radiation absorbed by a person&rsquo;s own projected area, facing whichever way they face), applied here to a flat, ground-facing sensor reading instead &mdash; so it leaves out <strong>reflected light</strong>, <strong>long-wave heat</strong> radiating off the road and surroundings, and the <strong>extra a rider facing into a low sun</strong> would catch that a flat sensor does not. All three only ever add warmth, which is why this is shown as a deliberate <strong>lower bound</strong>, as its own figure (in the Feels-like card, and as a separate dashed line on the temperature chart) rather than folded into the feels-like number above it.</p>
+          <p>It needs a forecast (<strong>From forecast</strong> and a tap on <strong>Get forecast</strong>); there is no manual sun setting. Like the wind chill, it is not applied below 10&nbsp;&deg;C, so a cold, sunny ride shows no sun boost at all &mdash; a known gap, not a claim that sun does nothing in the cold. Under Australian conditions Steadman found full sun adds up to about 8&nbsp;&deg;C at the sun&rsquo;s highest, in the same range as the heat index&rsquo;s own sun note further below.</p>
+
           <h2 id="how-blend">11. Putting the two together</h2>
           <p>The two models are not the same physics, and they disagree by a few degrees in the middle, so switching between them at a single temperature would make the result jump. Instead the app fades from one to the other between <strong>10&nbsp;&deg;C</strong> (where the official wind chill ends) and <strong>20&nbsp;&deg;C</strong>:</p>
           <div class="how-formula">x  =  (T &minus; 10) / 10                     (limited to 0 &hellip; 1)
@@ -2108,7 +2115,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <h2 id="how-limits">14. What this is not</h2>
           <ul>
             <li><strong>Not a measurement.</strong> It is a model of an average person. Individuals differ a lot, and what a cyclist feels is subjective.</li>
-            <li><strong>No sun.</strong> Neither formula includes solar radiation. Full sun feels hotter (the heat index notes up to about 8&nbsp;&deg;C).</li>
+            <li><strong>Sun is a separate, lower-bound estimate.</strong> The main feels-like numbers, the chart's solid line and the map colours do not include solar radiation. A separate &ldquo;feels like in full sun&rdquo; figure (section 10) approximates it from the forecast's shortwave radiation, but it leaves out reflected and long-wave heat and the sun's angle on the rider &mdash; all of which only add more warmth &mdash; and it is not applied below 10&nbsp;&deg;C.</li>
             <li><strong>No clothing, no effort.</strong> The models do not know what you wear or how hard you work. Riding hard generates heat the models do not count.</li>
             <li><strong>Constant speed, or constant power on a flat road.</strong> The clock and the airspeed use your cruising speed, or with steady power the speed that power gives on each stretch. Climbs, descents, stops and sprints are not modelled (the Climbs tab shows the hills but does not feed the speed), so timing is approximate. The forecast is hourly, so that is usually accurate enough.</li>
             <li><strong>Wind at 10 metres, hourly.</strong> The forecast wind is the standard 10&nbsp;metre wind, and the wind at a rider&rsquo;s height is lower, especially among trees and buildings. Gusts are not modelled. Between the hourly values the wind is interpolated, so a sudden shift within an hour is smoothed.</li>
@@ -2130,7 +2137,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <li>Rothfusz, L. P. (1990). The heat index equation (or, more than you ever wanted to know about heat index). NWS Southern Region Technical Attachment SR/SSD 90-23. <a href="https://www.weather.gov/media/ffc/ta_htindx.PDF" target="_blank" rel="noopener">weather.gov (PDF)</a> &middot; <a href="https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml" target="_blank" rel="noopener">the equation with all coefficients</a></li>
             <li>US National Weather Service. Heat index: what it is, shade assumption, and the heat-illness categories. <a href="https://www.weather.gov/ama/heatindex" target="_blank" rel="noopener">weather.gov/ama/heatindex</a></li>
             <li>Australian Bureau of Meteorology: thermal comfort and apparent temperature. <a href="http://www.bom.gov.au/info/thermal_stress/" target="_blank" rel="noopener">bom.gov.au</a></li>
-            <li>Open-Meteo. Weather forecast API documentation: the hourly precipitation (sum of the preceding hour), precipitation probability and weather code (WMO) variables. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">open-meteo.com/en/docs</a></li>
+            <li>Steadman, R. G. (1994). Norms of apparent temperature in Australia. <em>Australian Meteorological Magazine</em>, 43, 1&ndash;16. The sun-exposed apparent temperature (radiation term <code>Q</code>) behind the separate &ldquo;feels like in full sun&rdquo; figure. <a href="https://connectsci.au/es/article/43/1/1/270350/Norms-of-apparent-temperature-in-Australia" target="_blank" rel="noopener">connectsci.au</a></li>
+            <li>Open-Meteo. GitHub discussion on its own <code>apparent_temperature</code> calculation: the exact formula and the <code>Q = max(0, 0.1 &times; (shortwave_radiation &minus; 550))</code> baseline/scaling this app's sun estimate reuses. <a href="https://github.com/open-meteo/open-meteo/discussions/651" target="_blank" rel="noopener">github.com/open-meteo/open-meteo</a></li>
+            <li>Open-Meteo. Weather forecast API documentation: the hourly precipitation (sum of the preceding hour), precipitation probability, weather code (WMO) and shortwave radiation (global horizontal irradiance, preceding-hour average) variables. <a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">open-meteo.com/en/docs</a></li>
             <li>American Meteorological Society. Glossary of Meteorology: rain, with the light, moderate and heavy rain rates. <a href="https://glossary.ametsoc.org/wiki/Rains" target="_blank" rel="noopener">glossary.ametsoc.org</a></li>
             <li>US National Weather Service Storm Prediction Center: CAPE and the weak/moderate/strong/extreme instability bands the two thunderstorm levels are drawn from. <a href="https://www.spc.noaa.gov/exper/mesoanalysis/help/sfcoa.html" target="_blank" rel="noopener">spc.noaa.gov</a></li>
             <li>Weather forecast data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li>
@@ -2581,7 +2590,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // between the neighbouring sample places.
   function valueAtPlace(locs, field, frac, tMin) {
     var pts = [];
-    locs.forEach(function (l) { var v = interpSeries(l[field], tMin); if (v !== null) pts.push({ f: l.frac, v: v }); });
+    locs.forEach(function (l) { var v = l[field] ? interpSeries(l[field], tMin) : null; if (v !== null) pts.push({ f: l.frac, v: v }); });
     if (!pts.length) return null;
     if (frac <= pts[0].f) return pts[0].v;
     for (var i = 1; i < pts.length; i++) {
@@ -2698,12 +2707,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // Air temperature and humidity on every segment of the route, at the moment
   // the rider gets there: start time + distance ridden / speed.
   function segmentEnvironment(lengths, locs, startMin, speedKmh) {
-    var clock = segmentClock(lengths, startMin, speedKmh), tempC = [], rh = [];
+    var clock = segmentClock(lengths, startMin, speedKmh), tempC = [], rh = [], solar = [];
     for (var i = 0; i < lengths.length; i++) {
       tempC.push(valueAtPlace(locs, "temp", clock.frac[i], clock.t[i]));
       rh.push(valueAtPlace(locs, "rh", clock.frac[i], clock.t[i]));
+      solar.push(valueAtPlace(locs, "solar", clock.frac[i], clock.t[i]));
     }
-    return { tempC: tempC, rh: rh };
+    return { tempC: tempC, rh: rh, solar: solar };
   }
   // Start / end / mean air temperature and mean humidity over a ride as
   // ridden, on 100 equal steps (cheap, and all the fields need).
@@ -2727,8 +2737,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // BEGIN series-pure
   // A ride's conditions as a list of points in ride order (so the clock only ever
   // increases), thinned to at most maxPoints. Every array is indexed by route segment.
-  // o: { lengths, t (clock minutes), windKmh, windDir (from, deg), airC, feelsC, rainMm, rainProb, maxPoints }
-  // windKmh, windDir, airC, feelsC, rainMm and rainProb may be null when not known.
+  // o: { lengths, t (clock minutes), windKmh, windDir (from, deg), airC, feelsC, feelsSunC, rainMm, rainProb, maxPoints }
+  // windKmh, windDir, airC, feelsC, feelsSunC, rainMm and rainProb may be null when not known.
   function buildRideSeries(o) {
     var n = o.lengths.length, km = [], run = 0, k;
     for (k = 0; k < n; k++) {
@@ -2741,7 +2751,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       k = count === 1 ? 0 : Math.round(j * (n - 1) / (count - 1));
       var idx = k;
       out.push({ i: idx, t: o.t[idx], km: km[k], windKmh: at(o.windKmh, idx), windDir: at(o.windDir, idx), airC: at(o.airC, idx), feelsC: at(o.feelsC, idx),
-                 rainMm: at(o.rainMm, idx), rainProb: at(o.rainProb, idx) });
+                 feelsSunC: at(o.feelsSunC, idx), rainMm: at(o.rainMm, idx), rainProb: at(o.rainProb, idx) });
     }
     return out;
   }
@@ -3044,6 +3054,52 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return (1 - b) * windChillC(tempC, airspeedKmh) + b * at;
   }
 
+  // ---- Feels like in full sun (a separate, lower-bound estimate) --------
+  // Steadman's own sun-exposed extension of the shade formula above
+  // (Steadman, 1994, "Norms of apparent temperature in Australia", Aust.
+  // Met. Mag. 43, 1-16): AT = T + 0.348 e - 0.70 v + 0.70 Q/(v+10) - 4.25,
+  // where Q is the net radiation (W/m^2) a person absorbs. At Q = 0 it is
+  // close to (not identical to - the fitted constants differ slightly) the
+  // shade formula.
+  //
+  // Q is derived from the forecast's shortwave_radiation (global horizontal
+  // irradiance on a flat surface, W/m^2 - already reduced for cloud cover by
+  // the forecast model, and exactly 0 at night) the same way Open-Meteo's
+  // own apparent_temperature field does it: only the amount ABOVE a
+  // SUN_RADIATION_BASELINE_WM2 baseline counts, scaled down by
+  // SUN_ABSORPTION. Plugging raw shortwave_radiation straight into Q (an
+  // earlier version of this did exactly that) overshoots wildly - a mid-
+  // level 800 W/m^2 hour, taken as Q outright, adds over 20 deg C, far past
+  // every real-world figure this file cites elsewhere (Steadman and the NWS
+  // both put full sun's effect at roughly 8 deg C at most). Open-Meteo's own
+  // maintainers hit the same overshoot and added this same baseline+scaling
+  // for exactly that reason (see Sources).
+  //
+  // This is still cruder than Steadman's own Q (radiation absorbed by a
+  // person's own projected area, facing whichever way they face): it leaves
+  // out reflected light, long-wave heat radiated by the road and
+  // surroundings, and the extra a rider facing into a low sun would catch
+  // that a flat, ground-facing sensor does not. All three only ever ADD
+  // warmth, so this is a deliberate LOWER BOUND, kept as its own figure
+  // rather than folded into feelsLikeC above. Like the shade formula, no sun
+  // is added below WIND_CHILL_OFFICIAL_MAX_C - a known gap (a cold, sunny
+  // ride would really feel a little warmer than this says), not a claim
+  // that sun does nothing there.
+  var SUN_RADIATION_BASELINE_WM2 = 550, SUN_ABSORPTION = 0.1;
+  function apparentTempSunC(tempC, rhPercent, airspeedKmh, qWm2) {
+    var rh = Math.max(0, Math.min(100, rhPercent));
+    var e = rh / 100 * 6.105 * Math.exp(17.27 * tempC / (237.7 + tempC));
+    var v = Math.max(0, airspeedKmh) / 3.6, q = Math.max(0, SUN_ABSORPTION * ((qWm2 || 0) - SUN_RADIATION_BASELINE_WM2));
+    return tempC + 0.348 * e - 0.70 * v + 0.70 * q / (v + 10) - 4.25;
+  }
+  function feelsLikeSunC(tempC, rhPercent, airspeedKmh, qWm2) {
+    var b = smoothstep01((tempC - WIND_CHILL_OFFICIAL_MAX_C) / (APPARENT_FULL_C - WIND_CHILL_OFFICIAL_MAX_C));
+    if (b <= 0) return windChillC(tempC, airspeedKmh);
+    var atSun = apparentTempSunC(tempC, rhPercent, airspeedKmh, qWm2);
+    if (b >= 1) return atSun;
+    return (1 - b) * windChillC(tempC, airspeedKmh) + b * atSun;
+  }
+
   // Smooths a per-segment series against segment-to-segment noise that comes
   // from position, not from the weather: e.g. the relative wind angle can
   // swing sharply between two adjacent ~25 m segments at a bend or a GPS
@@ -3085,15 +3141,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // Also returns the air temperature actually used (per segment, mean, first
   // and last) and the hottest still-air heat index met on the ride: what it
   // feels like if you stop, or crawl uphill with no breeze there.
-  function feelsStats(lengths, cosphi, vMs, wMs, tempC, rhPercent) {
+  //
+  // qWm2 (shortwave radiation, W/m^2; one number or one per segment) is
+  // optional. When given, the same per-segment loop also works out the
+  // full-sun estimate (feelsLikeSunC) alongside the main one, smoothed and
+  // summarised the same way, under the "*Sun" keys - a second, independent
+  // set of numbers, never blended into the main ones.
+  function feelsStats(lengths, cosphi, vMs, wMs, tempC, rhPercent, qWm2) {
     var tArr = Array.isArray(tempC), rArr = Array.isArray(rhPercent), wArr = Array.isArray(wMs), vArr = Array.isArray(vMs);
-    var rawPerSeg = [], airSeg = [], dist = 0, sumAir = 0, sumRh = 0;
+    var hasSun = qWm2 !== undefined && qWm2 !== null, qArr = Array.isArray(qWm2);
+    var rawPerSeg = [], rawSun = [], airSeg = [], dist = 0, sumAir = 0, sumRh = 0;
     var stillHiC = -Infinity, stillAirC = null;
     for (var i = 0; i < lengths.length; i++) {
       var ti = tArr ? tempC[i] : tempC, ri = rArr ? rhPercent[i] : rhPercent, wi = wArr ? wMs[i] : wMs, vi = vArr ? vMs[i] : vMs;
       var rel2 = vi * vi + wi * wi - 2 * vi * wi * cosphi[i];
-      var c = feelsLikeC(ti, ri, Math.sqrt(Math.max(0, rel2)) * 3.6);
-      rawPerSeg.push(c);
+      var airspeedKmh = Math.sqrt(Math.max(0, rel2)) * 3.6;
+      rawPerSeg.push(feelsLikeC(ti, ri, airspeedKmh));
+      if (hasSun) rawSun.push(feelsLikeSunC(ti, ri, airspeedKmh, qArr ? qWm2[i] : qWm2));
       airSeg.push(ti);
       dist += lengths[i];
       sumAir += ti * lengths[i];
@@ -3104,32 +3168,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var t0 = tArr ? (tempC.length ? tempC[0] : 0) : tempC;
     if (dist <= 0) {
       return { avgFeelsC: t0, coldestFeelsC: t0, warmestFeelsC: t0, avgAirC: t0, avgRh: rArr ? 0 : rhPercent,
-               airStartC: t0, airEndC: t0, stillHiC: t0, stillDeltaC: 0, perSeg: rawPerSeg, airSeg: airSeg };
+               airStartC: t0, airEndC: t0, stillHiC: t0, stillDeltaC: 0, perSeg: rawPerSeg, airSeg: airSeg,
+               perSegSun: hasSun ? rawSun : null, avgSunC: hasSun ? t0 : null, coldestSunC: hasSun ? t0 : null,
+               warmestSunC: hasSun ? t0 : null, sunStartC: hasSun ? t0 : null, sunEndC: hasSun ? t0 : null };
+    }
+    // The coldest/warmest-10%-of-distance calculation, shared by the main
+    // series and (when present) the sun one.
+    function byDistanceStats(arr) {
+      var items = [], sum = 0, j;
+      for (j = 0; j < arr.length; j++) { items.push([arr[j], lengths[j]]); sum += arr[j] * lengths[j]; }
+      items.sort(function (a, b) { return a[0] - b[0]; });
+      var target = 0.1 * dist;
+      function tenth(fromEnd) {
+        var taken = 0, s2 = 0;
+        for (var k = 0; k < items.length && taken < target; k++) {
+          var it = items[fromEnd ? items.length - 1 - k : k];
+          var take = Math.min(it[1], target - taken);
+          s2 += it[0] * take;
+          taken += take;
+        }
+        return s2 / target;
+      }
+      return { avg: sum / dist, coldest: tenth(false), warmest: tenth(true) };
     }
     var perSeg = smoothByDistance(rawPerSeg, lengths, FEELS_SMOOTH_WINDOW_M);
-    var items = [], sum = 0;
-    for (var j = 0; j < perSeg.length; j++) {
-      items.push([perSeg[j], lengths[j]]);
-      sum += perSeg[j] * lengths[j];
-    }
-    items.sort(function (a, b) { return a[0] - b[0]; });
-    var target = 0.1 * dist;
-    function tenth(fromEnd) {
-      var taken = 0, s2 = 0;
-      for (var k = 0; k < items.length && taken < target; k++) {
-        var it = items[fromEnd ? items.length - 1 - k : k];
-        var take = Math.min(it[1], target - taken);
-        s2 += it[0] * take;
-        taken += take;
-      }
-      return s2 / target;
-    }
+    var main = byDistanceStats(perSeg);
+    var perSegSun = null, sunStats = null;
+    if (hasSun) { perSegSun = smoothByDistance(rawSun, lengths, FEELS_SMOOTH_WINDOW_M); sunStats = byDistanceStats(perSegSun); }
     return {
-      avgFeelsC: sum / dist, coldestFeelsC: tenth(false), warmestFeelsC: tenth(true),
+      avgFeelsC: main.avg, coldestFeelsC: main.coldest, warmestFeelsC: main.warmest,
       avgAirC: tArr ? sumAir / dist : tempC, avgRh: rArr ? sumRh / dist : rhPercent,
       airStartC: airSeg[0], airEndC: airSeg[airSeg.length - 1],
       stillHiC: stillHiC, stillDeltaC: stillHiC - stillAirC,
-      perSeg: perSeg, airSeg: airSeg
+      perSeg: perSeg, airSeg: airSeg,
+      perSegSun: perSegSun, avgSunC: hasSun ? sunStats.avg : null,
+      coldestSunC: hasSun ? sunStats.coldest : null, warmestSunC: hasSun ? sunStats.warmest : null,
+      sunStartC: hasSun ? perSegSun[0] : null, sunEndC: hasSun ? perSegSun[perSegSun.length - 1] : null
     };
   }
 
@@ -3584,12 +3658,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (powerMode) {                                      // the clock is the rider's real one
         var prof = profF;
         if (key === "tempC") return prof.tempC.slice();
-        return prof.tMid.map(function (t, q) { var v = valueAtPlace(timeline.locations, "rh", fracs[q], t); return v === null ? fallback : v; });
+        return prof.tMid.map(function (t, q) { var v = valueAtPlace(timeline.locations, key, fracs[q], t); return v === null ? fallback : v; });
       }
       return segmentEnvironment(lengths, timeline.locations, timeline.startMin, cruiseSpeedKmh)[key]
         .map(function (v) { return v === null ? fallback : v; });
     }
-    var fwdStats = feelsStats(lengths, cosphiFwd, vF, wFwd, environment("tempC", tempC), environment("rh", rh));
+    // Shortwave radiation (W/m^2) for the separate, lower-bound "feels like in
+    // full sun" estimate - forecast-only (see feelsLikeSunC), so this is null,
+    // not a fallback array, without a timeline.
+    var solarWm2 = timeline ? environment("solar", 0) : null;
+    var fwdStats = feelsStats(lengths, cosphiFwd, vF, wFwd, environment("tempC", tempC), environment("rh", rh), solarWm2);
     // Rain as the rider meets it: at each segment, the rain expected there when the
     // rider arrives (same clock and places as the temperature and the wind).
     var rain = null;
@@ -3626,6 +3704,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
       var rn = rain ? rain.fwd : null;
       rideSeries = { pts: buildRideSeries({ lengths: lengths, t: sT, windKmh: sWind, windDir: sDir, airC: timeline ? fwdStats.airSeg : null, feelsC: timeline ? fwdStats.perSeg : null,
+                                            feelsSunC: timeline ? fwdStats.perSegSun : null,
                                             rainMm: rn ? rn.mm : null, rainProb: rn ? rn.prob : null, maxPoints: 140 }),
                      hasWind: !!windTimeline, hasTemp: !!timeline, hasRain: !!rainTimeline };
     }
@@ -4126,6 +4205,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var H, panelTop, panelH = 88, gridBottom, p2Top = 0, p2H = 0, valueOf, yMin, yMax, unitLabel, ticks = [], t;
     var stormRunsHere = [];   // stays empty outside the rain chart; set for real inside its branch below
+    var haveSun = false;      // stays false outside the temp chart; set for real inside its branch below
     if (kind === "wind") {
       var rowH = 22, rows = rowH;
       panelTop = mt + rows + 10; H = panelTop + panelH + mb;
@@ -4139,7 +4219,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       panelH = panelH + 28;
       valueOf = function (p) { return p.feelsC === null ? null : cToDisplay(p.feelsC); };
       yMin = Infinity; yMax = -Infinity;
-      S.forEach(function (ser) { ser.pts.forEach(function (p) { [p.airC, p.feelsC].forEach(function (c) { if (c !== null) { var v = cToDisplay(c); yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); } }); }); });
+      S.forEach(function (ser) { ser.pts.forEach(function (p) { [p.airC, p.feelsC, p.feelsSunC].forEach(function (c) { if (c !== null) { var v = cToDisplay(c); yMin = Math.min(yMin, v); yMax = Math.max(yMax, v); } }); }); });
       var padV = Math.max(1, 0.12 * (yMax - yMin));
       yMin -= padV; yMax += padV;
       unitLabel = "\u00b0" + state.tempUnit;
@@ -4201,6 +4281,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       S.forEach(function (ser) {
         el("polyline", { points: linePoints(ser.pts, function (p) { return p.airC === null ? null : cToDisplay(p.airC); }), fill: "none", stroke: "var(--ink-muted)", "stroke-width": 1.3, "stroke-dasharray": ser.dash ? "2 3" : "none" });
       });
+      // Feels like in full sun: a separate, lower-bound line (see feelsLikeSunC),
+      // dashed so it never reads as the main answer. Only present with a forecast.
+      haveSun = rs.pts.some(function (p) { return p.feelsSunC !== null; });
+      if (haveSun) {
+        S.forEach(function (ser) {
+          el("polyline", { points: linePoints(ser.pts, function (p) { return p.feelsSunC === null ? null : cToDisplay(p.feelsSunC); }), fill: "none", stroke: "var(--status-warning)", "stroke-width": 1.6, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": "5 3" });
+        });
+      }
       S.forEach(function (ser) {
         el("polyline", { points: linePoints(ser.pts, valueOf), fill: "none", stroke: ser.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": ser.dash || "none" });
       });
@@ -4240,7 +4328,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var stormLevelsHere = stormRunsHere.map(function (w) { return w.level; });
     document.getElementById(kind + "RideLegend").innerHTML = kind === "temp"
-      ? rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "Feels like" }, { color: "var(--ink-muted)", w: 1.3, label: "Air temperature" }])
+      ? rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "Feels like" }, { color: "var(--ink-muted)", w: 1.3, label: "Air temperature" }]
+          .concat(haveSun ? [{ color: "var(--status-warning)", w: 1.6, dash: "5 3", label: "Feels like in full sun (lower bound)" }] : []))
       : kind === "rain" && stormRunsHere.length
       ? rideLegendHTML([1, 2].filter(function (l) { return stormLevelsHere.indexOf(l) >= 0; })
           .map(function (l) { return { color: l === 2 ? "var(--status-warning)" : "var(--status-warning-soft)", block: true, label: l === 2 ? "Thunderstorm likely" : "Thunderstorm possible" }; }))
@@ -4251,7 +4340,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     function describe(pt) {
       if (kind === "wind") return fmtKmLabel(pt.km) + ", " + fmtSpeed(pt.windKmh, 0) + " from " + degreesToCompass16(pt.windDir);
       if (kind === "rain") return fmtKmLabel(pt.km) + ", " + (pt.rainMm < 0.05 ? "dry" : fmtRainRate(pt.rainMm, 1)) + (pt.rainProb === null ? "" : " (chance " + Math.round(pt.rainProb) + "%)");
-      return fmtKmLabel(pt.km) + ", air " + fmtTemp(pt.airC) + ", feels like " + fmtTemp(pt.feelsC);
+      return fmtKmLabel(pt.km) + ", air " + fmtTemp(pt.airC) + ", feels like " + fmtTemp(pt.feelsC) +
+        (pt.feelsSunC === null ? "" : ", in full sun " + fmtTemp(pt.feelsSunC));
     }
     function stormAt(ta) {
       if (kind !== "rain") return 0;
@@ -4569,7 +4659,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         caption += "Between " + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C) + " and " + fmtTemp(APPARENT_FULL_C) + " it fades from the wind chill formula (official up to " + chillOfficialLimitText() + ") into the apparent temperature. ";
       }
       caption += "The apparent temperature (Australian Bureau of Meteorology, after Steadman) is a model of how warm it feels to an adult walking outdoors in the shade: wind cools, and humid air, which slows the evaporation of sweat, feels hotter. " +
-        "Sun is not included (full sun feels hotter), and above about " + fmtTemp(35) + " in dry air moving air stops helping and can add heat, which this does not capture. ";
+        "Sun is not included here (see the separate lower-bound figure below), and above about " + fmtTemp(35) + " in dry air moving air stops helping and can add heat, which this does not capture. ";
     }
     if (ch.timeline) {
       caption += "The forecast follows the clock: each stretch gets the air temperature and humidity expected when you would be there, from your start time and cruising speed. ";
@@ -4602,6 +4692,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
         '</div>';
     }
 
+    // Feels like in full sun: a separate, lower-bound estimate (see
+    // feelsLikeSunC) - only there with a forecast, and never blended into
+    // the plain feels-like card above.
+    function sunCell(st) {
+      var boost = st.avgSunC - st.avgFeelsC, sunBody;
+      if (st.avgAirC < WIND_CHILL_OFFICIAL_MAX_C) {
+        sunBody = "No boost from the sun here: below " + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C) + ", sun is not modelled (a known gap, not a claim that sun does nothing in the cold).";
+      } else if (boost < CHILL_NEGLIGIBLE_C) {
+        sunBody = "No real boost from the sun here - the forecast shows little to no shortwave radiation for this ride (cloud, a low sun, or night).";
+      } else {
+        sunBody = "On average <b>" + fmtTempDiff(boost) + " warmer</b> than the plain feels-like above.";
+      }
+      sunBody += " A lower bound: it leaves out reflected light, long-wave heat off the road, and the sun's angle on you, which only ever add more warmth.";
+      var sunA = st.sunStartC, sunB = st.sunEndC;
+      var sunChanges = Math.abs(sunB - sunA) >= 0.5;
+      return '<div class="half-card">' +
+          '<div class="half-title">Feels like in full sun' + (sunChanges ? ", start to end" : "") + '</div>' +
+          '<div class="half-multiplier">' + (sunChanges ? fmtTemp1(sunA) + " \u2192 " + fmtTemp1(sunB) : fmtTemp(st.avgSunC)) + '</div>' +
+          '<div class="half-net">' + sunBody + '</div>' +
+        '</div>';
+    }
+
     var airA = ch.forward.airStartC, airB = ch.forward.airEndC;
     var airChanges = ch.timeline && Math.abs(airB - airA) >= 0.5;
     document.getElementById("chillGrid").innerHTML =
@@ -4609,7 +4721,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         '<div class="half-multiplier">' + (airChanges ? fmtTemp1(airA) + " \u2192 " + fmtTemp1(airB) : fmtTemp(ch.tempC)) + '</div>' +
         '<div class="half-net">What a thermometer reads' + (airChanges ? ", as the forecast changes during the ride" : "") + '.' +
           (warm ? " Humidity " + Math.round(ch.rh) + "%" + (ch.timeline ? " on average" : "") + " (" + humidityStep(ch.rh)[1].toLowerCase() + ")." : "") + '</div></div>' +
-      cell("Feels like", ch.forward);
+      cell("Feels like", ch.forward) +
+      (ch.forward.avgSunC !== null ? sunCell(ch.forward) : "");
 
     var verdict = ch.tone === "even" && warm
       ? "Here the cooling from riding and the extra heat from humidity roughly cancel: it feels about like the air."
@@ -4703,6 +4816,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       else lines.push(label + ": feels like " + fmtTemp(st.avgFeelsC) + " on average (" + fmtTempDiff(d) + " hotter), hottest tenth of the route " + fmtTemp(st.warmestFeelsC));
     }
     feelsLine("Feels like", ch.forward);
+    if (ch.forward.avgSunC !== null) {
+      var sunBoost = ch.forward.avgSunC - ch.forward.avgFeelsC;
+      var sunNote = ch.forward.avgAirC < WIND_CHILL_OFFICIAL_MAX_C ? ", no boost below " + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C)
+        : sunBoost >= CHILL_NEGLIGIBLE_C ? " (" + fmtTempDiff(sunBoost) + " warmer than the plain feels-like)"
+        : ", little to no shortwave radiation for this ride";
+      lines.push("Feels like in full sun (lower bound, from the forecast's shortwave radiation): " + fmtTemp(ch.forward.avgSunC) + " on average" + sunNote);
+    }
     if (ch.stillDeltaC >= CHILL_NEGLIGIBLE_C) lines.push("Standing still (NWS heat index, no breeze)" + (ch.timeline ? ", at the hottest point of the ride" : "") + ": " + fmtTemp(ch.stillHiC) + " (" + fmtTempDiff(ch.stillDeltaC) + " hotter than the air)");
     lines.push("");
     lines.push("=== Climbs ===");
@@ -5285,7 +5405,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var url = FORECAST_API +
       "?latitude=" + unique.map(function (p) { return p.lat.toFixed(1); }).join(",") +
       "&longitude=" + unique.map(function (p) { return p.lon.toFixed(1); }).join(",") +
-      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation,precipitation_probability,weather_code,cape&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
+      "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation,precipitation_probability,weather_code,cape,shortwave_radiation&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto" +
       "&start_date=" + dateStr + "&end_date=" + endDate;
     return fetch(url).then(function (res) {
       return res.json().then(function (data) { return { ok: res.ok, data: data }; }, function () { return { ok: false, data: {} }; });
@@ -5335,6 +5455,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var locations = r.plan.samples.map(function (smp) {
         var res = r.results[smp.unique];
         return { frac: smp.frac, temp: forecastSeries(res, "temperature_2m", dateStr), rh: forecastSeries(res, "relative_humidity_2m", dateStr),
+                 solar: forecastSeries(res, "shortwave_radiation", dateStr),
                  wind: forecastWindSeries(res, dateStr), rain: forecastRainSeries(res, dateStr), storm: forecastStormSeries(res, dateStr) };
       });
       // Rain follows the clock and the place as well (own timeline: typing a wind or a

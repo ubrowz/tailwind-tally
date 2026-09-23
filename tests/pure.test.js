@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_RADIATION_BASELINE_WM2, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
   new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_RADIATION_BASELINE_WM2, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -367,6 +367,63 @@ t("feels stats: one value per segment; empty route does not crash", () => {
   assert(e.avgFeelsC === 3 && e.avgAirC === 3 && e.perSeg.length === 0 && e.airSeg.length === 0);
 });
 
+// ---- feels like in full sun (a separate, lower-bound estimate)
+t("apparentTempSunC: at Q=0 it is close to the shade formula (same shape, slightly different fitted constants)", () => {
+  const withSun = apparentTempSunC(25, 50, 25, 0), shade = apparentTempC(25, 50, 25);
+  assert(Math.abs(withSun - shade) < 1, `Q=0 should track the shade value closely, got ${withSun} vs ${shade}`);
+});
+t("apparentTempSunC: more shortwave radiation only ever adds warmth", () => {
+  const t0 = apparentTempSunC(20, 50, 20, 0), t1 = apparentTempSunC(20, 50, 20, 600), t2 = apparentTempSunC(20, 50, 20, 900);
+  assert(t0 < t1 && t1 < t2, `${t0}, ${t1}, ${t2}`);
+});
+t("apparentTempSunC: at or below the baseline (SUN_RADIATION_BASELINE_WM2), it reads exactly like Q=0 - only the excess above it counts", () => {
+  assert.strictEqual(apparentTempSunC(20, 50, 20, 300), apparentTempSunC(20, 50, 20, 0));
+  assert.strictEqual(apparentTempSunC(20, 50, 20, SUN_RADIATION_BASELINE_WM2), apparentTempSunC(20, 50, 20, 0));
+});
+t("apparentTempSunC: stays within a physically plausible range - not tens of degrees C from a single sunny hour", () => {
+  // A regression test for a real bug: an earlier version scaled Q straight off
+  // shortwave_radiation (e.g. Q = 0.7 * 800), which at a common midday value
+  // added over 20 C - far past the ~8 C ceiling Steadman and the NWS both
+  // report for full sun (see the comment above apparentTempSunC).
+  const boost = apparentTempSunC(25, 50, 25, 1000) - apparentTempC(25, 50, 25);
+  assert(boost >= 0 && boost < 8, `expected a boost of a few degrees at most, got ${boost}`);
+});
+t("apparentTempSunC: negative radiation is treated as none (never subtracts warmth)", () => {
+  assert.strictEqual(apparentTempSunC(20, 50, 20, -100), apparentTempSunC(20, 50, 20, 0));
+});
+t("feelsLikeSunC: below the wind chill cutoff, sun adds nothing (a known, documented gap)", () => {
+  assert.strictEqual(feelsLikeSunC(5, 50, 20, 900), windChillC(5, 20));
+});
+t("feelsLikeSunC: from 20 C up it is exactly apparentTempSunC; the blend zone sits between the two", () => {
+  assert.strictEqual(feelsLikeSunC(25, 50, 20, 700), apparentTempSunC(25, 50, 20, 700));
+  // Order-agnostic: at 15 C apparentTempSunC actually reads BELOW windChillC
+  // here (the same seam the shade formula already has, see section 11 of
+  // the docs) - the blend just needs to sit between whichever is smaller
+  // and whichever is larger, not assume which one that is.
+  const blend = feelsLikeSunC(15, 50, 20, 700), wc = windChillC(15, 20), atSun = apparentTempSunC(15, 50, 20, 700);
+  assert(blend > Math.min(wc, atSun) - 1e-9 && blend < Math.max(wc, atSun) + 1e-9, `${blend} not between ${wc} and ${atSun}`);
+});
+t("feels stats: with no qWm2 argument, the sun fields are all null (unaffected, back-compatible)", () => {
+  const r = feelsStats(L, Array(40).fill(0), ms(25), 0, 25, 50);
+  assert.strictEqual(r.perSegSun, null); assert.strictEqual(r.avgSunC, null);
+  assert.strictEqual(r.coldestSunC, null); assert.strictEqual(r.warmestSunC, null);
+  assert.strictEqual(r.sunStartC, null); assert.strictEqual(r.sunEndC, null);
+});
+t("feels stats: with qWm2, the sun series is its own smoothed, summarised set of numbers", () => {
+  const q = Array(40).fill(0); for (let i = 20; i < 40; i++) q[i] = 800;      // sun for the second half only
+  const r = feelsStats(L, Array(40).fill(0), ms(25), 0, 25, 50, q);
+  assert.strictEqual(r.perSegSun.length, 40);
+  assert(r.sunStartC < r.sunEndC, "sunnier at the end should read warmer");
+  assert(r.avgSunC > r.avgFeelsC, "with any real sun, the sun estimate is never colder than the plain one");
+  assert(r.warmestSunC >= r.coldestSunC);
+});
+t("feels stats: a scalar qWm2 behaves like a constant array of it", () => {
+  const a = feelsStats(L, Array(40).fill(0.2), ms(25), ms(15), 22, 55, 700);
+  const b = feelsStats(L, Array(40).fill(0.2), ms(25), ms(15), 22, 55, Array(40).fill(700));
+  assert(Math.abs(a.avgSunC - b.avgSunC) < 1e-9);
+  assert(a.avgSunC > a.avgFeelsC, "700 W/m^2 is above the baseline, so this should actually exercise a non-zero boost");
+});
+
 // ---- colour classes for the map
 t("classes: 9 edges -> 10 contiguous classes, index 5 is the neutral one around 0", () => {
   const c = feelsClasses([0], [25], 0).classes;
@@ -450,6 +507,10 @@ t("valueAtPlace: piecewise linear along the route, held beyond the end places", 
   assert.strictEqual(valueAtPlace(locs, "temp", 0.75, 0), 15); assert.strictEqual(valueAtPlace(locs, "temp", 1, 0), 10);
   assert.strictEqual(valueAtPlace(locs, "temp", -1, 0), 10);
 });
+t("valueAtPlace: a field missing from every place (not just missing hours) returns null, not a crash", () => {
+  const locs = [{ frac: 0, temp: { t: [0], v: [10] } }, { frac: 1, temp: { t: [0], v: [20] } }];
+  assert.strictEqual(valueAtPlace(locs, "solar", 0.5, 0), null);
+});
 // spatially uniform, warming 1 C per hour: T(t) = 10 + (t - 600) / 60
 const warming = [{ frac: 0, temp: { t: [0, 1440], v: [10 - 10, 10 - 10 + 24] }, rh: { t: [0], v: [50] } }];   // 1 C per hour from midnight
 const T_at = (min) => min / 60;
@@ -472,6 +533,11 @@ t("segmentEnvironment: places differ too - cold start, warm middle, cold end, re
   const locs = [{ frac: 0, temp: { t: [0], v: [10] }, rh: { t: [0], v: [50] } }, { frac: 0.5, temp: { t: [0], v: [20] }, rh: { t: [0], v: [50] } }, { frac: 1, temp: { t: [0], v: [10] }, rh: { t: [0], v: [50] } }];
   const env = segmentEnvironment(segs, locs, 600, 25);
   assert(env.tempC[0] < 10.3 && env.tempC[49] > 19.7 && env.tempC[99] < 10.3);
+});
+t("segmentEnvironment: carries solar (shortwave radiation) the same way as temp and rh, null where absent", () => {
+  assert.strictEqual(segmentEnvironment(segs, warming, 600, 25).solar.every((v) => v === null), true);
+  const sunny = [{ frac: 0, temp: { t: [0], v: [20] }, rh: { t: [0], v: [50] }, solar: { t: [0], v: [800] } }];
+  assert.strictEqual(segmentEnvironment(segs, sunny, 600, 25).solar[0], 800);
 });
 t("ride summary: start, end and mean of a steadily warming ride", () => {
   const r = rideEnvSummary(25000, warming, 600, 25);
