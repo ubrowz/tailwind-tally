@@ -22,8 +22,10 @@ BANNER_CSS = """
   .beta-banner a { color: inherit; }
   @media (prefers-color-scheme: dark) { .beta-banner { background: #3a3110; color: #f3e2a3; border-bottom-color: #6b5a1f; } }
 """
-BANNER_HTML = ('<div class="beta-banner">Beta: a test version of Tailwind Tally, not the released app. '
-               'The released app is at <a href="%s">%s</a>.</div>\n\n' % (RELEASED_URL, RELEASED_URL.replace("https://", "")))
+BANNER_HTML = ('<div class="beta-banner" id="betaBanner">Beta: a test version of Tailwind Tally, not the released app. '
+               'The released app is at <a href="%s">%s</a>.</div>\n'
+               '<script>if (/[?&]shots\\b/.test(location.search)) { var b = document.getElementById("betaBanner"); if (b) b.style.display = "none"; }</script>\n\n'
+               % (RELEASED_URL, RELEASED_URL.replace("https://", "")))
 
 def git(*args, cwd=None):
     return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
