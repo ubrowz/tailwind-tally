@@ -495,6 +495,8 @@
   #rideCard .two-col-grid { align-items: end; }
   .ride-chart { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
   .ride-chart h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 6px; }
+  .ride-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .ride-head h3 { margin: 0; }
   .ride-svg { width: 100%; height: auto; display: block; touch-action: pan-y; cursor: crosshair; }
   .ride-svg text { font-family: var(--font-display); font-size: 11px; fill: var(--ink-muted); }
   .ride-svg .rc-grid { stroke: var(--grid); stroke-width: 1; }
@@ -1682,7 +1684,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </div>
     <div class="ride-chart" id="windRideChart" hidden>
-      <h3>Wind during the ride <span class="info-pop" data-about="this chart">Arrows show where the wind blows toward, with its speed below, at each time of day. Hover or touch the chart to see where on the route you would be.</span></h3>
+      <div class="ride-head">
+        <h3>Wind during the ride <span class="info-pop" data-about="this chart">Arrows show where the wind blows toward, with its speed below, at each time of day. Hover or touch the chart to see where on the route you would be.</span></h3>
+        <button class="copy-btn" id="saveWindRideBtn">Save image</button>
+      </div>
       <svg class="ride-svg" id="windRideSvg" role="img" aria-label="Wind direction and speed during the ride"></svg>
       <p class="ride-readout" id="windRideReadout" aria-live="polite"></p>
       <div class="ride-legend" id="windRideLegend"></div>
@@ -4111,6 +4116,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         c.setAttribute("font-weight", cs.fontWeight);
       }
     }
+    // the hover/touch cursor of the "During the ride" chart is not part of the chart
+    clone.querySelectorAll(".rc-cursor").forEach(function (n) { n.parentNode.removeChild(n); });
     clone.setAttribute("xmlns", SVG_NS);
     var vb = clone.getAttribute("viewBox").split(/\s+/).map(Number);
     var bg = el("rect", { x: vb[0], y: vb[1], width: vb[2], height: vb[3], fill: bgColor });
@@ -4360,6 +4367,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   bindSaveImageButton("saveSweepBtn", "polarSvg", function () {
     return "tailwind-tally-sweep-" + degreesToCompass16(state.windFromDeg) + ".png";
+  });
+  bindSaveImageButton("saveWindRideBtn", "windRideSvg", function () {
+    return "tailwind-tally-wind-during-ride.png";
   });
 
   // Info popovers: the "?" buttons next to labels and titles that hold the explanations, and
