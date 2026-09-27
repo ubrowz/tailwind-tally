@@ -6,7 +6,16 @@ import SwiftUI
 // a registered handler for .gpx files (see Info.plist), so a route
 // shared from Strava's app, Mail, AirDrop or Files can be opened
 // straight into the already-running page via WebViewCoordinator.
+//
+// A Debug build (Run from Xcode) loads the BETA site instead, so the next
+// version can be tested inside the real app before it replaces the live
+// site. Same origin, so Strava and the map tiles work there too. Archive
+// (App Store / TestFlight) uses Release and always loads the live site.
+#if DEBUG
+private let tailwindTallyURL = URL(string: "https://ubrowz.github.io/tailwind-tally-beta/")!
+#else
 private let tailwindTallyURL = URL(string: "https://ubrowz.github.io/tailwind-tally/")!
+#endif
 
 @main
 struct TailwindTallyApp: App {
