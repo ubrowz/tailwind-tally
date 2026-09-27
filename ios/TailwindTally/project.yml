@@ -18,6 +18,9 @@ targets:
         CFBundleDisplayName: Tailwind Tally
         CFBundleShortVersionString: "1.0.1"
         CFBundleVersion: "2"
+        # Only the https that iOS itself provides (WKWebView), which is exempt,
+        # so App Store Connect doesn't ask the export-compliance question.
+        ITSAppUsesNonExemptEncryption: false
         LSRequiresIPhoneOS: true
         UIRequiresFullScreen: false
         UISupportedInterfaceOrientations:
