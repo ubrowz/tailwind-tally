@@ -101,7 +101,7 @@
   </header>
 
   <h2>In het kort</h2>
-  <p>Tailwind Tally heeft geen accounts, zet geen eigen trackingcookies en bewaart niets op een server, behalve kaarttegels en Strava-gegevens die het kort voor je doorgeeft. Je GPX-routegegevens worden volledig op je eigen apparaat verwerkt, met &eacute;&eacute;n optionele uitzondering: als je om een windverwachting vraagt, gaan drie afgeronde plaatsen van je route naar een weerdienst (zie &ldquo;Windverwachting&rdquo; hieronder). De onderdelen hieronder leggen precies uit wat er gebeurt, en waarom.</p>
+  <p>Tailwind Tally heeft geen accounts, zet geen eigen trackingcookies en bewaart niets op een server, behalve kaarttegels en Strava-gegevens die het kort voor je doorgeeft. Je GPX-routegegevens worden volledig op je eigen apparaat verwerkt, met &eacute;&eacute;n optionele uitzondering: als je om een weersverwachting vraagt, gaan drie afgeronde plaatsen van je route naar een weerdienst (zie &ldquo;Weersverwachting&rdquo; hieronder). De onderdelen hieronder leggen precies uit wat er gebeurt, en waarom.</p>
 
   <h2>Routebestanden (GPX)</h2>
   <p>Of je nu een bestand in de browser sleept, er een deelt vanuit een andere app op je telefoon, of er een laadt vanuit Strava: de routegegevens worden <strong>volledig op je apparaat</strong> gelezen en geanalyseerd &mdash; in de JavaScript van je eigen browser, of binnen de iOS-app. Ze worden nooit ge&uuml;pload naar, of bewaard op, een server van ons.</p>
@@ -120,9 +120,9 @@
   <h2>Kaarttegels</h2>
   <p>De kaartbeelden komen van MapTiler en worden via onze achterliggende dienst opgevraagd, zodat onze MapTiler-sleutel geheim blijft. MapTiler ontvangt het kaartgebied dat je bekijkt en je IP-adres, net als bij elk verzoek om kaarttegels - er worden geen persoonsgegevens van Tailwind Tally aan deze verzoeken toegevoegd.</p>
 
-  <h2>Windverwachting (optioneel)</h2>
-  <p>Als je &ldquo;Weersverwachting&rdquo; kiest en op &ldquo;Verwachting ophalen&rdquo; tikt, vraagt de app aan <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, een gratis weerdienst, welke wind er wordt verwacht op de datum die je koos. Daarvoor ontvangt Open-Meteo maximaal drie plaatsen van je route (het begin, het midden en het eind), elk <strong>afgerond op ongeveer 11 km</strong>, en die datum. Het ontvangt niet je routebestand, je exacte co&ouml;rdinaten of iets over wie je bent. Zoals bij elk verzoek op internet ziet het ook je IP-adres.</p>
-  <p>Het verzoek gaat rechtstreeks van je apparaat naar Open-Meteo, niet via onze dienst, en we bewaren geen kopie. Er wordt niets verstuurd tenzij je op &ldquo;Verwachting ophalen&rdquo; tikt; de wind zelf instellen neemt nooit contact op met een weerdienst. Weergegevens van <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, onder licentie <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>; zie <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">de voorwaarden van Open-Meteo</a>.</p>
+  <h2>Weersverwachting (optioneel)</h2>
+  <p>Als je &ldquo;Weersverwachting&rdquo; kiest en op &ldquo;Verwachting ophalen&rdquo; tikt, vraagt de app aan <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, een gratis weerdienst, welke wind, temperatuur, luchtvochtigheid en regen er worden verwacht op de datum die je koos. Daarvoor ontvangt Open-Meteo maximaal drie plaatsen van je route (het begin, het midden en het eind), elk <strong>afgerond op ongeveer 11 km</strong>, en die datum. Het ontvangt niet je routebestand, je exacte co&ouml;rdinaten of iets over wie je bent. Zoals bij elk verzoek op internet ziet het ook je IP-adres.</p>
+  <p>Het verzoek gaat rechtstreeks van je apparaat naar Open-Meteo, niet via onze dienst, en we bewaren geen kopie. Er wordt niets verstuurd tenzij je op &ldquo;Verwachting ophalen&rdquo; tikt; de wind en de temperatuur zelf instellen neemt nooit contact op met een weerdienst. Weergegevens van <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, onder licentie <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>; zie <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">de voorwaarden van Open-Meteo</a>.</p>
 
   <h2>Taalinstelling</h2>
   <p>Als je met de switch EN | NL voor Engels of Nederlands kiest, wordt die keuze in de lokale opslag van je browser (<code>localStorage</code>) op je eigen apparaat bewaard, zodat de app de volgende keer in dezelfde taal opent. Die keuze wordt nooit ergens naartoe gestuurd. Zolang je niet kiest, volgt de app de taal van je telefoon of browser.</p>
@@ -152,7 +152,7 @@
       <tr><td>Render</td><td>Host de kleine dienst die kaarttegels en Strava-verzoeken doorgeeft.</td></tr>
       <tr><td>Strava</td><td>Levert routegegevens die je zelf verbindt en goedkeurt.</td></tr>
       <tr><td>MapTiler</td><td>Levert de kaartbeelden.</td></tr>
-      <tr><td>Open-Meteo</td><td>Levert de windverwachting, alleen als je &ldquo;Weersverwachting&rdquo; gebruikt.</td></tr>
+      <tr><td>Open-Meteo</td><td>Levert de weersverwachting (wind, temperatuur, luchtvochtigheid en regen), alleen als je &ldquo;Weersverwachting&rdquo; gebruikt.</td></tr>
       <tr><td>GoatCounter</td><td>Telt paginabezoeken zonder cookies.</td></tr>
       <tr><td>Google Fonts</td><td>Levert de lettertypen van de pagina.</td></tr>
     </tbody>

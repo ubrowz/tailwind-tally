@@ -1754,24 +1754,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="tabpanel" id="panelTemp" role="tabpanel" aria-labelledby="tabTemp" hidden>
   <div class="card">
-    <h2>Temperature</h2>
+    <h2 data-nl="Temperatuur">Temperature</h2>
         <div class="field">
-          <label for="tempInput">Air temperature <span class="info-pop" data-about="the air temperature">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels. Change the unit in Your ride, above the tabs.</span></label>
+          <label for="tempInput"><span data-nl="Luchttemperatuur">Air temperature</span> <span class="info-pop" data-about="the air temperature" data-nl="Luchttemperatuur tijdens de rit. Samen met je snelheid en de wind (en, als het zacht of warm is, de luchtvochtigheid) bepaalt die hoe het aanvoelt. De eenheid kies je bij Jouw rit, boven de tabbladen.">Air temperature during the ride. With your speed and the wind (and, when it is mild or hot, the humidity), it sets how it feels. Change the unit in Your ride, above the tabs.</span></label>
           <input type="number" id="tempInput" min="-80" max="140" step="1">
         </div>
     <p class="field-hint" id="tempTimelineHint" hidden></p>
     <div class="field" id="humidityField" hidden>
-      <label for="humidityInput">Humidity <span class="info-pop" id="humidityHint" data-about="the humidity"></span></label>
+      <label for="humidityInput"><span data-nl="Luchtvochtigheid">Humidity</span> <span class="info-pop" id="humidityHint" data-about="the humidity"></span></label>
       <select id="humidityInput">
-        <option value="30">Dry (about 30%)</option>
-        <option value="50">Normal (about 50%)</option>
-        <option value="70">Humid (about 70%)</option>
-        <option value="90">Very humid (about 90%)</option>
+        <option value="30" data-nl="Droog (ongeveer 30%)">Dry (about 30%)</option>
+        <option value="50" data-nl="Normaal (ongeveer 50%)">Normal (about 50%)</option>
+        <option value="70" data-nl="Vochtig (ongeveer 70%)">Humid (about 70%)</option>
+        <option value="90" data-nl="Zeer vochtig (ongeveer 90%)">Very humid (about 90%)</option>
       </select>
     </div>
     <div class="ride-chart" id="tempRideChart" hidden>
-      <h3>Temperature during the ride <span class="info-pop" data-about="this chart">The air temperature and how it feels on the bike at each time of day. The shading is the difference between them.</span></h3>
-      <svg class="ride-svg" id="tempRideSvg" role="img" aria-label="Air temperature and feels-like temperature during the ride"></svg>
+      <div class="ride-head">
+        <h3><span data-nl="Temperatuur tijdens de rit">Temperature during the ride</span> <span class="info-pop" data-about="this chart" data-nl="De luchttemperatuur en hoe die op de fiets aanvoelt, op elk moment van de dag. De arcering is het verschil ertussen. Beweeg over de grafiek of raak hem aan om te zien waar op de route je dan zou zijn.">The air temperature and how it feels on the bike at each time of day. The shading is the difference between them. Hover or touch the chart to see where on the route you would be.</span></h3>
+        <button class="copy-btn" id="saveTempRideBtn" data-nl="Afbeelding opslaan">Save image</button>
+      </div>
+      <p class="ride-hint"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="13" height="8" rx="1.5"/><path d="M5 2.5 A6 6 0 0 1 12 3.5 M12 1.5 V3.5 H10"/></svg><span data-nl="Het best te bekijken met je telefoon gedraaid.">Best viewed with your phone turned sideways.</span></p>
+      <svg class="ride-svg" id="tempRideSvg" role="img" aria-label="Air temperature and feels-like temperature during the ride" data-nl-aria-label="Luchttemperatuur en gevoelstemperatuur tijdens de rit"></svg>
       <p class="ride-readout" id="tempRideReadout" aria-live="polite"></p>
       <div class="ride-legend" id="tempRideLegend"></div>
     </div>
@@ -1780,8 +1784,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="chart-grid">
     <div class="route-slot" id="routeSlotTemp"></div>
     <div class="card chart-card" id="chillCard">
-    <h2>Feels like on the bike <span class="info-pop" id="chillCaption" data-about="the feels-like temperature"></span></h2>
-    <p class="chart-caption">How the air feels to a rider at your speed, worked out for every stretch of the route.</p>
+    <h2><span data-nl="Gevoelstemperatuur op de fiets">Feels like on the bike</span> <span class="info-pop" id="chillCaption" data-about="the feels-like temperature"></span></h2>
+    <p class="chart-caption" data-nl="Hoe de lucht aanvoelt voor een fietser op jouw snelheid, berekend voor elk stuk van de route.">How the air feels to a rider at your speed, worked out for every stretch of the route.</p>
     <div class="half-grid" id="chillGrid"></div>
     <p class="half-verdict" id="chillVerdict"></p>
   </div>
@@ -1791,11 +1795,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="tabpanel" id="panelRain" role="tabpanel" aria-labelledby="tabRain" hidden>
     <div class="card">
-      <h2>Rain <span class="info-pop" data-about="the rain forecast">The rain forecast for the time and place at which you would be on every stretch of the route: the same clock as the temperature and the wind. Amounts are millimetres per hour. The chance is the probability of more than 0.1 mm in that hour. Forecast models place showers only roughly, a few kilometres and about an hour either way.</span></h2>
+      <h2><span data-nl="Regen">Rain</span> <span class="info-pop" data-about="the rain forecast" data-nl="De regenverwachting voor het moment en de plek waar je op elk stuk van de route zou zijn: dezelfde klok als de temperatuur en de wind. Hoeveelheden zijn millimeters per uur. De kans is de waarschijnlijkheid van meer dan 0,1 mm in dat uur. Weermodellen plaatsen buien maar ruwweg, een paar kilometer en ongeveer een uur ernaast.">The rain forecast for the time and place at which you would be on every stretch of the route: the same clock as the temperature and the wind. Amounts are millimetres per hour. The chance is the probability of more than 0.1 mm in that hour. Forecast models place showers only roughly, a few kilometres and about an hour either way.</span></h2>
       <p class="climb-summary" id="rainSummary"></p>
       <div class="ride-chart" id="rainRideChart" hidden>
-        <h3>Rain during the ride <span class="info-pop" data-about="this chart">Above, how hard it rains (mm per hour), below the chance of rain, at each time of day. Hover or touch the chart to see where on the route you would be.</span></h3>
-        <svg class="ride-svg" id="rainRideSvg" role="img" aria-label="Rain intensity and chance of rain during the ride"></svg>
+        <div class="ride-head">
+          <h3><span data-nl="Regen tijdens de rit">Rain during the ride</span> <span class="info-pop" data-about="this chart" data-nl="Boven hoe hard het regent (mm per uur), onder de kans op regen, op elk moment van de dag. Beweeg over de grafiek of raak hem aan om te zien waar op de route je dan zou zijn.">Above, how hard it rains (mm per hour), below the chance of rain, at each time of day. Hover or touch the chart to see where on the route you would be.</span></h3>
+          <button class="copy-btn" id="saveRainRideBtn" data-nl="Afbeelding opslaan">Save image</button>
+        </div>
+        <p class="ride-hint"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="13" height="8" rx="1.5"/><path d="M5 2.5 A6 6 0 0 1 12 3.5 M12 1.5 V3.5 H10"/></svg><span data-nl="Het best te bekijken met je telefoon gedraaid.">Best viewed with your phone turned sideways.</span></p>
+        <svg class="ride-svg" id="rainRideSvg" role="img" aria-label="Rain intensity and chance of rain during the ride" data-nl-aria-label="Regenintensiteit en kans op regen tijdens de rit"></svg>
         <p class="ride-readout" id="rainRideReadout" aria-live="polite"></p>
         <div class="ride-legend" id="rainRideLegend"></div>
       </div>
@@ -1803,7 +1811,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="chart-grid">
       <div class="route-slot" id="routeSlotRain"></div>
       <div class="card chart-card" id="rainListCard">
-        <h2>Where it rains, in the order you ride <span class="info-pop" data-about="the rain table">Each row is a stretch of the route where at least 0.1 mm per hour is expected when you get there. Rain classes: very light 0.1 to 0.5 mm/h, light 0.5 to 2.5, moderate 2.5 to 7.6, heavy above 7.6.</span></h2>
+        <h2><span data-nl="Waar het regent, in de volgorde waarin je rijdt">Where it rains, in the order you ride</span> <span class="info-pop" data-about="the rain table" data-nl="Elke rij is een stuk van de route waar minstens 0,1 mm per uur wordt verwacht als je daar bent. Regenklassen: zeer licht 0,1 tot 0,5 mm/u, licht 0,5 tot 2,5, matig 2,5 tot 7,6, zwaar boven 7,6.">Each row is a stretch of the route where at least 0.1 mm per hour is expected when you get there. Rain classes: very light 0.1 to 0.5 mm/h, light 0.5 to 2.5, moderate 2.5 to 7.6, heavy above 7.6.</span></h2>
         <div class="climb-table-wrap"><table class="climb-table" id="rainTable"></table></div>
       </div>
     </div>
@@ -3796,43 +3804,48 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // both themes; dry (class 0) is the neutral grey of the other maps.
   var RAIN_LIGHT = ["#1bbbd8", "#0999b2", "#0d778b", "#0d5665"];
   var RAIN_DARK = ["#095d6c", "#067e93", "#1aa0b9", "#1ec5e4"];
+  var RAIN_CLASS_LABELS_NL = ["Droog", "Zeer licht", "Licht", "Matig", "Zwaar"];
+  function rainClassLabel(k) { return (LANG === "nl" ? RAIN_CLASS_LABELS_NL : RAIN_CLASS_LABELS)[k]; }
   // Built from RAIN_EDGES rather than written out, so the US/metric unit always matches
   // the numbers actually used to classify the rain (see rain-pure).
   function rainRangeLabels() {
-    var d = isUS() ? 3 : 1, e = RAIN_EDGES.map(function (v) { return rainToDisplay(v).toFixed(d); }), u = rainUnitLabel() + "/h";
-    return ["under " + e[0] + " " + u, e[0] + " to " + e[1] + " " + u, e[1] + " to " + e[2] + " " + u, e[2] + " to " + e[3] + " " + u, e[3] + " " + u + " and more"];
+    var d = isUS() ? 3 : 1, e = RAIN_EDGES.map(function (v) { return num(rainToDisplay(v), d); }), u = rainUnitLabel() + rateSuffix(), to = tx(" to ", " tot ");
+    return [tx("under ", "minder dan ") + e[0] + " " + u, e[0] + to + e[1] + " " + u, e[1] + to + e[2] + " " + u, e[2] + to + e[3] + " " + u, e[3] + " " + u + tx(" and more", " en meer")];
   }
   function rainClassColors() { return [FEELS_NEUTRAL].concat(prefersDarkTheme() ? RAIN_DARK : RAIN_LIGHT); }
-  function kmText(m) { var km = m / 1000; return (isUS() ? km * KM_TO_MI : km).toFixed(1); }
+  function kmText(m) { var km = m / 1000; return num(isUS() ? km * KM_TO_MI : km, 1); }
 
   function renderRain(result) {
     var summary = document.getElementById("rainSummary"), table = document.getElementById("rainTable"), listCard = document.getElementById("rainListCard");
     var rn = result.rain;
     if (!rn) {
-      summary.innerHTML = "Rain comes from the forecast. Under <b>Weather for the ride</b>, choose <b>From forecast</b> and tap <b>Get forecast</b>.";
+      summary.innerHTML = tx("Rain comes from the forecast. Under <b>Weather for the ride</b>, choose <b>From forecast</b> and tap <b>Get forecast</b>.",
+                             "Regen komt uit de weersverwachting. Kies onder <b>Weer tijdens de rit</b> voor <b>Weersverwachting</b> en tik op <b>Verwachting ophalen</b>.");
       listCard.hidden = true;
       return;
     }
     listCard.hidden = false;
     var a = rn.fwd.stats;
-    var probText = a.peakProb === null ? "" : "chance up to " + Math.round(a.peakProb) + "%";
+    var probText = a.peakProb === null ? "" : tx("chance up to ", "kans tot ") + Math.round(a.peakProb) + "%";
     summary.innerHTML = a.wetM <= 0
-      ? "<b>Dry all the way.</b>" + (probText ? " The highest " + probText.replace("chance up to", "chance of rain on the route is") + "." : "")
-      : "<b>Rain on " + kmText(a.wetM) + " of " + kmText(a.totalM) + " " + distUnitLabel() + " (" + Math.round(a.wetPct) + "%).</b> Peak " + fmtRainRate(a.peakMm, 1) + (probText ? ", " + probText : "") +
-        ". About " + fmtRainMm(a.accumMm, 1) + " falls on you during the ride.";
+      ? tx("<b>Dry all the way.</b>", "<b>De hele rit droog.</b>") +
+        (a.peakProb === null ? "" : tx(" The highest chance of rain on the route is ", " De hoogste kans op regen op de route is ") + Math.round(a.peakProb) + "%.")
+      : tx("<b>Rain on ", "<b>Regen op ") + kmText(a.wetM) + tx(" of ", " van ") + kmText(a.totalM) + " " + distUnitLabel() + " (" + Math.round(a.wetPct) + "%).</b>" +
+        tx(" Peak ", " Piek ") + fmtRainRate(a.peakMm, 1) + (probText ? ", " + probText : "") +
+        tx(". About ", ". Ongeveer ") + fmtRainMm(a.accumMm, 1) + tx(" falls on you during the ride.", " valt er tijdens de rit op je.");
     if (rn.fwd.stormRuns.length) {
       var worstLvl = Math.max.apply(null, rn.fwd.stormRuns.map(function (w) { return w.level; }));
-      summary.innerHTML += " <b>Thunderstorm" + (worstLvl === 2 ? " likely" : "s possible") + "</b> around " +
-        rn.fwd.stormRuns.map(function (w) { return fmtHM(w.fromT) + "\u2013" + fmtHM(w.toT); }).join(", ") + " (see the chart below).";
+      summary.innerHTML += " <b>" + (worstLvl === 2 ? tx("Thunderstorm likely", "Onweer waarschijnlijk") : tx("Thunderstorms possible", "Onweer mogelijk")) + "</b>" + tx(" around ", " rond ") +
+        rn.fwd.stormRuns.map(function (w) { return fmtHM(w.fromT) + "\u2013" + fmtHM(w.toT); }).join(", ") + tx(" (see the chart below).", " (zie de grafiek hieronder).");
     }
 
     var colors = rainClassColors();
-    var head = '<thead><tr><th>Rain</th><th>From</th><th>Length</th><th>Peak</th></tr></thead>';
+    var head = '<thead><tr><th>' + tx("Rain", "Regen") + '</th><th>' + tx("From", "Vanaf") + '</th><th>' + tx("Length", "Lengte") + '</th><th>' + tx("Peak", "Piek") + '</th></tr></thead>';
     var rows = a.runs.map(function (r) {
-      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[r.cls] + '"></span>' + RAIN_CLASS_LABELS[r.cls] + "</td><td>" + fmtKmLabel(r.fromKm) + "</td><td>" +
+      return '<tr><td><span class="climb-swatch" style="background-color:' + colors[r.cls] + '"></span>' + rainClassLabel(r.cls) + "</td><td>" + fmtKmLabel(r.fromKm) + "</td><td>" +
         fmtLen((r.toKm - r.fromKm) * 1000) + "</td><td>" + fmtRainRate(r.peakMm, 1) + "</td></tr>";
     }).join("");
-    if (!a.runs.length) rows = '<tr><td colspan="4" style="text-align:left">No rain expected along the route.</td></tr>';
+    if (!a.runs.length) rows = '<tr><td colspan="4" style="text-align:left">' + tx("No rain expected along the route.", "Geen regen verwacht langs de route.") + '</td></tr>';
     table.innerHTML = head + "<tbody>" + rows + "</tbody>";
   }
 
@@ -3845,7 +3858,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     block.className = "route-stats-block";
     var h = document.createElement("div");
     h.className = "route-stats-heading";
-    h.textContent = "Rain intensity along the route";
+    h.textContent = tx("Rain intensity along the route", "Regenintensiteit langs de route");
     block.appendChild(h);
     var bar = document.createElement("div");
     bar.className = "route-stats-bar";
@@ -3864,7 +3877,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (m <= 0) return;
       var el = document.createElement("div");
       el.className = "route-stats-item";
-      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + RAIN_CLASS_LABELS[k] + " (" + rangeLabels[k] + ") " + fmtDistKm(m / 1000, 2);
+      el.innerHTML = '<span class="route-stats-swatch" style="background-color:' + colors[k] + '"></span>' + rainClassLabel(k) + " (" + rangeLabels[k] + ") " + fmtDistKm(m / 1000, 2);
       grid.appendChild(el);
     });
     block.appendChild(grid);
@@ -3945,7 +3958,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       yMin = 0; yMax = 0;
       S.forEach(function (ser) { ser.pts.forEach(function (p) { if (p.rainMm !== null) yMax = Math.max(yMax, rainToDisplay(p.rainMm)); }); });
       yMax = Math.max(yMax * 1.15, rainToDisplay(1));
-      unitLabel = rainUnitLabel() + "/h";
+      unitLabel = rainUnitLabel() + rateSuffix();
     }
     gridBottom = kind === "rain" ? p2Top + p2H : panelTop + panelH;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
@@ -3974,7 +3987,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var nArrows = Math.max(4, Math.floor(plotW / 30));
       S.forEach(function (ser, r) {
         var cy = mt + rowH * r + rowH / 2, sT0 = ser.pts[0].t, sT1 = ser.pts[ser.pts.length - 1].t;
-        el("text", { x: ml - 6, y: cy + 4, "text-anchor": "end" }, "toward");
+        el("text", { x: ml - 6, y: cy + 4, "text-anchor": "end" }, tx("toward", "naar"));
         for (var a = 0; a < nArrows; a++) {
           var ta = t0 + (a + 0.5) / nArrows * (t1 - t0);
           if (ta < sT0 - 1 || ta > sT1 + 1) continue;
@@ -4031,7 +4044,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         el("line", { "class": "rc-grid", x1: ml, x2: W - mr, y1: sy2(v).toFixed(1), y2: sy2(v).toFixed(1) });
         el("text", { x: ml - 6, y: (sy2(v) + 4).toFixed(1), "text-anchor": "end" }, String(v));
       });
-      el("text", { x: ml - 6, y: p2Top - 10, "text-anchor": "end" }, "chance %");
+      el("text", { x: ml - 6, y: p2Top - 10, "text-anchor": "end" }, tx("chance %", "kans %"));
       S.forEach(function (ser) {
         var pts2 = [];
         ser.pts.forEach(function (p) { if (p.rainProb !== null) pts2.push(sx(p.t).toFixed(1) + "," + sy2(p.rainProb).toFixed(1)); });
@@ -4042,21 +4055,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var stormLevelsHere = stormRunsHere.map(function (w) { return w.level; });
     document.getElementById(kind + "RideLegend").innerHTML = kind === "temp"
-      ? rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: "Feels like" }, { color: "var(--ink-muted)", w: 1.3, label: "Air temperature" }]
-          .concat(haveSun ? [{ color: "var(--status-warning)", w: 1.6, dash: "5 3", label: "Feels like in full sun (lower bound)" }] : []))
+      ? rideLegendHTML([{ color: RIDE_SERIES_COLORS.fwd, label: tx("Feels like", "Gevoelstemperatuur") }, { color: "var(--ink-muted)", w: 1.3, label: tx("Air temperature", "Luchttemperatuur") }]
+          .concat(haveSun ? [{ color: "var(--status-warning)", w: 1.6, dash: "5 3", label: tx("Feels like in full sun (lower bound)", "Gevoel in de volle zon (ondergrens)") }] : []))
       : kind === "rain" && stormRunsHere.length
       ? rideLegendHTML([1, 2].filter(function (l) { return stormLevelsHere.indexOf(l) >= 0; })
-          .map(function (l) { return { color: l === 2 ? "var(--status-warning)" : "var(--status-warning-soft)", block: true, label: l === 2 ? "Thunderstorm likely" : "Thunderstorm possible" }; }))
+          .map(function (l) { return { color: l === 2 ? "var(--status-warning)" : "var(--status-warning-soft)", block: true, label: l === 2 ? tx("Thunderstorm likely", "Onweer waarschijnlijk") : tx("Thunderstorm possible", "Onweer mogelijk") }; }))
       : "";
 
     var idleText = tx("Move over the chart, or touch it, to see the values and where you would be on the map.",
                      "Beweeg over de grafiek of raak hem aan om de waarden te zien en waar je op de kaart zou zijn.");
     readout.textContent = idleText;
     function describe(pt) {
-      if (kind === "wind") return fmtKmLabel(pt.km) + ", " + fmtSpeed(pt.windKmh, 0) + " from " + degreesToCompass16(pt.windDir);
-      if (kind === "rain") return fmtKmLabel(pt.km) + ", " + (pt.rainMm < 0.05 ? "dry" : fmtRainRate(pt.rainMm, 1)) + (pt.rainProb === null ? "" : " (chance " + Math.round(pt.rainProb) + "%)");
-      return fmtKmLabel(pt.km) + ", air " + fmtTemp(pt.airC) + ", feels like " + fmtTemp(pt.feelsC) +
-        (pt.feelsSunC === null ? "" : ", in full sun " + fmtTemp(pt.feelsSunC));
+      if (kind === "wind") return fmtKmLabel(pt.km) + ", " + fmtSpeed(pt.windKmh, 0) + tx(" from ", " uit ") + degreesToCompass16(pt.windDir);
+      if (kind === "rain") return fmtKmLabel(pt.km) + ", " + (pt.rainMm < 0.05 ? tx("dry", "droog") : fmtRainRate(pt.rainMm, 1)) + (pt.rainProb === null ? "" : tx(" (chance ", " (kans ") + Math.round(pt.rainProb) + "%)");
+      return fmtKmLabel(pt.km) + tx(", air ", ", lucht ") + fmtTemp(pt.airC) + tx(", feels like ", ", voelt als ") + fmtTemp(pt.feelsC) +
+        (pt.feelsSunC === null ? "" : tx(", in full sun ", ", in de volle zon ") + fmtTemp(pt.feelsSunC));
     }
     function stormAt(ta) {
       if (kind !== "rain") return 0;
@@ -4067,7 +4080,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     function showAt(ta) {
       var x = sx(ta).toFixed(1), pt = rs.pts[seriesIndexAtTime(rs.pts, ta)], lvl = stormAt(ta);
       cursor.setAttribute("x1", x); cursor.setAttribute("x2", x); cursor.setAttribute("visibility", "visible");
-      readout.innerHTML = "<b>" + fmtHM(ta) + "</b> &middot; " + describe(pt) + (lvl ? " &middot; <b>thunderstorm " + (lvl === 2 ? "likely" : "possible") + "</b>" : "");
+      readout.innerHTML = "<b>" + fmtHM(ta) + "</b> &middot; " + describe(pt) + (lvl ? tx(" &middot; <b>thunderstorm ", " &middot; <b>onweer ") + (lvl === 2 ? tx("likely", "waarschijnlijk") : tx("possible", "mogelijk")) + "</b>" : "");
       showRideMarkers(result, pt);
     }
     function hide() { cursor.setAttribute("visibility", "hidden"); readout.textContent = idleText; clearRideMarkers(); }
@@ -4087,13 +4100,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function diffNum(dC) { return Math.round(Math.abs(dC) * (state.tempUnit === "F" ? 9 / 5 : 1)); }
   function feelsClassLabel(k, c) {
     var unit = "\u00b0" + state.tempUnit;
-    if (k === 5) return "About the same as the air";
+    if (k === 5) return tx("About the same as the air", "Ongeveer gelijk aan de lucht");
     if (k < 5) {
-      if (c.loC === -Infinity) return "More than " + diffNum(c.hiC) + unit + " colder";
-      return diffNum(c.hiC) + " to " + diffNum(c.loC) + unit + " colder";
+      if (c.loC === -Infinity) return tx("More than ", "Meer dan ") + diffNum(c.hiC) + unit + tx(" colder", " kouder");
+      return diffNum(c.hiC) + tx(" to ", " tot ") + diffNum(c.loC) + unit + tx(" colder", " kouder");
     }
-    if (c.hiC === Infinity) return "More than " + diffNum(c.loC) + unit + " hotter";
-    return diffNum(c.loC) + " to " + diffNum(c.hiC) + unit + " hotter";
+    if (c.hiC === Infinity) return tx("More than ", "Meer dan ") + diffNum(c.loC) + unit + tx(" hotter", " warmer");
+    return diffNum(c.loC) + tx(" to ", " tot ") + diffNum(c.hiC) + unit + tx(" hotter", " warmer");
   }
 
   // Legend for the temperature-coloured track. It doubles as the table view
@@ -4110,7 +4123,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     block.className = "route-stats-block";
     var h = document.createElement("div");
     h.className = "route-stats-heading";
-    h.textContent = "Feels like, compared with the air";
+    h.textContent = tx("Feels like, compared with the air", "Gevoelstemperatuur vergeleken met de lucht");
     block.appendChild(h);
 
     var bar = document.createElement("div");
@@ -4140,12 +4153,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   function tempViewCaption(result) {
     var ch = result.chill;
-    return "Coloured by how much colder (blue) or hotter (red) each stretch feels than the air " +
-      (ch.timeline ? "at that moment of the ride (the forecast follows the clock; " + fmtTemp1(ch.forward.airStartC) + " at the start, " + fmtTemp1(ch.forward.airEndC) + " at the end)"
-                   : "at " + fmtTemp(ch.tempC)) +
-      ", riding it " + speedPhrase(result) + " in " +
-      (result.steadyWind ? "a wind from " + degreesToCompass16(result.windFromDeg) : "the forecast wind, which changes during the ride") +
-      ". Darker means a bigger difference; grey means it feels like the air. The scale is fixed, so a colour means the same thing on every route and day.";
+    return tx("Coloured by how much colder (blue) or hotter (red) each stretch feels than the air ", "Gekleurd naar hoeveel kouder (blauw) of warmer (rood) elk stuk aanvoelt dan de lucht ") +
+      (ch.timeline ? tx("at that moment of the ride (the forecast follows the clock; ", "op dat moment van de rit (de verwachting volgt de klok; ") + fmtTemp1(ch.forward.airStartC) + tx(" at the start, ", " bij de start, ") + fmtTemp1(ch.forward.airEndC) + tx(" at the end)", " aan het eind)")
+                   : tx("at ", "bij ") + fmtTemp(ch.tempC)) +
+      tx(", riding it ", ", als je het rijdt ") + speedPhrase(result) + tx(" in ", " bij ") +
+      (result.steadyWind ? tx("a wind from ", "wind uit ") + degreesToCompass16(result.windFromDeg) : tx("the forecast wind, which changes during the ride", "de voorspelde wind, die tijdens de rit verandert")) +
+      tx(". Darker means a bigger difference; grey means it feels like the air. The scale is fixed, so a colour means the same thing on every route and day.",
+         ". Donkerder betekent een groter verschil; grijs betekent dat het aanvoelt als de lucht. De schaal ligt vast, dus een kleur betekent op elke route en elke dag hetzelfde.");
   }
 
   // Plain-language easy/hard/neutral distance breakdown below the map -
@@ -4351,14 +4365,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function fmtElevM(m) { return Math.round(isUS() ? m * M_TO_FT : m) + " " + elevUnitLabel(); }
   function rainUnitLabel() { return isUS() ? "in" : "mm"; }
   function rainToDisplay(mm) { return isUS() ? mm * MM_TO_IN : mm; }
-  function fmtRainMm(mm, decimals) { return rainToDisplay(mm).toFixed(decimals) + " " + rainUnitLabel(); }
-  function fmtRainRate(mmPerHour, decimals) { return fmtRainMm(mmPerHour, decimals) + "/h"; }
+  function fmtRainMm(mm, decimals) { return num(rainToDisplay(mm), decimals) + " " + rainUnitLabel(); }
+  function rateSuffix() { return tx("/h", "/u"); }
+  function fmtRainRate(mmPerHour, decimals) { return fmtRainMm(mmPerHour, decimals) + rateSuffix(); }
   // A "km 12.3" / "mi 7.6" progress marker, the label style already used along the route.
   function fmtKmLabel(km) { return distUnitLabel() + " " + num(isUS() ? km * KM_TO_MI : km, 1); }
 
   // Word scale for humidity, so nobody has to know a percentage. Same idea
   // as the Beaufort scale for wind.
   var HUMIDITY_STEPS = [[30, "Dry"], [50, "Normal"], [70, "Humid"], [90, "Very humid"]];
+  var HUMIDITY_WORDS_NL = { "Dry": "Droog", "Normal": "Normaal", "Humid": "Vochtig", "Very humid": "Zeer vochtig" };
+  function humidityWord(step) { return LANG === "nl" ? HUMIDITY_WORDS_NL[step[1]] : step[1]; }
   function humidityStep(rh) {
     var best = HUMIDITY_STEPS[0];
     HUMIDITY_STEPS.forEach(function (st) { if (Math.abs(st[0] - rh) < Math.abs(best[0] - rh)) best = st; });
@@ -4374,43 +4391,53 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // the wind on you matters on hot days too.
   function renderChill(result) {
     var ch = result.chill, ef = result.effort;
-    var beaufort = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
+    var beaufort = beaufortName(Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort))));
     var warm = ch.model !== "windchill";
 
     var caption =
-      "At <b>" + fmtTemp(ch.tempC) + "</b>" +
-      (warm ? " and about <b>" + Math.round(ch.rh) + "%</b> relative humidity (" + (state.rhFromForecast ? "from the forecast" : "your setting") + ")" : "") +
-      ", riding " + (result.ride.mode === "power" ? speedPhrase(result) : "<b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b>") + " in " +
-      (result.steadyWind ? "a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufort + ")</b> wind. "
-                         : "a wind that changes during the ride, averaging <b>" + fmtSpeed(ef.windSpeedKmh, 0) + "</b>. ") +
-      "Your speed and the wind combine into the wind on you, so how it feels is worked out for every segment and averaged by distance. ";
+      tx("At <b>", "Bij <b>") + fmtTemp(ch.tempC) + "</b>" +
+      (warm ? tx(" and about <b>", " en ongeveer <b>") + Math.round(ch.rh) + tx("%</b> relative humidity (", "%</b> relatieve luchtvochtigheid (") +
+              (state.rhFromForecast ? tx("from the forecast", "uit de verwachting") : tx("your setting", "jouw instelling")) + ")" : "") +
+      tx(", riding ", ", fietsend ") + (result.ride.mode === "power" ? speedPhrase(result) : tx("", "met ") + "<b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b>") + tx(" in ", " bij ") +
+      (result.steadyWind ? tx("a <b>Beaufort ", "een wind van <b>Beaufort ") + Math.round(ef.windSpeedBeaufort) + " (" + beaufort + ")</b>" + tx(" wind. ", ". ")
+                         : tx("a wind that changes during the ride, averaging <b>", "een wind die tijdens de rit verandert, gemiddeld <b>") + fmtSpeed(ef.windSpeedKmh, 0) + "</b>. ") +
+      tx("Your speed and the wind combine into the wind on you, so how it feels is worked out for every segment and averaged by distance. ",
+         "Je snelheid en de wind vormen samen de wind die je voelt, dus hoe het aanvoelt wordt voor elk segment berekend en naar afstand gemiddeld. ");
     if (ch.model === "windchill") {
-      caption += "It uses the standard wind chill formula (Environment Canada and the US National Weather Service), which describes how fast exposed skin cools. ";
+      caption += tx("It uses the standard wind chill formula (Environment Canada and the US National Weather Service), which describes how fast exposed skin cools. ",
+                    "Hiervoor wordt de standaard wind-chillformule gebruikt (Environment Canada en de Amerikaanse National Weather Service), die beschrijft hoe snel onbedekte huid afkoelt. ");
     } else {
       if (ch.model === "blend") {
-        caption += "Between " + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C) + " and " + fmtTemp(APPARENT_FULL_C) + " it fades from the wind chill formula (official up to " + chillOfficialLimitText() + ") into the apparent temperature. ";
+        caption += tx("Between ", "Tussen ") + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C) + tx(" and ", " en ") + fmtTemp(APPARENT_FULL_C) +
+          tx(" it fades from the wind chill formula (official up to ", " gaat die geleidelijk over van de wind-chillformule (officieel tot ") + chillOfficialLimitText() +
+          tx(") into the apparent temperature. ", ") naar de apparent temperature. ");
       }
-      caption += "The apparent temperature (Australian Bureau of Meteorology, after Steadman) is a model of how warm it feels to an adult walking outdoors in the shade: wind cools, and humid air, which slows the evaporation of sweat, feels hotter. " +
-        "Sun is not included here (see the separate lower-bound figure below), and above about " + fmtTemp(35) + " in dry air moving air stops helping and can add heat, which this does not capture. ";
+      caption += tx("The apparent temperature (Australian Bureau of Meteorology, after Steadman) is a model of how warm it feels to an adult walking outdoors in the shade: wind cools, and humid air, which slows the evaporation of sweat, feels hotter. " +
+        "Sun is not included here (see the separate lower-bound figure below), and above about " + fmtTemp(35) + " in dry air moving air stops helping and can add heat, which this does not capture. ",
+        "De apparent temperature (Australian Bureau of Meteorology, naar Steadman) is een model van hoe warm het voelt voor een volwassene die buiten in de schaduw loopt: wind koelt af, en vochtige lucht, die het verdampen van zweet vertraagt, voelt warmer. " +
+        "Zon zit hier niet in (zie de aparte ondergrens hieronder), en boven ongeveer " + fmtTemp(35) + " helpt bewegende lucht in droge lucht niet meer en kan die juist warmte toevoegen; dat zit hier niet in. ");
     }
     if (ch.timeline) {
-      caption += "The forecast follows the clock: each stretch gets the air temperature and humidity expected when you would be there, from your start time and cruising speed. ";
+      caption += tx("The forecast follows the clock: each stretch gets the air temperature and humidity expected when you would be there, from your start time and cruising speed. ",
+                    "De verwachting volgt de klok: elk stuk krijgt de luchttemperatuur en luchtvochtigheid die verwacht worden als je daar bent, vanaf je starttijd en kruissnelheid. ");
     }
-    caption += "It is a guide, not a measure of effort, and what a cyclist feels also depends on clothing and on the person.";
+    caption += tx("It is a guide, not a measure of effort, and what a cyclist feels also depends on clothing and on the person.",
+                  "Het is een richtlijn, geen maat voor inspanning, en wat een fietser voelt hangt ook af van kleding en van de persoon.");
     document.getElementById("chillCaption").innerHTML = caption;
 
     function cell(title, st) {
       var delta = st.avgFeelsC - ch.tempC, avgNote;
       if (Math.abs(delta) < CHILL_NEGLIGIBLE_C) {
-        avgNote = "About the same as the air temperature on average.";
+        avgNote = tx("About the same as the air temperature on average.", "Gemiddeld ongeveer gelijk aan de luchttemperatuur.");
       } else if (delta < 0) {
-        avgNote = "On average <b>" + fmtTempDiff(delta) + " colder</b> than the air.";
+        avgNote = tx("On average <b>", "Gemiddeld <b>") + fmtTempDiff(delta) + tx(" colder</b> than the air.", " kouder</b> dan de lucht.");
       } else {
-        avgNote = "On average <b>" + fmtTempDiff(delta) + " hotter</b> than the air.";
+        avgNote = tx("On average <b>", "Gemiddeld <b>") + fmtTempDiff(delta) + tx(" hotter</b> than the air.", " warmer</b> dan de lucht.");
       }
       var spreadNote = "";
       if (st.warmestFeelsC - st.coldestFeelsC >= CHILL_NEGLIGIBLE_C) {
-        spreadNote = " The coldest tenth of the route feels like <b>" + fmtTemp(st.coldestFeelsC) + "</b>, the warmest <b>" + fmtTemp(st.warmestFeelsC) + "</b>.";
+        spreadNote = tx(" The coldest tenth of the route feels like <b>", " Het koudste tiende van de route voelt als <b>") + fmtTemp(st.coldestFeelsC) +
+          tx("</b>, the warmest <b>", "</b>, het warmste als <b>") + fmtTemp(st.warmestFeelsC) + "</b>.";
       }
       var body = avgNote + spreadNote;
       var hasSeg = st.perSeg && st.perSeg.length;
@@ -4418,7 +4445,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var feelsB = hasSeg ? st.perSeg[st.perSeg.length - 1] : st.avgFeelsC;
       var feelsChanges = Math.abs(feelsB - feelsA) >= 0.5;
       return '<div class="half-card">' +
-          '<div class="half-title">' + title + (feelsChanges ? ", start to end" : "") + '</div>' +
+          '<div class="half-title">' + title + (feelsChanges ? tx(", start to end", ", van start tot eind") : "") + '</div>' +
           '<div class="half-multiplier">' + (feelsChanges ? fmtTemp1(feelsA) + " \u2192 " + fmtTemp1(feelsB) : fmtTemp(st.avgFeelsC)) + '</div>' +
           '<div class="half-net">' + body + '</div>' +
         '</div>';
@@ -4430,17 +4457,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     function sunCell(st) {
       var boost = st.avgSunC - st.avgFeelsC, sunBody;
       if (st.avgAirC < WIND_CHILL_OFFICIAL_MAX_C) {
-        sunBody = "No boost from the sun here: below " + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C) + ", sun is not modelled (a known gap, not a claim that sun does nothing in the cold).";
+        sunBody = tx("No boost from the sun here: below ", "Hier geen extra warmte van de zon: onder ") + fmtTemp(WIND_CHILL_OFFICIAL_MAX_C) +
+          tx(", sun is not modelled (a known gap, not a claim that sun does nothing in the cold).", " wordt de zon niet meegerekend (een bekende beperking, geen bewering dat de zon in de kou niets doet).");
       } else if (boost < CHILL_NEGLIGIBLE_C) {
-        sunBody = "No real boost from the sun here - the forecast shows little to no shortwave radiation for this ride (cloud, a low sun, or night).";
+        sunBody = tx("No real boost from the sun here - the forecast shows little to no shortwave radiation for this ride (cloud, a low sun, or night).",
+                     "Hier nauwelijks extra warmte van de zon - de verwachting toont weinig tot geen zonnestraling voor deze rit (bewolking, een lage zon of nacht).");
       } else {
-        sunBody = "On average <b>" + fmtTempDiff(boost) + " warmer</b> than the plain feels-like above.";
+        sunBody = tx("On average <b>", "Gemiddeld <b>") + fmtTempDiff(boost) + tx(" warmer</b> than the plain feels-like above.", " warmer</b> dan de gewone gevoelstemperatuur hierboven.");
       }
-      sunBody += " A lower bound: it leaves out reflected light, long-wave heat off the road, and the sun's angle on you, which only ever add more warmth.";
+      sunBody += tx(" A lower bound: it leaves out reflected light, long-wave heat off the road, and the sun's angle on you, which only ever add more warmth.",
+                    " Een ondergrens: teruggekaatst licht, warmte die de weg uitstraalt en de hoek waaronder de zon op je valt zitten er niet in, en die voegen alleen maar warmte toe.");
       var sunA = st.sunStartC, sunB = st.sunEndC;
       var sunChanges = Math.abs(sunB - sunA) >= 0.5;
       return '<div class="half-card">' +
-          '<div class="half-title">Feels like in full sun' + (sunChanges ? ", start to end" : "") + '</div>' +
+          '<div class="half-title">' + tx("Feels like in full sun", "Gevoel in de volle zon") + (sunChanges ? tx(", start to end", ", van start tot eind") : "") + '</div>' +
           '<div class="half-multiplier">' + (sunChanges ? fmtTemp1(sunA) + " \u2192 " + fmtTemp1(sunB) : fmtTemp(st.avgSunC)) + '</div>' +
           '<div class="half-net">' + sunBody + '</div>' +
         '</div>';
@@ -4449,25 +4479,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var airA = ch.forward.airStartC, airB = ch.forward.airEndC;
     var airChanges = ch.timeline && Math.abs(airB - airA) >= 0.5;
     document.getElementById("chillGrid").innerHTML =
-      '<div class="half-card"><div class="half-title">Air temperature' + (airChanges ? ", start to end" : "") + '</div>' +
+      '<div class="half-card"><div class="half-title">' + tx("Air temperature", "Luchttemperatuur") + (airChanges ? tx(", start to end", ", van start tot eind") : "") + '</div>' +
         '<div class="half-multiplier">' + (airChanges ? fmtTemp1(airA) + " \u2192 " + fmtTemp1(airB) : fmtTemp(ch.tempC)) + '</div>' +
-        '<div class="half-net">What a thermometer reads' + (airChanges ? ", as the forecast changes during the ride" : "") + '.' +
-          (warm ? " Humidity " + Math.round(ch.rh) + "%" + (ch.timeline ? " on average" : "") + " (" + humidityStep(ch.rh)[1].toLowerCase() + ")." : "") + '</div></div>' +
-      cell("Feels like", ch.forward) +
+        '<div class="half-net">' + tx("What a thermometer reads", "Wat een thermometer aangeeft") + (airChanges ? tx(", as the forecast changes during the ride", ", zoals de verwachting tijdens de rit verandert") : "") + '.' +
+          (warm ? tx(" Humidity ", " Luchtvochtigheid ") + (ch.timeline ? tx("", "gemiddeld ") : "") + Math.round(ch.rh) + "%" + (ch.timeline ? tx(" on average", "") : "") + " (" + humidityWord(humidityStep(ch.rh)).toLowerCase() + ")." : "") + '</div></div>' +
+      cell(tx("Feels like", "Gevoelstemperatuur"), ch.forward) +
       (ch.forward.avgSunC !== null ? sunCell(ch.forward) : "");
 
     var verdict = ch.tone === "even" && warm
-      ? "Here the cooling from riding and the extra heat from humidity roughly cancel: it feels about like the air."
+      ? tx("Here the cooling from riding and the extra heat from humidity roughly cancel: it feels about like the air.",
+           "Hier heffen de afkoeling door het fietsen en de extra warmte door de luchtvochtigheid elkaar ongeveer op: het voelt ongeveer als de lucht.")
       : "";
     // Standing still or crawling uphill there is no breeze from riding: the
     // NWS heat index, and its heat-illness warnings, apply to that case.
     if (ch.stillDeltaC >= CHILL_NEGLIGIBLE_C) {
       var hi = ch.stillHiC;
-      verdict += " <b>Standing still</b>, or crawling uphill with no breeze," + (ch.timeline ? " at the hottest point of the ride" : "") + " it feels like <b>" + fmtTemp(hi) + "</b> (the NWS heat index, " + fmtTempDiff(ch.stillDeltaC) + " hotter than the air).";
+      verdict += tx(" <b>Standing still</b>, or crawling uphill with no breeze,", " <b>Stilstaand</b>, of heel langzaam bergop zonder briesje,") +
+        (ch.timeline ? tx(" at the hottest point of the ride", " op het warmste punt van de rit") : "") + tx(" it feels like <b>", " voelt het als <b>") + fmtTemp(hi) +
+        tx("</b> (the NWS heat index, ", "</b> (de hitte-index van de NWS, ") + fmtTempDiff(ch.stillDeltaC) + tx(" hotter than the air).", " warmer dan de lucht).");
       if (hi >= HEAT_STROKE_LIKELY_C) {
-        verdict += " According to the National Weather Service, at " + fmtTemp(HEAT_STROKE_LIKELY_C) + " and above heat stroke is highly likely.";
+        verdict += tx(" According to the National Weather Service, at " + fmtTemp(HEAT_STROKE_LIKELY_C) + " and above heat stroke is highly likely.",
+                      " Volgens de National Weather Service is vanaf " + fmtTemp(HEAT_STROKE_LIKELY_C) + " een hitteberoerte zeer waarschijnlijk.");
       } else if (hi >= HEAT_ILLNESS_LIKELY_C) {
-        verdict += " According to the National Weather Service, from " + fmtTemp(HEAT_ILLNESS_LIKELY_C) + " to " + fmtTemp(HEAT_STROKE_LIKELY_C) + " heat cramps or heat exhaustion are likely, and heat stroke is possible.";
+        verdict += tx(" According to the National Weather Service, from " + fmtTemp(HEAT_ILLNESS_LIKELY_C) + " to " + fmtTemp(HEAT_STROKE_LIKELY_C) + " heat cramps or heat exhaustion are likely, and heat stroke is possible.",
+                      " Volgens de National Weather Service zijn van " + fmtTemp(HEAT_ILLNESS_LIKELY_C) + " tot " + fmtTemp(HEAT_STROKE_LIKELY_C) + " hittekrampen of hitte-uitputting waarschijnlijk en is een hitteberoerte mogelijk.");
       }
     }
     document.getElementById("chillVerdict").innerHTML = verdict;
@@ -4822,8 +4857,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     humidityField.hidden = state.tempC < HUMIDITY_SHOW_C;
     humidityInput.value = String(humidityStep(state.rh)[0]);
     humidityHint.textContent = state.rhFromForecast
-      ? "From the forecast: about " + Math.round(state.rh) + "%. Pick a word to override it."
-      : "Only matters on mild and hot days: humid air feels hotter. With \u201cFrom forecast\u201d the real figure is filled in for you.";
+      ? tx("From the forecast: about ", "Uit de weersverwachting: ongeveer ") + Math.round(state.rh) + tx("%. Pick a word to override it.", "%. Kies een woord om het te vervangen.")
+      : tx("Only matters on mild and hot days: humid air feels hotter. With \u201cFrom forecast\u201d the real figure is filled in for you.",
+           "Telt alleen op zachte en warme dagen: vochtige lucht voelt warmer. Met \u201cWeersverwachting\u201d wordt het echte getal voor je ingevuld.");
   }
   humidityInput.addEventListener("change", function () {
     forecastNote.hidden = true;
@@ -4999,6 +5035,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function fmtTemp1(c) {
     var t = cToDisplay(c).toFixed(1);
     if (Number(t) === 0) t = "0.0";                 // no "-0.0"
+    if (LANG === "nl") t = t.replace(".", ",");
     return (t.charAt(0) === "-" ? "\u2212" + t.slice(1) : t) + "\u00b0" + state.tempUnit;
   }
 
@@ -5023,8 +5060,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (!state.timeline) { tempTimelineHint.hidden = true; return; }
     var a = ch.forward.airStartC, b = ch.forward.airEndC;
     tempTimelineHint.textContent = Math.abs(b - a) >= 0.5
-      ? "From the forecast and changing during the ride: " + fmtTemp1(a) + " at the start, " + fmtTemp1(b) + " at the end. The field shows the average; if you change it, your value replaces the forecast."
-      : "From the forecast; it stays about " + fmtTemp1((a + b) / 2) + " during the ride. If you change it, your value replaces the forecast.";
+      ? tx("From the forecast and changing during the ride: ", "Uit de weersverwachting en veranderend tijdens de rit: ") + fmtTemp1(a) + tx(" at the start, ", " bij de start, ") + fmtTemp1(b) +
+        tx(" at the end. The field shows the average; if you change it, your value replaces the forecast.", " aan het eind. Het veld toont het gemiddelde; als je het aanpast, vervangt jouw waarde de verwachting.")
+      : tx("From the forecast; it stays about ", "Uit de weersverwachting; het blijft tijdens de rit ongeveer ") + fmtTemp1((a + b) / 2) +
+        tx(" during the ride. If you change it, your value replaces the forecast.", ". Als je het aanpast, vervangt jouw waarde de verwachting.");
     tempTimelineHint.hidden = false;
   }
   // The stored hourly series answer any start time and speed within the fetched
@@ -5493,20 +5532,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
         '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + fmtDistKm(result.fwd.easy / 1000, 1) + tx(' tailwind &middot; ', ' rugwind &middot; ') + fmtDistKm(result.fwd.hard / 1000, 1) + tx(' headwind', ' tegenwind') + '</div></div>';
 
     document.getElementById("planSummary").textContent = state.view === "rain"
-      ? (result.rain ? "Each stretch coloured by the rain expected when you get there." : "Rain comes from the forecast, so nothing is coloured yet.")
+      ? (result.rain ? tx("Each stretch coloured by the rain expected when you get there.", "Elk stuk gekleurd naar de regen die verwacht wordt als je daar bent.")
+                     : tx("Rain comes from the forecast, so nothing is coloured yet.", "Regen komt uit de weersverwachting, dus er is nog niets gekleurd."))
       : state.view === "temp"
-      ? "Each stretch coloured by how much colder (blue) or hotter (red) it feels than the air."
+      ? tx("Each stretch coloured by how much colder (blue) or hotter (red) it feels than the air.", "Elk stuk gekleurd naar hoeveel kouder (blauw) of warmer (rood) het aanvoelt dan de lucht.")
       : (result.steadyWind
-          ? "Tailwind and headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)."
-          : "Tailwind and headwind for the forecast wind, which changes during the ride.");
+          ? tx("Tailwind and headwind for wind from ", "Rugwind en tegenwind bij wind uit ") + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)."
+          : tx("Tailwind and headwind for the forecast wind, which changes during the ride.", "Rugwind en tegenwind bij de voorspelde wind, die tijdens de rit verandert."));
     document.getElementById("planCaption").textContent = state.view === "rain"
-      ? (result.rain ? "Coloured by how hard it is expected to rain on each stretch at the moment you would be there: dry stretches grey, then very light to heavy in darker teal. The forecast follows the clock, so the rain you meet depends on the direction you ride (press Reverse route to see the other way)."
-        : "Rain comes from the forecast. Get a forecast under Weather for the ride to see it here.")
+      ? (result.rain ? tx("Coloured by how hard it is expected to rain on each stretch at the moment you would be there: dry stretches grey, then very light to heavy in darker teal. The forecast follows the clock, so the rain you meet depends on the direction you ride (press Reverse route to see the other way).",
+                          "Gekleurd naar hoe hard het naar verwachting regent op elk stuk op het moment dat je daar bent: droge stukken grijs, dan zeer licht tot zwaar in donkerder blauwgroen. De verwachting volgt de klok, dus de regen die je tegenkomt hangt af van de richting waarin je rijdt (druk op Route omdraaien om de andere kant op te zien).")
+        : tx("Rain comes from the forecast. Get a forecast under Weather for the ride to see it here.", "Regen komt uit de weersverwachting. Haal een verwachting op onder Weer tijdens de rit om hem hier te zien."))
       : state.view === "temp"
       ? tempViewCaption(result)
       : (result.steadyWind
-          ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0): each stretch by the angle between the way you ride and the wind. Green is tailwind, red is headwind and grey is crosswind; darker means closer to dead-on."
-          : "Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there, from the start time.");
+          ? tx("Coloured by tailwind/headwind for wind from ", "Gekleurd naar rugwind/tegenwind bij wind uit ") + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)" +
+            tx(": each stretch by the angle between the way you ride and the wind. Green is tailwind, red is headwind and grey is crosswind; darker means closer to dead-on.",
+               ": elk stuk naar de hoek tussen je rijrichting en de wind. Groen is rugwind, rood is tegenwind en grijs is zijwind; donkerder betekent dichter bij pal mee of pal tegen.")
+          : tx("Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there, from the start time.",
+               "Gekleurd naar rugwind/tegenwind bij de voorspelde wind, die tijdens de rit verandert: elk stuk wordt beoordeeld tegen de wind die verwacht wordt als je daar bent, gerekend vanaf de starttijd."));
     renderPolarSweep(result);
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
     if (state.view === "temp") renderTempLegend(result); else if (state.view === "rain") renderRainLegend(result); else renderRouteStats(result);
@@ -5855,6 +5899,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
   bindSaveImageButton("saveWindRideBtn", "windRideSvg", function () {
     return "tailwind-tally-wind-during-ride.png";
+  });
+  bindSaveImageButton("saveTempRideBtn", "tempRideSvg", function () {
+    return "tailwind-tally-temperature-during-ride.png";
+  });
+  bindSaveImageButton("saveRainRideBtn", "rainRideSvg", function () {
+    return "tailwind-tally-rain-during-ride.png";
   });
 
   // Info popovers: the "?" buttons next to labels and titles that hold the explanations, and
