@@ -2007,7 +2007,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <h3>In full sun (a separate, lower-bound estimate)</h3>
           <p>None of the above includes solar radiation. Steadman&rsquo;s own model has an extension for it: a version of apparent temperature with a radiation term <code>Q</code>, the net radiation (in W/m&sup2;) a person absorbs (Steadman, 1994, &ldquo;Norms of apparent temperature in Australia&rdquo;).</p>
           <div class="how-formula">apparent temperature in sun  =  T  +  0.348 &middot; e  &minus;  0.70 &middot; v  +  0.70 &middot; Q / (v + 10)  &minus;  4.25</div>
-          <p>The app derives <code>Q</code> from the forecast&rsquo;s <strong>shortwave radiation</strong> (the total solar energy reaching a flat horizontal square metre, in W/m&sup2; &mdash; already reduced for cloud cover by the forecast model, and exactly 0 at night): <code>Q = 0.104 &times; shortwave radiation</code>, nothing subtracted first. That 0.104 is solved from two independent real numbers already used elsewhere on this page &mdash; full sun adds at most roughly 8&nbsp;&deg;C (Steadman, the NWS) and Open-Meteo&rsquo;s own observed real-world maximum for shortwave radiation is about 1100&nbsp;W/m&sup2; &mdash; so that a rider standing still (the single largest boost the formula can give) in the strongest sun ever seen still reads a little under 8&nbsp;&deg;C, tying smoothly back to 0 with no separate cutoff.</p>
+          <p>The app derives <code>Q</code> from the forecast&rsquo;s <strong>shortwave radiation</strong> (the total solar energy reaching a flat horizontal square metre, in W/m&sup2; &mdash; already reduced for cloud cover by the forecast model, and exactly 0 at night): <code>Q = 0.104 &times; shortwave radiation</code>, nothing subtracted first. That 0.104 is solved from two independent real numbers already used elsewhere on this page &mdash; full sun adds at most roughly 8&nbsp;&deg;C (Steadman, the NWS) and Open-Meteo&rsquo;s own observed real-world maximum for shortwave radiation is about 1100&nbsp;W/m&sup2; &mdash; so that a rider standing still (the single largest boost the formula can give) in the strongest sun ever seen still reads a little under 8&nbsp;&deg;C, tying smoothly back to 0 with no separate cutoff. Open-Meteo gives shortwave radiation as the average of the preceding hour, so each value is placed at the middle of that hour before it is read at the moment you would be on a stretch.</p>
           <p>Two earlier, wronger versions of this constant are worth naming, since both looked reasonable until checked against real numbers: plugging the raw value straight in (<code>Q = 0.7 &times;</code> shortwave radiation) added over 20&nbsp;&deg;C at a common midday value, wildly past that same 8&nbsp;&deg;C ceiling. Copying Open-Meteo&rsquo;s own <code>apparent_temperature</code> formula exactly &mdash; they hit the identical overshoot and fixed it with <code>Q = max(0, 0.1 &times; (shortwave radiation &minus; 550))</code>, only the amount above a 550&nbsp;W/m&sup2; baseline &mdash; no longer overshot, but tested against a real, genuinely clear (low cloud cover) September morning it read as no boost at all: 550&nbsp;W/m&sup2; is close to that day&rsquo;s very peak, reachable only for an hour or two around solar noon at that latitude and time of year. A baseline tuned for Open-Meteo&rsquo;s own product turned out to be a bar this app&rsquo;s typical ride rarely clears.</p>
           <p>This is still cruder than Steadman&rsquo;s own <code>Q</code> (radiation absorbed by a person&rsquo;s own projected area, facing whichever way they face), applied here to a flat, ground-facing sensor reading instead &mdash; so it leaves out <strong>reflected light</strong>, <strong>long-wave heat</strong> radiating off the road and surroundings, and the <strong>extra a rider facing into a low sun</strong> would catch that a flat sensor does not. All three only ever add warmth, which is why this is shown as a deliberate <strong>lower bound</strong>, as its own figure (in the Feels-like card, and as a separate dashed line on the temperature chart) rather than folded into the feels-like number above it.</p>
           <p>It needs a forecast (<strong>From forecast</strong> and a tap on <strong>Get forecast</strong>); there is no manual sun setting. Like the wind chill, it is not applied below 10&nbsp;&deg;C, so a cold, sunny ride shows no sun boost at all &mdash; a known gap, not a claim that sun does nothing in the cold. Under Australian conditions Steadman found full sun adds up to about 8&nbsp;&deg;C at the sun&rsquo;s highest, in the same range as the heat index&rsquo;s own sun note further below.</p>
@@ -2545,6 +2545,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       out.v.push(h[field][i]);
     }
     return out;
+  }
+  // A series whose values are averages over the hour BEFORE each stamp (Open-Meteo's
+  // shortwave_radiation: "average of the preceding hour"), moved to the middle of that
+  // hour, so reading it at a moment gives that moment's sun rather than the sun of half
+  // an hour earlier. Instant values (temperature, humidity, wind) are not moved.
+  function hourMeanSeries(series) {
+    return { t: series.t.map(function (t) { return t - 30; }), v: series.v.slice() };
   }
   // Linear in time between the hourly values; held at the first / last value
   // outside them.
@@ -5190,7 +5197,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var locations = r.plan.samples.map(function (smp) {
         var res = r.results[smp.unique];
         return { frac: smp.frac, temp: forecastSeries(res, "temperature_2m", dateStr), rh: forecastSeries(res, "relative_humidity_2m", dateStr),
-                 solar: forecastSeries(res, "shortwave_radiation", dateStr),
+                 solar: hourMeanSeries(forecastSeries(res, "shortwave_radiation", dateStr)),
                  wind: forecastWindSeries(res, dateStr), rain: forecastRainSeries(res, dateStr), storm: forecastStormSeries(res, dateStr) };
       });
       // Rain follows the clock and the place as well (own timeline: typing a wind or a
