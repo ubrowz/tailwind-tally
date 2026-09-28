@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
-  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -777,172 +777,6 @@ t("each stretch of a profile satisfies the power balance at its own wind and den
   }
 });
 
-// ---- climbs (elevation profile, detection, slope classes)
-function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-// a profile from [lengthM, slopePct] pieces, one value per 25 m, starting at 100 m
-function prof(pieces, z0 = 100) { const z = [z0]; pieces.forEach(([len, pct]) => { for (let i = 0; i < len / 25; i++) z.push(z[z.length - 1] + 25 * pct / 100); }); return z; }
-const RAW = { deadbandM: 3, mergeDipFrac: 0.25, mergeGapM: 400, minGainM: 25, minAvgPct: 2, slopeWindowM: 100, stepM: 25 };
-
-t("slope classes: edges belong to the class above (under 5 / 5-8 / 8-12 / 12-16 / 16 up)", () => {
-  assert.deepStrictEqual(CLIMB_SLOPE_EDGES, [5, 8, 12, 16]);
-  [[0, 0], [4.99, 0], [5, 1], [7.9, 1], [8, 2], [11.99, 2], [12, 3], [15.9, 3], [16, 4], [30, 4]].forEach(([m, c]) => assert.strictEqual(climbSlopeClass(m), c, `max ${m}%`));
-});
-t("median3 removes a single-point spike but keeps a step; smoothMean keeps a ramp and a constant", () => {
-  const flat = Array(20).fill(50); flat[10] = 80;
-  assert(median3(flat).every((v) => v === 50));
-  const step = [10, 10, 10, 20, 20, 20]; assert.deepStrictEqual(median3(step), step);
-  const ramp = Array.from({ length: 30 }, (_, i) => i * 2), sm = smoothMean(ramp, 3);
-  for (let i = 3; i < 27; i++) assert(near(sm[i], ramp[i], 1e-9));
-  assert(smoothMean(Array(10).fill(7), 3).every((v) => near(v, 7)));
-});
-t("elevation profile: a linear elevation is reproduced exactly on the 25 m grid", () => {
-  const s = [0, 100, 200, 300, 400], e = [10, 14, 18, 22, 26], p = elevationProfile(s, e, 25);
-  assert(p.available && p.z.length === 17); p.z.forEach((v, i) => assert(near(v, 10 + i * 1, 1e-9), `g${i}: ${v}`));
-});
-t("elevation profile: gaps in the elevation are interpolated over distance", () => {
-  const s = Array.from({ length: 41 }, (_, i) => i * 100), e = s.map((x) => 100 + x / 10); e[7] = null; e[8] = null; e[15] = undefined;   // 3 of 41 missing: 93% coverage
-  const p = elevationProfile(s, e, 25);
-  assert(p.available); p.z.forEach((v, i) => assert(near(v, 100 + i * 25 / 10, 1e-6), `g${i}`));
-});
-t("elevation profile: refuses to invent data (none, too sparse, constant, implausible, too short)", () => {
-  const s = Array.from({ length: 20 }, (_, i) => i * 100);
-  assert.strictEqual(elevationProfile(s, s.map(() => null), 25).available, false);
-  const sparse = s.map((x, i) => (i % 10 === 0 ? 50 + i : null)); const sp = elevationProfile(s, sparse, 25);
-  assert(!sp.available && /too few/.test(sp.reason) && near(sp.coverage, 0.1));
-  assert(!elevationProfile(s, s.map(() => 0), 25).available); assert(!elevationProfile(s, s.map(() => 42.5), 25).available);
-  assert(!elevationProfile(s, s.map((x) => 20000 + x), 25).available);
-  assert(!elevationProfile([0], [10], 25).available);
-});
-t("dead-banded ascent and descent: a 20 m triangle wave counts 20 m per rise, and noise within the dead-band counts nothing", () => {
-  const z = []; for (let c = 0; c < 4; c++) { for (let i = 0; i < 20; i++) z.push(i); for (let i = 20; i > 0; i--) z.push(i); }
-  const ad = profileAscentDescent(z, 3); assert(near(ad.ascentM, 80, 1e-9), String(ad.ascentM)); assert(near(ad.descentM, 79, 1e-9), String(ad.descentM));   // 4 rises of 20 m; the last cycle ends on the way down at 1
-  const r = rng(7), noisy = Array.from({ length: 4000 }, () => 100 + (r() - 0.5) * 4);         // +/- 2 m about flat: range 4 m
-  assert(profileAscentDescent(smoothMean(noisy, 3), 3).ascentM < 1);
-});
-t("detect: one 5% climb of 50 m is found exactly; a smaller 20 m rise and the descent are not climbs", () => {
-  const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -5], [500, 4], [1000, 0]]);
-  const c = detectClimbs(z, RAW);
-  assert.strictEqual(c.length, 1, JSON.stringify(c.map((x) => x.startM)));
-  assert(near(c[0].startM, 1000, 1e-6) && near(c[0].endM, 2000, 1e-6) && near(c[0].gainM, 50, 1e-6) && near(c[0].avgPct, 5, 1e-6) && near(c[0].maxPct, 5, 1e-6) && c[0].cls === 1);
-});
-t("detect: the steepest 100 m sets the max slope (4% with a 12% pinch in the middle)", () => {
-  const z = prof([[500, 0], [700, 4], [100, 12], [700, 4], [500, 0]]);
-  const c = detectClimbs(z, RAW)[0];
-  assert(near(c.maxPct, 12, 1e-6), String(c.maxPct)); assert(c.avgPct < 5 && c.cls === 3);
-});
-t("detect: raising the minimum gain never adds climbs", () => {
-  for (let seed = 1; seed <= 30; seed++) {
-    const r = rng(seed), pieces = Array.from({ length: 12 }, () => [200 + Math.floor(r() * 12) * 100, (r() - 0.5) * 16]), z = prof(pieces);
-    let prev = Infinity;
-    for (const g of [5, 10, 25, 40, 60, 100]) { const n = detectClimbs(z, { ...RAW, minGainM: g }).length; assert(n <= prev, `seed ${seed} gain ${g}`); prev = n; }
-  }
-});
-t("detect: a long gentle rise (30 m over 10 km) is not a climb unless the average-slope floor is off", () => {
-  const z = prof([[10000, 0.3]]);
-  assert.strictEqual(detectClimbs(z, RAW).length, 0); assert.strictEqual(detectClimbs(z, { ...RAW, minAvgPct: 0 }).length, 1);
-});
-t("detect: two ramps split by a small dip are one climb; split by a big dip they are two", () => {
-  const small = prof([[800, 5], [200, -2.5], [800, 5]]);                                          // 40 m up, 5 m down, 40 m up
-  const cs = detectClimbs(small, RAW); assert.strictEqual(cs.length, 1); assert(near(cs[0].gainM, 75, 1e-6));
-  const big = prof([[800, 5], [400, -5], [800, 5]]);                                              // 40 m up, 20 m down (> 25% of 40), 40 m up
-  assert.strictEqual(detectClimbs(big, RAW).length, 2);
-});
-t("a reversed profile: the recorded descent becomes the climb (what pressing Reverse route does)", () => {
-  const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -3], [1000, 0]]);                      // up 50, down 30
-  const fwd = detectClimbs(z, RAW), rev = detectClimbs(z.slice().reverse(), RAW);
-  assert(fwd.length === 1 && near(fwd[0].gainM, 50, 1e-6)); assert(rev.length === 1 && Math.abs(rev[0].gainM - 30) <= 2 && Math.abs(rev[0].avgPct - 3) < 0.15, JSON.stringify(rev));   // within the end-trim (<= 1 m per end) of the exact 30 m at 3%
-});
-t("segment classes: a climb lands on the stretch of the route where it is", () => {
-  const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -5], [1000, 0]]), gridM = (z.length - 1) * 25, lens = Array(z.length - 1).fill(25);
-  const f = climbSegmentClasses(detectClimbs(z, RAW), gridM, lens);
-  const idx = (a) => a.map((c, i) => (c >= 0 ? i : -1)).filter((i) => i >= 0);
-  assert(Math.min(...idx(f)) >= 39 && Math.max(...idx(f)) <= 81, "the climb is km 1-2");
-  assert(idx(f).every((i) => f[i] === 1));
-  const rr = climbSegmentClasses(detectClimbs(z.slice().reverse(), RAW), gridM, lens);
-  assert(Math.min(...idx(rr)) >= 39 && Math.max(...idx(rr)) <= 81, "on the reversed profile the recorded descent (km 3-4) is the climb, now at km 1-2");
-});
-t("noise: +/-2 m random elevation on a 40 km flat route gives no climbs and almost no ascent (through the whole pipeline)", () => {
-  for (let seed = 1; seed <= 10; seed++) {
-    const r = rng(seed * 101), s = Array.from({ length: 1601 }, (_, i) => i * 25), e = s.map(() => 30 + (r() - 0.5) * 4);
-    const a = analyzeTerrain(s, e); assert(a.available && a.fwd.length === 0, `seed ${seed}`); assert(a.ascentM < 5, `ascent ${a.ascentM}`);
-  }
-});
-t("noise on top of a real climb: the climb is still found, with about the right gain", () => {
-  const r = rng(99), z = prof([[3000, 0], [2000, 4], [3000, 0]]), s = z.map((_, i) => i * 25), e = z.map((v) => v + (r() - 0.5) * 4);
-  const a = analyzeTerrain(s, e), c = a.fwd; assert.strictEqual(c.length, 1); assert(Math.abs(c[0].gainM - 80) < 6, String(c[0].gainM)); assert(Math.abs(c[0].startM - 3000) < 250);
-});
-// real terrain: a straight line Valkenburg -> Vaals (South Limburg), 90 m terrain model, a value every 100 m
-const fs2 = require("fs"), fx = JSON.parse(fs2.readFileSync(path.join(__dirname, "fixtures", "limburg-line.json"), "utf8"));
-t("real terrain (South Limburg line): six climbs, each matching a valley-to-peak rise of the raw data, the steep short ramp is the steepest", () => {
-  const s = fx.elevation.map((_, i) => i * fx.stepM), a = analyzeTerrain(s, fx.elevation);
-  assert(a.available); assert.strictEqual(a.fwd.length, 6, JSON.stringify(a.fwd.map((c) => [Math.round(c.startM), Math.round(c.gainM)])));
-  const gains = a.fwd.map((c) => c.gainM); [51, 35, 35, 56, 55, 46].forEach((g, i) => assert(Math.abs(gains[i] - g) < 6, `climb ${i}: ${gains[i]} vs ~${g}`));
-  a.fwd.forEach((c) => { assert(c.gainM >= 25 && c.avgPct >= 2, JSON.stringify(c)); assert(c.zEnd - c.zStart === c.gainM || near(c.zEnd - c.zStart, c.gainM, 1e-9)); });
-  const steep = a.fwd.reduce((m, c) => (c.maxPct > m.maxPct ? c : m)); assert(steep.lengthM < 500 && steep.cls === 4 && steep.avgPct > 10, JSON.stringify(steep));
-  assert(a.zMax > 190 && a.zMin < 80); assert(a.ascentM > a.descentM, "the line ends higher than it starts");
-});
-t("real terrain: a higher minimum gain removes exactly the smaller climbs and never changes the others (stability)", () => {
-  const s = fx.elevation.map((_, i) => i * fx.stepM), all = analyzeTerrain(s, fx.elevation).fwd, big = analyzeTerrain(s, fx.elevation, { minGainM: 40 }).fwd;
-  assert.strictEqual(big.length, 4);
-  big.forEach((c) => assert(all.some((d) => d.startM === c.startM && d.endM === c.endM), "same climb, same extent"));
-  assert(all.filter((d) => !big.some((c) => c.startM === d.startM)).every((d) => d.gainM < 40));
-  assert(analyzeTerrain(s, fx.elevation, { minGainM: 100 }).fwd.length === 0);
-});
-t("real terrain: max slope depends on smoothing (that is why the app labels it) but the climbs and their gains hold", () => {
-  const s = fx.elevation.map((_, i) => i * fx.stepM), a100 = analyzeTerrain(s, fx.elevation, { smoothWindowM: 100 }), a250 = analyzeTerrain(s, fx.elevation, { smoothWindowM: 250 });
-  assert(Math.abs(a100.fwd.length - a250.fwd.length) <= 1, `${a100.fwd.length} vs ${a250.fwd.length}`);
-  const st = (a) => a.fwd.reduce((m, c) => (c.maxPct > m.maxPct ? c : m)).maxPct; assert(st(a100) > st(a250) + 2, `${st(a100)} vs ${st(a250)}`);
-  const big100 = a100.fwd.filter((c) => c.gainM > 45).map((c) => Math.round(c.startM / 1000)), big250 = a250.fwd.filter((c) => c.gainM > 45).map((c) => Math.round(c.startM / 1000));
-  assert.deepStrictEqual(big100.slice(0, 3), big250.slice(0, 3), "the big climbs are where they are whatever the smoothing");
-});
-
-// looking elevation up: which points are sent, and in what requests
-t("cumulativeDistances: running length along the track", () => {
-  const d = cumulativeDistances([[0, 0], [3, 4], [3, 4], [6, 8]]); assert.deepStrictEqual(d, [0, 5, 5, 10]);
-});
-t("sampleAlongRoute: even spacing, first and last point included, positions on the line", () => {
-  const pts = [[50, 5, null], [50.01, 5, null], [50.01, 5.02, null]], sRaw = [0, 1113, 1113 + 1432];   // an L-shaped track
-  const r = sampleAlongRoute(pts, sRaw, 100, 1500), total = sRaw[2];
-  assert.strictEqual(r.s.length, Math.ceil(total / 100) + 1); assert.strictEqual(r.s[0], 0); assert(near(r.s[r.s.length - 1], total, 1e-9));
-  assert(near(r.spacingM, total / (r.s.length - 1), 1e-9) && r.spacingM <= 100 && r.spacingM > 95);
-  assert(near(r.lat[0], 50, 1e-12) && near(r.lon[0], 5, 1e-12)); assert(near(r.lat[r.lat.length - 1], 50.01, 1e-12) && near(r.lon[r.lon.length - 1], 5.02, 1e-12));
-  for (let i = 1; i < r.s.length; i++) assert(near(r.s[i] - r.s[i - 1], r.spacingM, 1e-9));
-  // the sample at the corner (s = 1113) is at the corner; one 500 m before it is half way up the first leg
-  const half = sampleAlongRoute(pts, sRaw, 556.5, 1500);   // 2545/556.5 -> spacing 2545/5: samples at 0, 509, 1018, 1527, ...
-  assert(near(half.lon[1], 5, 1e-12) && near(half.lat[1], 50 + 0.01 * (half.s[1] / 1113), 1e-9), "on the first leg");
-  const onSecond = half.s.map((v, i) => i).filter((i) => half.s[i] > 1113 && half.s[i] < sRaw[2]);
-  onSecond.forEach((i) => { assert(near(half.lat[i], 50.01, 1e-12) && near(half.lon[i], 5 + 0.02 * ((half.s[i] - 1113) / 1432), 1e-9), "on the second leg"); });
-});
-t("sampleAlongRoute: a long route gets a wider spacing, never more than maxN points; degenerate tracks give null", () => {
-  const pts = [[0, 0, null], [0, 1, null]], sRaw = [0, 200000], r = sampleAlongRoute(pts, sRaw, 100, 1500);
-  assert.strictEqual(r.s.length, 1500); assert(near(r.spacingM, 200000 / 1499, 1e-9));
-  assert.strictEqual(sampleAlongRoute([[0, 0, null], [0, 0, null]], [0, 0], 100, 1500), null); assert.strictEqual(sampleAlongRoute([[0, 0, null]], [0], 100, 1500), null);
-});
-t("sampleAlongRoute: repeated points (zero-length pieces) do not produce NaN", () => {
-  const pts = [[50, 5, null], [50, 5, null], [50.001, 5, null], [50.001, 5, null], [50.002, 5, null]], sRaw = [0, 0, 111, 111, 222];
-  const r = sampleAlongRoute(pts, sRaw, 50, 1500); r.lat.concat(r.lon, r.s).forEach((v) => assert(Number.isFinite(v))); assert(near(r.lat[r.lat.length - 1], 50.002, 1e-9));
-});
-t("elevationUrls: batches of at most 100, in order, every point once, rounded", () => {
-  const lat = [], lon = []; for (let i = 0; i < 250; i++) { lat.push(50 + i * 0.000123456); lon.push(5 - i * 0.000234567); }
-  const urls = elevationUrls("https://x/e", lat, lon, 4, 100); assert.strictEqual(urls.length, 3);
-  const sizes = urls.map((u) => u.split("latitude=")[1].split("&")[0].split(",").length); assert.deepStrictEqual(sizes, [100, 100, 50]);
-  urls.forEach((u) => assert(/^https:\/\/x\/e\?latitude=[-\d.,]+&longitude=[-\d.,]+$/.test(u), u));
-  const all = urls.flatMap((u) => u.split("latitude=")[1].split("&")[0].split(",")); assert.deepStrictEqual(all, lat.map((v) => v.toFixed(4)));
-  const allLon = urls.flatMap((u) => u.split("longitude=")[1].split(",")); assert.deepStrictEqual(allLon, lon.map((v) => v.toFixed(4)));
-  assert.strictEqual(elevationUrls("https://x/e", [], [], 4, 100).length, 0); assert.strictEqual(elevationUrls("https://x/e", [50], [5], 4, 100).length, 1);
-});
-t("a looked-up profile (integer metres, no noise handling of its own) gives the same climbs through analyzeTerrain as a file would", () => {
-  const s = fx.elevation.map((_, i) => i * fx.stepM), e = fx.elevation.map(Math.round);
-  assert.deepStrictEqual(analyzeTerrain(s, e).fwd.map((c) => Math.round(c.gainM / 5)), analyzeTerrain(s, fx.elevation).fwd.map((c) => Math.round(c.gainM / 5)));
-});
-
-t("climbMidSegment: the segment half way along a climb, and the last segment as a fallback", () => {
-  const lengths = Array(100).fill(25), gridM = 2500, c = { startM: 500, endM: 1000 };      // km 0.5 - 1.0 of a 2.5 km route
-  assert.strictEqual(climbMidSegment(c, gridM, lengths), 30);                                 // 750 m -> segment 30
-  assert.strictEqual(climbMidSegment({ startM: 2400, endM: 2500 }, gridM, lengths), 98);
-  assert.strictEqual(climbMidSegment({ startM: 2500, endM: 2500 }, gridM, lengths), 99);
-});
-
 // the "During the ride" series
 t("buildRideSeries: km counted along the ride, the clock ascends, thinned evenly, ends included", () => {
   const lengths = Array(100).fill(25), tt = lengths.map((_, i) => 600 + i * 0.5);
@@ -1017,11 +851,6 @@ t("mirrorLocations: places turn around (fractions 1 - f, order reversed), everyt
 t("mirrorTimeline: keeps the start time, mirrors the places, and null stays null", () => {
   const tl = { locations: [{ frac: 0, x: 1 }, { frac: 1, x: 2 }], startMin: 480 }, m = mirrorTimeline(tl);
   assert.strictEqual(m.startMin, 480); assert.deepStrictEqual(m.locations.map((l) => l.x), [2, 1]); assert.strictEqual(mirrorTimeline(null), null);
-});
-t("mirrorProfile: distances measured from the other end, elevations reversed, points replaced; twice is the identity", () => {
-  const dem = { points: "old", s: [0, 100, 250, 400], ele: [10, 20, 35, 30], spacingM: 100 }, pts = ["new"], m = mirrorProfile(dem, pts);
-  assert.deepStrictEqual(m.s, [0, 150, 300, 400]); assert.deepStrictEqual(m.ele, [30, 35, 20, 10]); assert.strictEqual(m.points, pts); assert.strictEqual(m.spacingM, 100);
-  const back = mirrorProfile(m, "old"); assert.deepStrictEqual(back.s, dem.s); assert.deepStrictEqual(back.ele, dem.ele); assert.strictEqual(mirrorProfile(null, pts), null);
 });
 t("a wind and a rain series read on mirrored places give the mirrored answer", () => {
   const mk = (mm) => ({ t: [600], mm: [mm], prob: [null] });
