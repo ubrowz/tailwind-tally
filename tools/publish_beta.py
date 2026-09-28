@@ -2,7 +2,7 @@
 """Publish a build of the web app to the BETA site (github.com/ubrowz/tailwind-tally-beta,
 served at https://ubrowz.github.io/tailwind-tally-beta/), never to the released one.
 
-  python3 tools/publish_beta.py [--ref forecast-wind] [--dir ~/Software/tailwind-tally-beta] [--no-push]
+  python3 tools/publish_beta.py [--ref next] [--dir ~/Software/tailwind-tally-beta] [--no-push]
 
 It takes the web files from a git ref of THIS repository (committed state, so local
 scratch files and routes are never included), makes them safe for a test site (noindex,
@@ -48,7 +48,7 @@ def betaify_privacy(html):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ref", default="forecast-wind")
+    ap.add_argument("--ref", default="next")
     ap.add_argument("--dir", default=os.path.expanduser("~/Software/tailwind-tally-beta"))
     ap.add_argument("--no-push", action="store_true")
     a = ap.parse_args()
