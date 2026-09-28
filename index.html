@@ -113,6 +113,9 @@
 
   /* ---------- Header ---------- */
   .masthead { display: flex; align-items: center; gap: 16px; }
+  /* EN | NL language switch, top right next to the title */
+  .masthead .lang-toggle { margin: 0 0 0 auto; align-self: flex-start; flex: none; }
+  .masthead .lang-toggle button { padding: 5px 10px; font-size: 12px; }
   .masthead svg { flex: none; }
   .masthead-text h1 {
     font-family: var(--font-display);
@@ -1521,36 +1524,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </svg>
     <div class="masthead-text">
       <h1>Tailwind Tally</h1>
-      <p id="mastheadIntro">Upload a ride's GPX track and a wind direction &mdash; set by hand, or taken from the forecast for your ride &mdash; to see how many kilometres are tailwind ("easy") versus headwind ("hard").</p>
+      <p id="mastheadIntro" data-nl="Laad de GPX-track van een rit en een windrichting &mdash; zelf ingesteld, of uit de weersverwachting voor je rit &mdash; en zie hoeveel kilometer rugwind (&ldquo;makkelijk&rdquo;) is en hoeveel tegenwind (&ldquo;zwaar&rdquo;).">Upload a ride's GPX track and a wind direction &mdash; set by hand, or taken from the forecast for your ride &mdash; to see how many kilometres are tailwind ("easy") versus headwind ("hard").</p>
+    </div>
+    <div class="mode-toggle lang-toggle" role="group" aria-label="Language / Taal">
+      <button type="button" id="langEn" aria-pressed="true" lang="en">EN</button>
+      <button type="button" id="langNl" aria-pressed="false" lang="nl">NL</button>
     </div>
   </div>
 
   <div class="card">
-    <h2>Load a route</h2>
+    <h2 data-nl="Laad een route">Load a route</h2>
     <div class="route-section">
-      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a GPX file">
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a GPX file" data-nl-aria-label="Een GPX-bestand laden">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 3v12M12 3l-4 4M12 3l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <div class="dropzone-text">
-          <strong>Drop a .gpx file here, or click to browse</strong>
-          <span>Parsed entirely in your browser &mdash; the file is never uploaded anywhere.</span>
+          <strong data-nl="Sleep hier een .gpx-bestand naartoe, of klik om te bladeren">Drop a .gpx file here, or click to browse</strong>
+          <span data-nl="Wordt helemaal in je browser verwerkt &mdash; het bestand gaat nergens naartoe.">Parsed entirely in your browser &mdash; the file is never uploaded anywhere.</span>
         </div>
         <input type="file" id="fileInput" accept=".gpx,application/gpx+xml,text/xml,application/xml">
       </div>
     </div>
 
-    <div class="route-divider">or</div>
+    <div class="route-divider" data-nl="of">or</div>
 
     <div class="route-section">
-      <button type="button" class="strava-btn" id="stravaConnectBtn">Connect to Strava</button>
-      <button type="button" class="copy-btn" id="stravaDisconnectBtn" hidden>Disconnect</button>
+      <button type="button" class="strava-btn" id="stravaConnectBtn" data-nl="Verbind met Strava">Connect to Strava</button>
+      <button type="button" class="copy-btn" id="stravaDisconnectBtn" hidden data-nl="Verbinding verbreken">Disconnect</button>
       <div class="strava-panel" id="stravaPanel" hidden>
         <p class="strava-status" id="stravaStatus"></p>
         <div class="strava-route-row">
           <select id="stravaRouteSelect"></select>
-          <button type="button" class="copy-btn" id="stravaLoadBtn">Load route</button>
+          <button type="button" class="copy-btn" id="stravaLoadBtn" data-nl="Route laden">Load route</button>
         </div>
       </div>
       <p class="error-text" id="stravaError"></p>
@@ -1568,46 +1575,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <button type="button" class="route-btn" id="reverseBtn" aria-pressed="false">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Reverse route</span>
+        <span data-nl="Route omdraaien">Reverse route</span>
       </button>
       <p class="error-text" id="fileError"></p>
     </div>
   </div>
 
   <div class="card" id="rideCard">
-    <h2>Your ride <span class="info-pop" data-about="your ride">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the wind you meet.</span></h2>
-    <div class="mode-toggle" role="group" aria-label="Units" id="unitsToggle">
-      <button type="button" id="unitsMetric" aria-pressed="true">Metric (km)</button>
-      <button type="button" id="unitsUS" aria-pressed="false">US (mi)</button>
+    <h2><span data-nl="Jouw rit">Your ride</span> <span class="info-pop" data-about="your ride" data-nl="Constante snelheid houdt je kruissnelheid vast, wat de wind ook doet. Constant vermogen houdt je inspanning vast en laat de snelheid meebewegen: tegen de wind in ga je langzamer, met de wind mee sneller (alleen vlakke weg). Je snelheid en rijstijl bepalen hoe lang de rit duurt, en dus hoe laat je op elk stuk bent. Met de weersverwachting bepaalt dat welke wind je tegenkomt.">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the wind you meet.</span></h2>
+    <div class="mode-toggle" role="group" aria-label="Units" data-nl-aria-label="Eenheden" id="unitsToggle">
+      <button type="button" id="unitsMetric" aria-pressed="true" data-nl="Metrisch (km)">Metric (km)</button>
+      <button type="button" id="unitsUS" aria-pressed="false" data-nl="VS (mi)">US (mi)</button>
     </div>
-    <p class="field-hint">Set from the route&rsquo;s own location; change it here any time. Speed and distance follow it.</p>
+    <p class="field-hint" data-nl="Ingesteld op basis van waar de route ligt; je kunt het hier altijd aanpassen. Snelheid en afstand volgen het.">Set from the route&rsquo;s own location; change it here any time. Speed and distance follow it.</p>
     <div class="two-col-grid">
       <div class="field">
         <label for="cruiseSpeedInput" id="cruiseSpeedLabel">Cruising speed (km/h)</label>
         <input type="number" id="cruiseSpeedInput" value="25" min="1" max="60" step="1">
       </div>
       <div class="field">
-        <label for="rideStyleInput">Riding style</label>
+        <label for="rideStyleInput" data-nl="Rijstijl">Riding style</label>
         <select id="rideStyleInput">
-          <option value="speed">Steady speed</option>
-          <option value="power">Steady power (the same effort as your speed on a calm day)</option>
+          <option value="speed" data-nl="Constante snelheid">Steady speed</option>
+          <option value="power" data-nl="Constant vermogen (dezelfde inspanning als je snelheid op een windstille dag)">Steady power (the same effort as your speed on a calm day)</option>
         </select>
       </div>
     </div>
     <p class="field-hint" id="rideStyleHint" hidden></p>
     <details class="advanced">
-      <summary>Advanced</summary>
+      <summary data-nl="Geavanceerd">Advanced</summary>
       <div class="advanced-grid">
         <div class="field">
-          <label for="riderMassInput">Rider + bike mass (kg)</label>
+          <label for="riderMassInput" data-nl="Massa renner + fiets (kg)">Rider + bike mass (kg)</label>
           <input type="number" id="riderMassInput" value="85" min="40" max="200" step="1">
         </div>
         <div class="field">
-          <label for="riderCdaInput">Drag area CdA (m&sup2;) <span class="info-pop" data-about="the rider settings">The mass, drag area and rolling resistance are used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</span></label>
+          <label for="riderCdaInput"><span data-nl="Luchtweerstand CdA (m&sup2;)">Drag area CdA (m&sup2;)</span> <span class="info-pop" data-about="the rider settings" data-nl="Massa, luchtweerstand en rolweerstand worden alleen gebruikt bij <b>Constant vermogen</b>. Gangbare CdA: 0,28 laag in de beugel, 0,32 op de remgrepen, 0,40 rechtop.">The mass, drag area and rolling resistance are used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</span></label>
           <input type="number" id="riderCdaInput" value="0.32" min="0.15" max="0.8" step="0.01">
         </div>
         <div class="field">
-          <label for="riderCrrInput">Rolling resistance Crr</label>
+          <label for="riderCrrInput" data-nl="Rolweerstand Crr">Rolling resistance Crr</label>
           <input type="number" id="riderCrrInput" value="0.005" min="0.002" max="0.02" step="0.001">
         </div>
       </div>
@@ -1615,37 +1622,37 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card" id="weatherCard">
-    <h2>Weather for the ride <span class="info-pop" data-about="the weather options"><b>Set manually:</b> type the wind yourself, in the Wind tab. <b>From forecast:</b> times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: the wind changes from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind, and you can still adjust it.</span></h2>
-    <div class="mode-toggle" role="group" aria-label="Wind source">
-      <button type="button" id="modeManual" aria-pressed="true">Set manually</button>
-      <button type="button" id="modeForecast" aria-pressed="false">From forecast</button>
+    <h2><span data-nl="Weer tijdens de rit">Weather for the ride</span> <span class="info-pop" data-about="the weather options" data-nl="<b>Zelf instellen:</b> vul de wind zelf in, bij het tabblad Wind. <b>Weersverwachting:</b> tijden zijn de lokale tijd van de route, waar ter wereld die ook ligt. De rit duurt zo lang als de route nodig heeft bij je kruissnelheid, en de verwachting volgt de klok onderweg: de wind verandert van stuk tot stuk zoals de verwachting verandert. Verwachtingen reiken zo&rsquo;n twee weken vooruit; stel voor andere data de wind zelf in. De verwachting vult de wind in, en je kunt die daarna nog aanpassen."><b>Set manually:</b> type the wind yourself, in the Wind tab. <b>From forecast:</b> times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: the wind changes from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind, and you can still adjust it.</span></h2>
+    <div class="mode-toggle" role="group" aria-label="Wind source" data-nl-aria-label="Bron van de wind">
+      <button type="button" id="modeManual" aria-pressed="true" data-nl="Zelf instellen">Set manually</button>
+      <button type="button" id="modeForecast" aria-pressed="false" data-nl="Weersverwachting">From forecast</button>
     </div>
     <div class="forecast-panel" id="forecastPanel" hidden>
       <div class="forecast-grid">
         <div class="field">
-          <label for="fcDate">Ride date</label>
+          <label for="fcDate" data-nl="Datum van de rit">Ride date</label>
           <input type="date" id="fcDate">
         </div>
         <div class="field">
-          <label for="fcStart">Start time</label>
+          <label for="fcStart" data-nl="Starttijd">Start time</label>
           <input type="time" id="fcStart" value="10:00">
         </div>
       </div>
       <p class="ride-timing" id="rideTiming"></p>
       <div class="forecast-actions">
-        <button type="button" class="action-btn" id="fcGetBtn">Get forecast</button>
+        <button type="button" class="action-btn" id="fcGetBtn" data-nl="Verwachting ophalen">Get forecast</button>
       </div>
-      <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a></p>
-      <p class="forecast-note stale" id="forecastStale" hidden>You changed the date, or the ride now runs past the hours that were fetched. The wind follows a changed start time and speed on its own; tap Get forecast again to pick up a different date or later hours.</p>
+      <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener" data-nl="Weergegevens van Open-Meteo.com">Weather data by Open-Meteo.com</a></p>
+      <p class="forecast-note stale" id="forecastStale" hidden data-nl="Je hebt de datum veranderd, of de rit loopt nu door na de opgehaalde uren. De wind volgt een andere starttijd en snelheid vanzelf; tik opnieuw op Verwachting ophalen voor een andere datum of latere uren.">You changed the date, or the ride now runs past the hours that were fetched. The wind follows a changed start time and speed on its own; tap Get forecast again to pick up a different date or later hours.</p>
       <p class="error-text" id="forecastError"></p>
     </div>
   </div>
 
   <div class="stat-row" id="statRow"></div>
 
-  <div class="tabbar" role="tablist" aria-label="What to look at">
+  <div class="tabbar" role="tablist" aria-label="What to look at" data-nl-aria-label="Wat je wilt zien">
     <button type="button" role="tab" id="tabWind" aria-selected="true" aria-controls="panelWind">Wind</button>
-    <button type="button" role="tab" id="tabHow" aria-selected="false" aria-controls="panelHow" tabindex="-1">How it works</button>
+    <button type="button" role="tab" id="tabHow" aria-selected="false" aria-controls="panelHow" tabindex="-1" data-nl="Uitleg (Engels)">How it works</button>
   </div>
 
   <div class="tabpanel" id="panelWind" role="tabpanel" aria-labelledby="tabWind">
@@ -1661,27 +1668,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div class="wind-fields">
         <div class="field">
-          <label for="windInput">Wind from <span class="info-pop" data-about="the wind direction">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</span></label>
+          <label for="windInput"><span data-nl="Wind uit">Wind from</span> <span class="info-pop" data-about="the wind direction" data-nl="Een windrichting met 16 streken (N, NNO, NO &hellip; NNW) of een koers in graden.">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</span></label>
           <input type="text" id="windInput" value="SW" autocomplete="off" spellcheck="false">
           <p class="field-hint" id="windTimelineHint" hidden></p>
         </div>
         <div class="field">
-          <label for="windSpeedInput">Wind speed (Beaufort) <span class="info-pop" id="speedHint" data-about="the wind speed"></span></label>
+          <label for="windSpeedInput"><span data-nl="Windkracht (Beaufort)">Wind speed (Beaufort)</span> <span class="info-pop" id="speedHint" data-about="the wind speed"></span></label>
           <select id="windSpeedInput"></select>
         </div>
         <div class="field">
-          <label for="neutralInput">Crosswind band (&deg;) <span class="info-pop" data-about="the crosswind band">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) &mdash; e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</span></label>
+          <label for="neutralInput"><span data-nl="Zijwindband (&deg;)">Crosswind band (&deg;)</span> <span class="info-pop" data-about="the crosswind band" data-nl="Totale breedte van de zijwindband, gecentreerd op zijwind (haaks op de wind) &mdash; bijv. 10&deg; betekent &plusmn;5&deg; aan beide kanten. Stukken met zijwind tellen niet als makkelijk of zwaar (Neutraal buiten de routekaart, Zijwind erop).">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) &mdash; e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</span></label>
           <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
         </div>
         <div class="field">
-          <label for="veryInput">Full tailwind / full headwind band (&deg;) <span class="info-pop" data-about="the full tailwind and headwind band">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) &mdash; e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</span></label>
+          <label for="veryInput"><span data-nl="Band volle rugwind / volle tegenwind (&deg;)">Full tailwind / full headwind band (&deg;)</span> <span class="info-pop" data-about="the full tailwind and headwind band" data-nl="Totale breedte van de &ldquo;volle&rdquo; banden, gecentreerd op pal rugwind (0&deg;) en pal tegenwind (180&deg;) &mdash; bijv. 40&deg; betekent dat de 20&deg; het dichtst bij elk ervan telt als volle rugwind/volle tegenwind. Gebruikt door de routekaart en de berekeningen eronder, niet door de rest van de pagina.">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) &mdash; e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</span></label>
           <input type="number" id="veryInput" value="40" min="0" max="90" step="1">
         </div>
         <details class="advanced">
-          <summary>Advanced</summary>
+          <summary data-nl="Geavanceerd">Advanced</summary>
           <div class="advanced-grid">
             <div class="field">
-              <label for="resampleInput">Resample spacing (m)</label>
+              <label for="resampleInput" data-nl="Afstand tussen meetpunten (m)">Resample spacing (m)</label>
               <input type="number" id="resampleInput" value="25" min="0" step="5">
             </div>
           </div>
@@ -1690,11 +1697,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
     <div class="ride-chart" id="windRideChart" hidden>
       <div class="ride-head">
-        <h3>Wind during the ride <span class="info-pop" data-about="this chart">Arrows show where the wind blows toward, with its speed below, at each time of day. Hover or touch the chart to see where on the route you would be.</span></h3>
-        <button class="copy-btn" id="saveWindRideBtn">Save image</button>
+        <h3><span data-nl="Wind tijdens de rit">Wind during the ride</span> <span class="info-pop" data-about="this chart" data-nl="Pijlen tonen waar de wind naartoe waait, met de snelheid eronder, op elk moment van de dag. Beweeg over de grafiek of raak hem aan om te zien waar op de route je dan zou zijn.">Arrows show where the wind blows toward, with its speed below, at each time of day. Hover or touch the chart to see where on the route you would be.</span></h3>
+        <button class="copy-btn" id="saveWindRideBtn" data-nl="Afbeelding opslaan">Save image</button>
       </div>
-      <p class="ride-hint"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="13" height="8" rx="1.5"/><path d="M5 2.5 A6 6 0 0 1 12 3.5 M12 1.5 V3.5 H10"/></svg>Best viewed with your phone turned sideways.</p>
-      <svg class="ride-svg" id="windRideSvg" role="img" aria-label="Wind direction and speed during the ride"></svg>
+      <p class="ride-hint"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="13" height="8" rx="1.5"/><path d="M5 2.5 A6 6 0 0 1 12 3.5 M12 1.5 V3.5 H10"/></svg><span data-nl="Het best te bekijken met je telefoon gedraaid.">Best viewed with your phone turned sideways.</span></p>
+      <svg class="ride-svg" id="windRideSvg" role="img" aria-label="Wind direction and speed during the ride" data-nl-aria-label="Windrichting en windsnelheid tijdens de rit"></svg>
       <p class="ride-readout" id="windRideReadout" aria-live="polite"></p>
       <div class="ride-legend" id="windRideLegend"></div>
     </div>
@@ -1706,8 +1713,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="card-head">
         <h2>Route <span class="info-pop" id="planCaption" data-about="the route colours"></span></h2>
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span class="badge example" id="mapStatusBadge">Loading&hellip;</span>
-          <button class="copy-btn" id="saveRouteBtn">Save image</button>
+          <span class="badge example" id="mapStatusBadge" data-nl="Laden&hellip;">Loading&hellip;</span>
+          <button class="copy-btn" id="saveRouteBtn" data-nl="Afbeelding opslaan">Save image</button>
         </div>
       </div>
       <p class="chart-caption" id="planSummary"></p>
@@ -1726,17 +1733,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="card">
     <div class="card-head">
-      <h2>Wind-direction sweep <span class="info-pop" data-about="the sweep chart">The share of the route that is tailwind, if the wind came from every direction, 0&ndash;359&deg;. It is for the route as it is now: press Reverse route to see the other way round.</span></h2>
-      <button class="copy-btn" id="saveSweepBtn">Save image</button>
+      <h2><span data-nl="Alle windrichtingen">Wind-direction sweep</span> <span class="info-pop" data-about="the sweep chart" data-nl="Het deel van de route met rugwind, als de wind uit elke richting zou komen, 0&ndash;359&deg;. Het geldt voor de route zoals die nu is: druk op Route omdraaien om de andere kant op te zien.">The share of the route that is tailwind, if the wind came from every direction, 0&ndash;359&deg;. It is for the route as it is now: press Reverse route to see the other way round.</span></h2>
+      <button class="copy-btn" id="saveSweepBtn" data-nl="Afbeelding opslaan">Save image</button>
     </div>
     <div class="sweep-layout">
-        <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of the tailwind share versus wind direction"></svg>
+        <svg id="polarSvg" viewBox="0 0 480 480" role="img" aria-label="Polar plot of the tailwind share versus wind direction" data-nl-aria-label="Poolgrafiek van het aandeel rugwind per windrichting"></svg>
     <div class="wind-sensitivity" id="sweepCallout"></div>
     <details class="table-toggle" id="sweepTableToggle">
-      <summary>View sweep as a table</summary>
+      <summary data-nl="Bekijk als tabel">View sweep as a table</summary>
       <div class="sweep-table-wrap">
         <table class="sweep-table" id="sweepTable">
-          <thead><tr><th>From</th><th>Bearing</th><th>Tailwind</th></tr></thead>
+          <thead><tr><th data-nl="Uit">From</th><th data-nl="Richting">Bearing</th><th data-nl="Rugwind">Tailwind</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -1880,16 +1887,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="card" id="reportCard">
     <div class="card-head">
-      <h2>Full report</h2>
-      <button class="copy-btn" id="copyBtn">Copy</button>
+      <h2 data-nl="Volledig rapport (Engels)">Full report</h2>
+      <button class="copy-btn" id="copyBtn" data-nl="Kopi&euml;ren">Copy</button>
     </div>
     <pre class="report" id="reportText"></pre>
   </div>
 
   <footer>
-    Geometry: equirectangular projection about the route centroid, resampled to fixed arc-length spacing before heading is measured.
-    <div style="margin-top: 8px;"><a href="privacy.html" style="color: inherit;">Privacy Policy</a></div>
-    <div style="margin-top: 8px;" id="howFooterLink" hidden><a href="#how-it-works" target="_blank" rel="noopener" style="color: inherit;">How it works</a> (a long read, best on a larger screen)</div>
+    <span data-nl="Geometrie: equirectangulaire projectie rond het middelpunt van de route, op vaste afstanden langs de route herbemonsterd voordat de richting wordt gemeten.">Geometry: equirectangular projection about the route centroid, resampled to fixed arc-length spacing before heading is measured.</span>
+    <div style="margin-top: 8px;"><a href="privacy.html" id="privacyLink" style="color: inherit;" data-nl="Privacybeleid">Privacy Policy</a></div>
+    <div style="margin-top: 8px;" id="howFooterLink" hidden><a href="#how-it-works" target="_blank" rel="noopener" style="color: inherit;" data-nl="Uitleg (Engels)">How it works</a> <span data-nl="(lang, het best op een groter scherm)">(a long read, best on a larger screen)</span></div>
   </footer>
 </div>
 
@@ -1897,6 +1904,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script>
 (function () {
   "use strict";
+
+  // ---------------------------------------------------------------------
+  // Language: English or Dutch. The phone's or browser's own first language
+  // decides at first (nl -> Dutch), until the rider picks one with the
+  // EN | NL switch at the top; that choice is remembered on this device.
+  // tx(en, nl) picks a text; num() writes a decimal comma in Dutch. Text in
+  // the page itself carries its Dutch in a data-nl attribute (see applyLang).
+  // ---------------------------------------------------------------------
+  var LANG = (function () {
+    try { var saved = localStorage.getItem("tailwind-tally-lang"); if (saved === "en" || saved === "nl") return saved; } catch (e) { /* storage blocked */ }
+    var first = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+    return /^nl\b/i.test(first) ? "nl" : "en";
+  })();
+  function tx(en, nl) { return LANG === "nl" ? nl : en; }
+  function num(x, d) { var t = x.toFixed(d); return LANG === "nl" ? t.replace(".", ",") : t; }
+  function numStr(x) { var t = String(x); return LANG === "nl" ? t.replace(".", ",") : t; }
 
   // ---------------------------------------------------------------------
   // Wind convention: wind_from_deg is degrees clockwise from north, the
@@ -1922,20 +1945,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   function parseWindFrom(text) {
     var t = String(text).trim();
-    if (t === "") throw new Error("Enter a wind direction.");
+    if (t === "") throw new Error(tx("Enter a wind direction.", "Vul een windrichting in."));
     if (/^-?\d+(\.\d+)?$/.test(t)) {
       var n = parseFloat(t);
       return ((n % 360) + 360) % 360;
     }
     var key = t.toUpperCase();
+    // Dutch codes too: O (oost) is E, Z (zuid) is S. English codes never contain O or Z.
+    if (/[OZ]/.test(key)) key = key.replace(/O/g, "E").replace(/Z/g, "S");
     if (COMPASS_MAP.hasOwnProperty(key)) return COMPASS_MAP[key];
-    throw new Error("'" + text + "' isn't a compass code (N, NE, NNE, ...) or a number of degrees.");
+    throw new Error(tx("'" + text + "' isn't a compass code (N, NE, NNE, ...) or a number of degrees.",
+                      "'" + text + "' is geen windrichting (N, NO, NNO, ...) of aantal graden."));
   }
 
-  function degreesToCompass16(deg) {
+  // The English code (file names use it); degreesToCompass16 gives the one for the page's language.
+  function compassCodeEn(deg) {
     var idx = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16;
     return COMPASS_16[idx][0];
   }
+  // Dutch compass letters: O (oost) for E, Z (zuid) for S; N and W are the same.
+  function compassLocal(code) { return LANG === "nl" ? code.replace(/E/g, "O").replace(/S/g, "Z") : code; }
+  function degreesToCompass16(deg) { return compassLocal(compassCodeEn(deg)); }
 
   // ---------------------------------------------------------------------
   // GPX parsing
@@ -1948,7 +1978,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function parseGpxPoints(xmlText) {
     var doc = new DOMParser().parseFromString(xmlText, "application/xml");
     if (doc.querySelector("parsererror")) {
-      throw new Error("That file doesn't look like valid GPX/XML.");
+      throw new Error(tx("That file doesn't look like valid GPX/XML.", "Dat bestand lijkt geen geldige GPX/XML."));
     }
     var points = [];
     doc.querySelectorAll("trk").forEach(function (trk) {
@@ -1965,7 +1995,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
     points = points.filter(function (p) { return isFinite(p[0]) && isFinite(p[1]); });
     if (points.length < 2) {
-      throw new Error("This GPX file has " + points.length + " usable point(s); need at least 2 to form a route.");
+      throw new Error(tx("This GPX file has " + points.length + " usable point(s); need at least 2 to form a route.",
+                        "Dit GPX-bestand heeft " + points.length + " bruikbare punt(en); een route heeft er minstens 2 nodig."));
     }
     return points;
   }
@@ -2185,6 +2216,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     "Calm", "Light air", "Light breeze", "Gentle breeze", "Moderate breeze", "Fresh breeze",
     "Strong breeze", "Near gale", "Gale", "Strong gale", "Storm", "Violent storm", "Hurricane force"
   ];
+  var BEAUFORT_LABELS_NL = [                    // the KNMI's names
+    "Windstil", "Zwak", "Zwak", "Matig", "Matig", "Vrij krachtig",
+    "Krachtig", "Hard", "Stormachtig", "Storm", "Zware storm", "Zeer zware storm", "Orkaan"
+  ];
+  function beaufortName(i) { return (LANG === "nl" ? BEAUFORT_LABELS_NL : BEAUFORT_LABELS)[i]; }
   function beaufortToKmh(n) { return BEAUFORT_KMH[Math.max(0, Math.min(12, Math.round(n)))]; }
 
   // ---------------------------------------------------------------------
@@ -2801,7 +2837,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       svg.appendChild(el("line", { x1: cx, y1: cy, x2: fmt(far[0]), y2: fmt(far[1]), class: "chart-grid-line", "stroke-width": 1 }));
       var lp = toXY(pair[0], scaleMax * 1.11);
       var t = el("text", { x: fmt(lp[0]), y: fmt(lp[1] + 3), "text-anchor": "middle", class: "chart-ink", "font-size": "12", "font-weight": "600", "font-family": "var(--font-display)" });
-      t.textContent = pair[1];
+      t.textContent = compassLocal(pair[1]);
       svg.appendChild(t);
     });
 
@@ -2897,12 +2933,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
   });
 
 
-  function renderMap(result) {
+  var mapBadgeState = null;                     // "live", "blocked" or "error"; null while loading
+  function syncMapBadge() {
     var badge = document.getElementById("mapStatusBadge");
-    if (typeof L === "undefined") {
-      if (badge) { badge.textContent = "Map library blocked"; badge.className = "badge blocked"; }
-      return;
-    }
+    if (!badge || !mapBadgeState) return;
+    badge.textContent = mapBadgeState === "live" ? tx("Live tiles", "Kaart geladen")
+      : mapBadgeState === "blocked" ? tx("Map library blocked", "Kaartbibliotheek geblokkeerd")
+      : tx("Tile error - check proxy URL", "Kaartfout - controleer de proxy-URL");
+    badge.className = "badge " + (mapBadgeState === "live" ? "loaded" : "blocked");
+  }
+
+  function renderMap(result) {
+    if (typeof L === "undefined") { mapBadgeState = "blocked"; syncMapBadge(); return; }
 
     var style = prefersDarkTheme() ? "dataviz-dark" : "dataviz";
     var url = TILE_PROXY_BASE + "/tiles/" + style + "/{z}/{x}/{y}.png";
@@ -2915,10 +2957,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener">MapTiler</a>'
       }).addTo(leafletMap);
       leafletTileLayer.on("load", function () {
-        if (badge) { badge.textContent = "Live tiles"; badge.className = "badge loaded"; }
+        mapBadgeState = "live"; syncMapBadge();
       });
       leafletTileLayer.on("tileerror", function () {
-        if (badge) { badge.textContent = "Tile error - check proxy URL"; badge.className = "badge blocked"; }
+        mapBadgeState = "error"; syncMapBadge();
       });
       L.control.scale({ metric: true, imperial: false }).addTo(leafletMap);
       leafletRouteLayer = L.layerGroup().addTo(leafletMap);
@@ -3007,7 +3049,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var ystep = niceStep(yMax - yMin, 4), t;
     for (t = Math.ceil(yMin / ystep) * ystep; t <= yMax + 1e-9; t += ystep) {
       el("line", { "class": "rc-grid", x1: ml, x2: W - mr, y1: sy(t).toFixed(1), y2: sy(t).toFixed(1) });
-      el("text", { x: ml - 6, y: (sy(t) + 4).toFixed(1), "text-anchor": "end" }, String(Math.round(t * 10) / 10));
+      el("text", { x: ml - 6, y: (sy(t) + 4).toFixed(1), "text-anchor": "end" }, numStr(Math.round(t * 10) / 10));
     }
     el("text", { x: ml - 6, y: panelTop - 1, "text-anchor": "end" }, unitLabel);
     var steps = [5, 10, 15, 20, 30, 60, 120, 180, 360], tstep = steps[steps.length - 1];
@@ -3025,7 +3067,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var nArrows = Math.max(4, Math.floor(plotW / 30));
     S.forEach(function (ser, r) {
       var cy = mt + rowH * r + rowH / 2, sT0 = ser.pts[0].t, sT1 = ser.pts[ser.pts.length - 1].t;
-      el("text", { x: ml - 6, y: cy + 4, "text-anchor": "end" }, "toward");
+      el("text", { x: ml - 6, y: cy + 4, "text-anchor": "end" }, tx("toward", "naar"));
       for (var a = 0; a < nArrows; a++) {
         var ta = t0 + (a + 0.5) / nArrows * (t1 - t0);
         if (ta < sT0 - 1 || ta > sT1 + 1) continue;
@@ -3040,9 +3082,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
     var cursor = el("line", { "class": "rc-cursor", x1: 0, x2: 0, y1: mt, y2: gridBottom, visibility: "hidden" });
 
-    var idleText = "Move over the chart, or touch it, to see the values and where you would be on the map.";
+    var idleText = tx("Move over the chart, or touch it, to see the values and where you would be on the map.",
+                     "Beweeg over de grafiek of raak hem aan om de waarden te zien en waar je op de kaart zou zijn.");
     readout.textContent = idleText;
-    function describe(pt) { return fmtKmLabel(pt.km) + ", " + fmtSpeed(pt.windKmh, 0) + " from " + degreesToCompass16(pt.windDir); }
+    function describe(pt) { return fmtKmLabel(pt.km) + ", " + fmtSpeed(pt.windKmh, 0) + tx(" from ", " uit ") + degreesToCompass16(pt.windDir); }
     function showAt(ta) {
       var x = sx(ta).toFixed(1), pt = rs.pts[seriesIndexAtTime(rs.pts, ta)];
       cursor.setAttribute("x1", x); cursor.setAttribute("x2", x); cursor.setAttribute("visibility", "visible");
@@ -3069,12 +3112,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // same classification method (and same underlying numbers) as the
   // stat tiles and the compass table: result.fwd for the full route,
   // result.lastHalf.forward for the closing half.
+  function catLabel(cat) {
+    return {
+      calm: tx("Calm", "Windstil"), veryeasy: tx("Full tailwind", "Volle rugwind"), easy: tx("Tailwind", "Rugwind"),
+      neutral: tx("Crosswind", "Zijwind"), hard: tx("Headwind", "Tegenwind"), veryhard: tx("Full headwind", "Volle tegenwind")
+    }[cat];
+  }
   function renderRouteStats(result) {
     var wrap = document.getElementById("routeStats");
     wrap.innerHTML = "";
     var CATS = result.fiveWay.isCalm
-      ? [["calm", "Calm"], ["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Crosswind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]]
-      : [["veryeasy", "Full tailwind"], ["easy", "Tailwind"], ["neutral", "Crosswind"], ["hard", "Headwind"], ["veryhard", "Full headwind"]];
+      ? [["calm", catLabel("calm")], ["veryeasy", catLabel("veryeasy")], ["easy", catLabel("easy")], ["neutral", catLabel("neutral")], ["hard", catLabel("hard")], ["veryhard", catLabel("veryhard")]]
+      : [["veryeasy", catLabel("veryeasy")], ["easy", catLabel("easy")], ["neutral", catLabel("neutral")], ["hard", catLabel("hard")], ["veryhard", catLabel("veryhard")]];
 
     function block(title, stats) {
       var container = document.createElement("div");
@@ -3111,8 +3160,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return container;
     }
 
-    wrap.appendChild(block("Full route", result.fiveWay.full));
-    wrap.appendChild(block("Last 50% of the route", result.fiveWay.lastHalfForward));
+    wrap.appendChild(block(tx("Full route", "Hele route"), result.fiveWay.full));
+    wrap.appendChild(block(tx("Last 50% of the route", "Laatste 50% van de route"), result.fiveWay.lastHalfForward));
   }
 
   function buildSweepTable(result) {
@@ -3121,7 +3170,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     for (var deg = 0; deg < 360; deg += 15) {
       var tr = document.createElement("tr");
       var f = result.sweep.easyFwd[deg] * 100;
-      tr.innerHTML = "<td>" + deg + "&deg;</td><td>" + degreesToCompass16(deg) + "</td><td>" + f.toFixed(1) + "%</td>";
+      tr.innerHTML = "<td>" + deg + "&deg;</td><td>" + degreesToCompass16(deg) + "</td><td>" + num(f, 1) + "%</td>";
       tbody.appendChild(tr);
     }
   }
@@ -3133,52 +3182,62 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // "1 h 12 min" / "42 min" from minutes.
   function fmtDuration(min) {
     var m = Math.round(min), h = Math.floor(m / 60);
-    return h ? h + " h " + pad2(m - h * 60) + " min" : m + " min";
+    return h ? h + tx(" h ", " u ") + pad2(m - h * 60) + " min" : m + " min";
   }
   // How the speed is described in captions: a number, or the steady power.
   function speedPhrase(result) {
     return result.ride.mode === "power"
-      ? "at steady power (about " + Math.round(result.ride.powerW) + " W, the effort that holds " + fmtSpeed(result.effort.cruiseSpeedKmh, 0) + " on a calm, flat day)"
-      : "at " + fmtSpeed(result.effort.cruiseSpeedKmh, 0);
+      ? tx("at steady power (about " + Math.round(result.ride.powerW) + " W, the effort that holds " + fmtSpeed(result.effort.cruiseSpeedKmh, 0) + " on a calm, flat day)",
+          "met constant vermogen (ongeveer " + Math.round(result.ride.powerW) + " W, de inspanning die " + fmtSpeed(result.effort.cruiseSpeedKmh, 0) + " vasthoudt op een windstille, vlakke dag)")
+      : tx("at ", "met ") + fmtSpeed(result.effort.cruiseSpeedKmh, 0);
   }
 
   // Steady power: the price of the wind is TIME, so this card replaces the effort
   // multiple (which assumes a constant speed).
   function renderRideTime(result) {
     var r = result.ride, ef = result.effort, calm = r.calmMinutes;
-    document.getElementById("effortTitle").textContent = "Ride time at steady power";
-    document.getElementById("halfCaption").innerHTML =
+    document.getElementById("effortTitle").textContent = tx("Ride time at steady power", "Rittijd bij constant vermogen");
+    document.getElementById("halfCaption").innerHTML = tx(
       "Holding about <b>" + Math.round(r.powerW) + " W</b> at the pedals, the effort that gives <b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b> on a calm, flat day, " +
       "your speed on each stretch is worked out from the wind on it. A headwind slows you more than the same tailwind speeds you up, so the wind costs time. " +
-      "Flat road only: hills, drafting, cornering and braking are not modelled.";
+      "Flat road only: hills, drafting, cornering and braking are not modelled.",
+      "Met ongeveer <b>" + Math.round(r.powerW) + " W</b> op de pedalen, de inspanning die <b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b> geeft op een windstille, vlakke dag, " +
+      "wordt je snelheid op elk stuk berekend uit de wind daar. Tegenwind remt je meer af dan dezelfde rugwind je versnelt, dus de wind kost tijd. " +
+      "Alleen vlakke weg: heuvels, uit de wind rijden, bochten en remmen worden niet meegenomen.");
     function cell(title, d) {
       var diff = d.minutes - calm;
       return '<div class="half-card">' +
           '<div class="half-title">' + title + '</div>' +
           '<div class="half-multiplier">' + fmtDuration(d.minutes) + '</div>' +
-          '<div class="half-net">' + (Math.abs(diff) < 0.5 ? "About the same as a calm day." : "<b>" + fmtDuration(Math.abs(diff)) + (diff > 0 ? " longer" : " shorter") + "</b> than a calm day (" + (diff > 0 ? "+" : "\u2212") + Math.abs(100 * diff / calm).toFixed(0) + "%).") +
-            " Average <b>" + fmtSpeed(d.avgKmh, 1) + "</b>; slowest stretch " + fmtSpeed(d.vminKmh, 1) + ", fastest " + fmtSpeed(d.vmaxKmh, 1) + ". " +
-            "<b>" + (100 * d.timeShare.hard).toFixed(0) + "%</b> of the time is into a headwind, " + (100 * d.timeShare.easy).toFixed(0) + "% with a tailwind.</div>" +
+          '<div class="half-net">' + (Math.abs(diff) < 0.5 ? tx("About the same as a calm day.", "Ongeveer even lang als op een windstille dag.")
+              : "<b>" + fmtDuration(Math.abs(diff)) + (diff > 0 ? tx(" longer", " langer") : tx(" shorter", " korter")) + "</b>" + tx(" than a calm day (", " dan op een windstille dag (") + (diff > 0 ? "+" : "\u2212") + Math.abs(100 * diff / calm).toFixed(0) + "%).") +
+            tx(" Average <b>", " Gemiddeld <b>") + fmtSpeed(d.avgKmh, 1) + "</b>" + tx("; slowest stretch ", "; langzaamste stuk ") + fmtSpeed(d.vminKmh, 1) + tx(", fastest ", ", snelste ") + fmtSpeed(d.vmaxKmh, 1) + ". " +
+            "<b>" + (100 * d.timeShare.hard).toFixed(0) + "%</b>" + tx(" of the time is into a headwind, ", " van de tijd tegenwind, ") + (100 * d.timeShare.easy).toFixed(0) + tx("% with a tailwind.", "% rugwind.") + "</div>" +
         '</div>';
     }
     document.getElementById("halfGrid").innerHTML =
-      cell("Your ride", r.forward) +
-      '<div class="half-card"><div class="half-title">Calm day</div><div class="half-multiplier">' + fmtDuration(calm) + '</div>' +
-        '<div class="half-net">' + fmtSpeed(ef.cruiseSpeedKmh, 1) + ' all the way, at the same power.</div></div>';
+      cell(tx("Your ride", "Jouw rit"), r.forward) +
+      '<div class="half-card"><div class="half-title">' + tx("Calm day", "Windstille dag") + '</div><div class="half-multiplier">' + fmtDuration(calm) + '</div>' +
+        '<div class="half-net">' + fmtSpeed(ef.cruiseSpeedKmh, 1) + tx(' all the way, at the same power.', ' de hele weg, met hetzelfde vermogen.') + '</div></div>';
     document.getElementById("halfVerdict").innerHTML = "";
   }
 
   function renderLastHalf(result) {
     if (result.ride.mode === "power") { renderRideTime(result); return; }
-    document.getElementById("effortTitle").textContent = "Effort by part of the route";
+    document.getElementById("effortTitle").textContent = tx("Effort by part of the route", "Inspanning per deel van de route");
     var lh = result.lastHalf, ef = result.effort;
-    var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
-    document.getElementById("halfCaption").innerHTML =
+    var beaufortLabel = beaufortName(Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort))));
+    document.getElementById("halfCaption").innerHTML = tx(
       "Split at the route's distance midpoint (" + fmtDistKm(lh.splitKm, 1) + " in). " +
       "At <b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b> cruising speed into " +
       (result.steadyWind ? "a <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + fmtSpeed(ef.windSpeedKmh, 1) + ")</b> wind: "
                          : "a wind that changes during the ride, averaging <b>" + fmtSpeed(ef.windSpeedKmh, 1) + "</b>: ") +
-      "aerodynamic drag scales with relative-airspeed <i>squared</i>, not with the wind component directly, so this is shown as a multiple of the effort a completely calm day at the same speed would take.";
+      "aerodynamic drag scales with relative-airspeed <i>squared</i>, not with the wind component directly, so this is shown as a multiple of the effort a completely calm day at the same speed would take.",
+      "Gesplitst halverwege de route (na " + fmtDistKm(lh.splitKm, 1) + "). " +
+      "Bij <b>" + fmtSpeed(ef.cruiseSpeedKmh, 0) + "</b> kruissnelheid en " +
+      (result.steadyWind ? "een wind van <b>Beaufort " + Math.round(ef.windSpeedBeaufort) + " (" + beaufortLabel + ", " + fmtSpeed(ef.windSpeedKmh, 1) + ")</b>: "
+                         : "een wind die tijdens de rit verandert, gemiddeld <b>" + fmtSpeed(ef.windSpeedKmh, 1) + "</b>: ") +
+      "de luchtweerstand groeit met het <i>kwadraat</i> van de relatieve luchtsnelheid, niet rechtstreeks met de windcomponent, dus dit staat als een veelvoud van de inspanning die een volledig windstille dag bij dezelfde snelheid zou kosten.");
 
     var fwdEffort = ef.lastHalf.forward;
     var firstEffort = ef.firstHalf.forward, wholeEffort = ef.full.forward;
@@ -3191,21 +3250,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var fillPct = Math.min(100, 100 * mult / maxScale);
       return '<div class="half-card">' +
           '<div class="half-title">' + title + '</div>' +
-          '<div class="half-multiplier ' + (good ? "good" : "bad") + '">' + mult.toFixed(2) + '&times; <span class="unit">calm-day aero effort</span></div>' +
+          '<div class="half-multiplier ' + (good ? "good" : "bad") + '">' + num(mult, 2) + '&times; <span class="unit">' + tx("calm-day aero effort", "aero-inspanning windstille dag") + '</span></div>' +
           '<div class="half-bar"><div class="half-bar-fill ' + (good ? "good" : "bad") + '" style="width:' + fillPct.toFixed(1) + '%"></div><div class="half-bar-ref" style="left:' + refPct.toFixed(1) + '%"></div></div>' +
-          '<div class="half-net">Effective wind-in-your-face speed: <b>' + fmtSpeed(eff.avgRelSpeedKmh, 1) + '</b> (vs. ' + fmtSpeed(ef.cruiseSpeedKmh, 0) + ' on a calm day).</div>' +
+          '<div class="half-net">' + tx("Effective wind-in-your-face speed: <b>", "Effectieve wind in je gezicht: <b>") + fmtSpeed(eff.avgRelSpeedKmh, 1) + '</b>' +
+            tx(" (vs. ", " (tegen ") + fmtSpeed(ef.cruiseSpeedKmh, 0) + tx(" on a calm day).", " op een windstille dag).") + '</div>' +
         '</div>';
     }
 
     document.getElementById("halfGrid").innerHTML =
-      cell("First 50%", firstEffort) +
-      cell("Last 50%", fwdEffort) +
-      cell("Whole route", wholeEffort);
+      cell(tx("First 50%", "Eerste 50%"), firstEffort) +
+      cell(tx("Last 50%", "Laatste 50%"), fwdEffort) +
+      cell(tx("Whole route", "Hele route"), wholeEffort);
 
     var trend = fwdEffort.powerMultiplier - firstEffort.powerMultiplier;
     document.getElementById("halfVerdict").innerHTML = Math.abs(trend) < 0.05
-      ? "The wind is about as hard on the second half as on the first."
-      : "The wind is <b>" + (trend > 0 ? "harder" : "kinder") + "</b> on the second half than on the first.";
+      ? tx("The wind is about as hard on the second half as on the first.", "De wind is op de tweede helft ongeveer even zwaar als op de eerste.")
+      : tx("The wind is <b>" + (trend > 0 ? "harder" : "kinder") + "</b> on the second half than on the first.",
+          "De wind is op de tweede helft <b>" + (trend > 0 ? "zwaarder" : "gunstiger") + "</b> dan op de eerste.");
   }
 
   // ---------------------------------------------------------------------
@@ -3214,22 +3275,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // (km/h, km, m); only these display helpers convert.
   // ---------------------------------------------------------------------
   function isUS() { return state.unitSystem === "us"; }
-  function speedUnitLabel() { return isUS() ? "mph" : "km/h"; }
+  function speedUnitLabel() { return isUS() ? "mph" : tx("km/h", "km/u"); }
   function speedToDisplay(kmh) { return isUS() ? kmh * KM_TO_MI : kmh; }
   function speedFromDisplay(v) { return isUS() ? v / KM_TO_MI : v; }
-  function fmtSpeed(kmh, decimals) { return speedToDisplay(kmh).toFixed(decimals) + " " + speedUnitLabel(); }
+  function fmtSpeed(kmh, decimals) { return num(speedToDisplay(kmh), decimals) + " " + speedUnitLabel(); }
   function distUnitLabel() { return isUS() ? "mi" : "km"; }
-  function fmtDistKm(km, decimals) { return (isUS() ? km * KM_TO_MI : km).toFixed(decimals) + " " + distUnitLabel(); }
+  function fmtDistKm(km, decimals) { return num(isUS() ? km * KM_TO_MI : km, decimals) + " " + distUnitLabel(); }
   // A route/climb/rain length: metres if short, km/mi once it is long enough that the other
   // unit reads more naturally (the same idea in both systems, just a different threshold).
   function fmtLen(m) {
-    if (isUS()) { var ft = m * M_TO_FT; return ft >= 1000 ? (ft / 5280).toFixed(2) + " mi" : Math.round(ft) + " ft"; }
-    return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";
+    if (isUS()) { var ft = m * M_TO_FT; return ft >= 1000 ? num(ft / 5280, 2) + " mi" : Math.round(ft) + " ft"; }
+    return m >= 1000 ? num(m / 1000, 1) + " km" : Math.round(m) + " m";
   }
   function elevUnitLabel() { return isUS() ? "ft" : "m"; }
   function fmtElevM(m) { return Math.round(isUS() ? m * M_TO_FT : m) + " " + elevUnitLabel(); }
   // A "km 12.3" / "mi 7.6" progress marker, the label style already used along the route.
-  function fmtKmLabel(km) { return distUnitLabel() + " " + (isUS() ? (km * KM_TO_MI).toFixed(1) : km.toFixed(1)); }
+  function fmtKmLabel(km) { return distUnitLabel() + " " + num(isUS() ? km * KM_TO_MI : km, 1); }
 
   // ---------------------------------------------------------------------
   // Text report (mirrors the CLI's report)
@@ -3269,7 +3330,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     lines.push("Best wind for this route: " + bestD + " deg (" + degreesToCompass16(bestD) + "), " + (100 * result.sweep.easyFwd[bestD]).toFixed(1) + "% tailwind");
     lines.push("");
     var ef = result.effort;
-    var beaufortLabel = BEAUFORT_LABELS[Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort)))];
+    var beaufortLabel = beaufortName(Math.max(0, Math.min(12, Math.round(ef.windSpeedBeaufort))));
     if (result.ride.mode === "power") {
       var rp = result.ride;
       lines.push("=== Ride at steady power (flat road) ===");
@@ -3363,7 +3424,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     BEAUFORT_KMH.forEach(function (kmh, i) {
       var opt = document.createElement("option");
       opt.value = i;
-      opt.textContent = i + " \u2014 " + BEAUFORT_LABELS[i] + " (" + fmtSpeed(kmh, 0) + ")";
+      opt.textContent = i + " \u2014 " + beaufortName(i) + " (" + fmtSpeed(kmh, 0) + ")";
       windSpeedInput.appendChild(opt);
     });
     windSpeedInput.value = v || state.windSpeedBeaufort;
@@ -3380,10 +3441,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   COMPASS_16.forEach(function (pair, idx) {
     var btn = document.createElement("div");
     btn.className = "compass-point";
-    btn.textContent = pair[0];
+    btn.dataset.code = pair[0];
     btn.tabIndex = 0;
     btn.setAttribute("role", "button");
-    btn.setAttribute("aria-label", "Wind from " + pair[0]);
     btn.style.setProperty("--ang", pair[1] + "deg");
     btn.dataset.deg = pair[1];
     btn.addEventListener("click", function () { setWind(pair[1]); });
@@ -3393,9 +3453,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var tick = document.createElement("div");
     tick.className = "compass-tick";
     tick.style.setProperty("--ang", pair[1] + "deg");
-    if (idx % 4 === 0) tick.textContent = pair[0];
+    if (idx % 4 === 0) tick.dataset.code = pair[0];
     compassDial.appendChild(tick);
   });
+  // The dial's letters follow the language (Dutch: O and Z for E and S).
+  function syncCompassLabels() {
+    compassDial.querySelectorAll(".compass-point").forEach(function (b) {
+      b.textContent = compassLocal(b.dataset.code);
+      b.setAttribute("aria-label", tx("Wind from ", "Wind uit ") + compassLocal(b.dataset.code));
+    });
+    compassDial.querySelectorAll(".compass-tick[data-code]").forEach(function (t) { t.textContent = compassLocal(t.dataset.code); });
+  }
 
   function setWind(deg) {
     state.windTimeline = null;             // your wind replaces the forecast's
@@ -3455,7 +3523,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   function syncRideStyleUI() {
     var power = state.rideStyle === "power";
     rideStyleInput.value = state.rideStyle;
-    cruiseSpeedLabel.textContent = (power ? "Speed on a calm, flat day (" : "Cruising speed (") + speedUnitLabel() + ")";
+    cruiseSpeedLabel.textContent = (power ? tx("Speed on a calm, flat day (", "Snelheid op een windstille, vlakke dag (") : tx("Cruising speed (", "Kruissnelheid (")) + speedUnitLabel() + ")";
   }
   rideStyleInput.addEventListener("change", function () {
     state.rideStyle = rideStyleInput.value === "power" ? "power" : "speed";
@@ -3622,7 +3690,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   function fmtClock(min) {
     var m = Math.round(min), day = Math.floor(m / 1440), r = m - day * 1440;
-    return pad2(Math.floor(r / 60)) + ":" + pad2(r % 60) + (day > 0 ? " the next day" : "");
+    return pad2(Math.floor(r / 60)) + ":" + pad2(r % 60) + (day > 0 ? tx(" the next day", " de volgende dag") : "");
   }
   // "Riding time: about 1 h 04 min ..." - from the route length and the
   // cruising speed, so the start time alone fixes the whole ride's clock.
@@ -3631,13 +3699,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (startMin === null) { rideTiming.textContent = ""; return; }
     if (result.ride.mode === "power") {
       var rp = result.ride;
-      rideTiming.textContent = "Riding time at steady power: about " + fmtDuration(rp.forward.minutes) +
-        " (a calm day: " + fmtDuration(rp.calmMinutes) + ") for " + fmtDistKm(result.totalLength / 1000, 1) + ". You would finish around " + fmtClock(startMin + rp.forward.minutes) + ".";
+      rideTiming.textContent = tx("Riding time at steady power: about ", "Rijtijd bij constant vermogen: ongeveer ") + fmtDuration(rp.forward.minutes) +
+        tx(" (a calm day: ", " (op een windstille dag: ") + fmtDuration(rp.calmMinutes) + tx(") for ", ") voor ") + fmtDistKm(result.totalLength / 1000, 1) +
+        tx(". You would finish around ", ". Je bent rond ") + fmtClock(startMin + rp.forward.minutes) + tx(".", " klaar.");
       return;
     }
     var mins = rideMinutes(result.totalLength, state.cruiseSpeedKmh);
-    rideTiming.textContent = "Riding time: about " + fmtDuration(mins) + " for " + fmtDistKm(result.totalLength / 1000, 1) +
-      " at " + fmtSpeed(state.cruiseSpeedKmh, 0) + ". You would finish around " + fmtClock(startMin + mins) + ".";
+    rideTiming.textContent = tx("Riding time: about ", "Rijtijd: ongeveer ") + fmtDuration(mins) + tx(" for ", " voor ") + fmtDistKm(result.totalLength / 1000, 1) +
+      tx(" at ", " bij ") + fmtSpeed(state.cruiseSpeedKmh, 0) + tx(". You would finish around ", ". Je bent rond ") + fmtClock(startMin + mins) + tx(".", " klaar.");
   }
   // The stored hourly series answer any start time and speed within the fetched
   // hours, so wind follows such changes on its own. What needs a new request
@@ -3651,17 +3720,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   // A short description of how the forecast wind changes over the ride.
   function windChangeText(wr) {
-    function one(w) { return degreesToCompass16(w.dir) + " (" + Math.round(w.dir) + "\u00b0) at " + fmtSpeed(w.sp, 0); }
-    return "from " + one(wr.start) + " at the start to " + one(wr.end) + " at the end";
+    function one(w) { return degreesToCompass16(w.dir) + " (" + Math.round(w.dir) + "\u00b0)" + tx(" at ", ", ") + fmtSpeed(w.sp, 0); }
+    return tx("from " + one(wr.start) + " at the start to " + one(wr.end) + " at the end",
+             "van " + one(wr.start) + " bij de start naar " + one(wr.end) + " aan het eind");
   }
   function updateWindTimelineHint(result) {
     if (!state.windTimeline || !result.windRide) { windTimelineHint.hidden = true; return; }
     var wr = result.windRide;
-    windTimelineHint.textContent = "From the forecast and changing during the ride: " + windChangeText(wr) + ". " +
+    windTimelineHint.textContent = tx("From the forecast and changing during the ride: ", "Uit de weersverwachting en veranderend tijdens de rit: ") + windChangeText(wr) + ". " +
       (wr.meanDir === null
-        ? "The direction changes so much that no single average describes it, so the compass keeps its last value; the Beaufort field shows the average speed. "
-        : "The compass and the Beaufort field show the average. ") +
-      "If you change them, your value replaces the forecast wind.";
+        ? tx("The direction changes so much that no single average describes it, so the compass keeps its last value; the Beaufort field shows the average speed. ",
+            "De richting verandert zo sterk dat geen enkel gemiddelde die beschrijft, dus het kompas houdt zijn laatste stand; het Beaufort-veld toont de gemiddelde snelheid. ")
+        : tx("The compass and the Beaufort field show the average. ", "Het kompas en het Beaufort-veld tonen het gemiddelde. ")) +
+      tx("If you change them, your value replaces the forecast wind.", "Als je ze aanpast, vervangt jouw waarde de voorspelde wind.");
     windTimelineHint.hidden = false;
   }
 
@@ -3678,18 +3749,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return fetch(url).then(function (res) {
       return res.json().then(function (data) { return { ok: res.ok, data: data }; }, function () { return { ok: false, data: {} }; });
     }, function () {
-      throw new Error("Couldn't reach the forecast service. Check your connection, or set the wind manually.");
+      throw new Error(tx("Couldn't reach the forecast service. Check your connection, or set the wind manually.",
+                        "De weerdienst is niet bereikbaar. Controleer je verbinding, of stel de wind zelf in."));
     }).then(function (result) {
       if (!result.ok || result.data.error) {
         var range = /from (\d{4}-\d\d-\d\d) to (\d{4}-\d\d-\d\d)/.exec(String(result.data.reason || ""));
-        if (range) throw new Error("There's no forecast for that date. Forecast data covers " + range[1] + " to " + range[2] + " - for other dates, set the wind manually.");
-        throw new Error("The forecast service couldn't answer that request. Try again, or set the wind manually.");
+        if (range) throw new Error(tx("There's no forecast for that date. Forecast data covers " + range[1] + " to " + range[2] + " - for other dates, set the wind manually.",
+                                     "Er is geen verwachting voor die datum. De verwachting loopt van " + range[1] + " tot " + range[2] + " - stel voor andere data de wind zelf in."));
+        throw new Error(tx("The forecast service couldn't answer that request. Try again, or set the wind manually.",
+                          "De weerdienst kon dat verzoek niet beantwoorden. Probeer het opnieuw, of stel de wind zelf in."));
       }
       var results = Array.isArray(result.data) ? result.data : [result.data];
       var summary = summarizeForecast(results, dateStr, startMin, endMin);
-      if (!summary) throw new Error("The forecast has no wind data for those hours. Try another time, or set the wind manually.");
+      if (!summary) throw new Error(tx("The forecast has no wind data for those hours. Try another time, or set the wind manually.",
+                                      "De verwachting heeft geen windgegevens voor die uren. Probeer een ander tijdstip, of stel de wind zelf in."));
       return { summary: summary, results: results, plan: plan, throughMin: endMin > 1440 ? 2880 : 1440, timezone: results[0].timezone, offsetSeconds: results[0].utc_offset_seconds };
     });
+  }
+
+  var forecastNoteData = null;
+  function renderForecastNote() {
+    var d = forecastNoteData;
+    if (!d) return;
+    var wind = d.wind;
+    var day = new Date(d.dateStr + "T12:00:00").toLocaleDateString(LANG === "nl" ? "nl-NL" : undefined, { weekday: "short", day: "numeric", month: "short" });
+    var dirText = wind.dir === null
+      ? (wind.ride ? tx("changing so much that no single direction describes it", "zo wisselend dat geen enkele richting die beschrijft") : tx("essentially calm", "vrijwel windstil"))
+      : tx("from ", "uit ") + degreesToCompass16(wind.dir) + " (" + Math.round(wind.dir) + "\u00b0)";
+    var changes = wind.ride && (Math.abs(wind.ride.end.sp - wind.ride.start.sp) >= 3 ||
+      Math.abs(((wind.ride.end.dir - wind.ride.start.dir + 540) % 360) - 180) >= 15);
+    var windNoteText = (changes ? windChangeText(wind.ride) + tx("; on average ", "; gemiddeld ") + dirText : dirText) + ", " + (wind.speedKmh === null ? fmtSpeed(0, 0) : fmtSpeed(wind.speedKmh, 0)) +
+      " \u2192 Beaufort " + d.beaufort + " (" + beaufortName(d.beaufort) + ")";
+    var where = " (" + d.timezone + ", " + formatUtcOffset(d.offsetSeconds) + "): ";
+    forecastNoteText.textContent = tx(
+      "Forecast for " + day + ", riding " + d.start + "\u2013" + fmtClock(d.endMin) + where + "wind " + windNoteText + ", gusts up to " + fmtSpeed(d.gustKmh, 0) +
+        ". Wind follows the clock, at " + d.placeCount + " point" + (d.placeCount === 1 ? "" : "s") + " along the route.",
+      "Verwachting voor " + day + ", fietsen van " + d.start + "\u2013" + fmtClock(d.endMin) + where + "wind " + windNoteText + ", windstoten tot " + fmtSpeed(d.gustKmh, 0) +
+        ". De wind volgt de klok, op " + d.placeCount + (d.placeCount === 1 ? " punt" : " punten") + " langs de route.");
   }
 
   function showForecastError(err) {
@@ -3702,8 +3798,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     forecastNote.hidden = true;
     forecastStale.hidden = true;
     var dateStr = fcDate.value, startMin = parseClock(fcStart.value);
-    if (!dateStr) return showForecastError(new Error("Pick the ride date."));
-    if (startMin === null) return showForecastError(new Error("Enter the time you start."));
+    if (!dateStr) return showForecastError(new Error(tx("Pick the ride date.", "Kies de datum van de rit.")));
+    if (startMin === null) return showForecastError(new Error(tx("Enter the time you start.", "Vul je starttijd in.")));
 
     // The ride lasts as long as the route takes at the cruising speed; the
     // wind is averaged over exactly that, not over a window typed in.
@@ -3712,7 +3808,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var endMin = startMin + rideMin;
 
     fcGetBtn.disabled = true;
-    fcGetBtn.textContent = "Getting forecast\u2026";
+    fcGetBtn.textContent = tx("Getting forecast\u2026", "Bezig met ophalen\u2026");
     fetchForecast(state.points, dateStr, startMin, endMin).then(function (r) {
       var sm = r.summary;
       var beaufort = kmhToBeaufort(sm.speedKmh);
@@ -3744,20 +3840,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       fileError.classList.remove("show");
       scheduleRender();
 
-      var day = new Date(dateStr + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-      var dirText = wind.dir === null ? (wind.ride ? "changing so much that no single direction describes it" : "essentially calm") :
-        "from " + degreesToCompass16(wind.dir) + " (" + Math.round(wind.dir) + "\u00b0)";
-      var changes = wind.ride && (Math.abs(wind.ride.end.sp - wind.ride.start.sp) >= 3 ||
-        Math.abs(((wind.ride.end.dir - wind.ride.start.dir + 540) % 360) - 180) >= 15);
-      var windNoteText = (changes ? windChangeText(wind.ride) + "; on average " + dirText : dirText) + ", " + (wind.speedKmh === null ? fmtSpeed(0, 0) : fmtSpeed(wind.speedKmh, 0)) +
-        " \u2192 Beaufort " + beaufort + " (" + BEAUFORT_LABELS[beaufort] + ")";
-      forecastNoteText.textContent =
-        "Forecast for " + day + ", riding " + fcStart.value + "\u2013" + fmtClock(startMin + rideMin) + " (" + r.timezone + ", " + formatUtcOffset(r.offsetSeconds) + "): wind " + windNoteText + ", gusts up to " + fmtSpeed(sm.gustKmh, 0) +
-        ". Wind follows the clock, at " + sm.placeCount + " point" + (sm.placeCount === 1 ? "" : "s") + " along the route.";
+      forecastNoteData = { dateStr: dateStr, start: fcStart.value, endMin: startMin + rideMin, timezone: r.timezone, offsetSeconds: r.offsetSeconds,
+                           wind: wind, beaufort: beaufort, gustKmh: sm.gustKmh, placeCount: sm.placeCount };
+      renderForecastNote();
       forecastNote.hidden = false;
     }).catch(showForecastError).then(function () {
       fcGetBtn.disabled = false;
-      fcGetBtn.textContent = "Get forecast";
+      fcGetBtn.textContent = tx("Get forecast", "Verwachting ophalen");
     });
   });
   fcStart.addEventListener("change", function () { markForecastStale(false); scheduleRender(); });
@@ -3826,7 +3915,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
     };
     reader.onerror = function () {
-      fileError.textContent = "Couldn't read that file.";
+      fileError.textContent = tx("Couldn't read that file.", "Kon dat bestand niet lezen.");
       fileError.classList.add("show");
     };
     reader.readAsText(file);
@@ -3893,7 +3982,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     stravaRouteSelect.innerHTML = "";
     if (strava.routes.length === 0) {
       var opt = document.createElement("option");
-      opt.textContent = "No routes found on this Strava account";
+      opt.textContent = tx("No routes found on this Strava account", "Geen routes gevonden op dit Strava-account");
       stravaRouteSelect.appendChild(opt);
       stravaLoadBtn.disabled = true;
       return;
@@ -3908,23 +3997,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
 
   function stravaScopeSuffix() {
-    return strava.scope ? " <span class=\"strava-scope\">(scope: " + strava.scope + ")</span>" : "";
+    return strava.scope ? " <span class=\"strava-scope\">(" + tx("scope: ", "toegang: ") + strava.scope + ")</span>" : "";
+  }
+  // "Connected as ..." with the routes' state; rebuilt on a language switch.
+  function renderStravaStatus() {
+    if (!strava.accessToken) return;
+    var n = strava.routes.length;
+    stravaStatus.innerHTML = tx("Connected as <b>", "Verbonden als <b>") + strava.athleteName + "</b>." + stravaScopeSuffix() + " " +
+      (strava.routesLoaded ? n + " route" + (n === 1 ? "" : "s") + tx(" found.", " gevonden.") : tx("Loading your routes&hellip;", "Je routes worden geladen&hellip;"));
   }
 
   function stravaLoadRoutes() {
-    stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>." + stravaScopeSuffix() + " Loading your routes&hellip;";
+    strava.routesLoaded = false;
+    renderStravaStatus();
     fetch(TILE_PROXY_BASE + "/strava/routes?access_token=" + encodeURIComponent(strava.accessToken) +
       "&athlete_id=" + encodeURIComponent(strava.athleteId))
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (result) {
-        if (!result.ok) throw new Error(result.data.error || "Strava rejected that request.");
+        if (!result.ok) throw new Error(result.data.error || tx("Strava rejected that request.", "Strava heeft dat verzoek geweigerd."));
         strava.routes = result.data;
-        stravaStatus.innerHTML = "Connected as <b>" + strava.athleteName + "</b>." + stravaScopeSuffix() + " " +
-          strava.routes.length + " route" + (strava.routes.length === 1 ? "" : "s") + " found.";
+        strava.routesLoaded = true;
+        renderStravaStatus();
         stravaRenderRoutePicker();
       })
       .catch(function (err) {
-        stravaShowError(err.message || "Couldn't load your Strava routes.");
+        stravaShowError(err.message || tx("Couldn't load your Strava routes.", "Kon je Strava-routes niet laden."));
       });
   }
 
@@ -3934,21 +4031,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (!route) return;
     stravaError.classList.remove("show");
     stravaLoadBtn.disabled = true;
-    stravaLoadBtn.textContent = "Loading\u2026";
+    stravaLoadBtn.textContent = tx("Loading\u2026", "Laden\u2026");
     fetch(TILE_PROXY_BASE + "/strava/routes/" + encodeURIComponent(routeId) + "/gpx?access_token=" + encodeURIComponent(strava.accessToken))
       .then(function (res) {
-        if (!res.ok) return res.text().then(function (t) { throw new Error(t || "Strava rejected that request."); });
+        if (!res.ok) return res.text().then(function (t) { throw new Error(t || tx("Strava rejected that request.", "Strava heeft dat verzoek geweigerd.")); });
         return res.text();
       })
       .then(function (gpxText) {
         loadGpxText(gpxText, route.name + " (Strava)");
       })
       .catch(function (err) {
-        stravaShowError(err.message || "Couldn't load that route.");
+        stravaShowError(err.message || tx("Couldn't load that route.", "Kon die route niet laden."));
       })
       .finally(function () {
         stravaLoadBtn.disabled = false;
-        stravaLoadBtn.textContent = "Load route";
+        stravaLoadBtn.textContent = tx("Load route", "Route laden");
       });
   });
 
@@ -3963,12 +4060,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (!code && !oauthError) return;
     window.history.replaceState({}, document.title, stravaRedirectUri());
     if (oauthError) {
-      stravaShowError("Strava connection was cancelled.");
+      stravaShowError(tx("Strava connection was cancelled.", "De verbinding met Strava is geannuleerd."));
       return;
     }
     strava.scope = grantedScope;
     stravaConnectBtn.disabled = true;
-    stravaConnectBtn.textContent = "Connecting\u2026";
+    stravaConnectBtn.textContent = tx("Connecting\u2026", "Verbinden\u2026");
     fetch(TILE_PROXY_BASE + "/strava/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -3976,22 +4073,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (result) {
-        if (!result.ok) throw new Error(result.data.error || "Strava rejected that connection.");
+        if (!result.ok) throw new Error(result.data.error || tx("Strava rejected that connection.", "Strava heeft de verbinding geweigerd."));
         strava.accessToken = result.data.access_token;
         strava.athleteId = result.data.athlete && result.data.athlete.id;
         strava.athleteName = result.data.athlete ?
-          (result.data.athlete.firstname + " " + result.data.athlete.lastname).trim() : "your Strava account";
+          (result.data.athlete.firstname + " " + result.data.athlete.lastname).trim() : tx("your Strava account", "je Strava-account");
         stravaConnectBtn.hidden = true;
         stravaDisconnectBtn.hidden = false;
         stravaPanel.hidden = false;
         stravaLoadRoutes();
       })
       .catch(function (err) {
-        stravaShowError(err.message || "Couldn't connect to Strava.");
+        stravaShowError(err.message || tx("Couldn't connect to Strava.", "Kon geen verbinding maken met Strava."));
       })
       .finally(function () {
         stravaConnectBtn.disabled = false;
-        stravaConnectBtn.textContent = "Connect to Strava";
+        stravaConnectBtn.textContent = tx("Connect to Strava", "Verbind met Strava");
       });
   })();
 
@@ -4003,10 +4100,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
 
   function render() {
-    fileName.textContent = state.fileLabel + (state.reversed ? " (reversed)" : "");
+    fileName.textContent = (state.isExample ? tx("Sample loop", "Voorbeeldronde") : state.fileLabel) + (state.reversed ? tx(" (reversed)", " (omgedraaid)") : "");
     reverseBtn.setAttribute("aria-pressed", String(state.reversed));
-    filePoints.textContent = state.points.length + " points";
-    fileBadge.textContent = state.isExample ? "Example route" : "Loaded";
+    filePoints.textContent = state.points.length + tx(" points", " punten");
+    fileBadge.textContent = state.isExample ? tx("Example route", "Voorbeeldroute") : tx("Loaded", "Geladen");
     fileBadge.className = "badge " + (state.isExample ? "example" : "loaded");
 
     var result;
@@ -4028,17 +4125,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var statRow = document.getElementById("statRow");
     statRow.innerHTML =
-      '<div class="stat-tile"><div class="label">Total length</div><div class="value mono">' + fmtDistKm(result.totalLength / 1000, 1) + '</div>' +
-        '<div class="sub">' + result.segCount + ' segments &middot; ' + result.rawCount + ' raw pts</div></div>' +
-      '<div class="stat-tile"><div class="label">Tailwind</div><div class="value mono">' + result.fwd.easyPct.toFixed(1) + '%</div>' +
-        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + fmtDistKm(result.fwd.easy / 1000, 1) + ' tailwind &middot; ' + fmtDistKm(result.fwd.hard / 1000, 1) + ' headwind</div></div>';
+      '<div class="stat-tile"><div class="label">' + tx("Total length", "Totale lengte") + '</div><div class="value mono">' + fmtDistKm(result.totalLength / 1000, 1) + '</div>' +
+        '<div class="sub">' + result.segCount + tx(' segments &middot; ', ' stukken &middot; ') + result.rawCount + tx(' raw pts', ' ruwe punten') + '</div></div>' +
+      '<div class="stat-tile"><div class="label">' + tx("Tailwind", "Rugwind") + '</div><div class="value mono">' + num(result.fwd.easyPct, 1) + '%</div>' +
+        '<div class="sub"><span class="dot" style="background:var(--status-good)"></span>' + fmtDistKm(result.fwd.easy / 1000, 1) + tx(' tailwind &middot; ', ' rugwind &middot; ') + fmtDistKm(result.fwd.hard / 1000, 1) + tx(' headwind', ' tegenwind') + '</div></div>';
 
     document.getElementById("planSummary").textContent = result.steadyWind
-      ? "Tailwind and headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)."
-      : "Tailwind and headwind for the forecast wind, which changes during the ride.";
+      ? tx("Tailwind and headwind for wind from ", "Rugwind en tegenwind bij wind uit ") + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)."
+      : tx("Tailwind and headwind for the forecast wind, which changes during the ride.", "Rugwind en tegenwind bij de voorspelde wind, die tijdens de rit verandert.");
     document.getElementById("planCaption").textContent = result.steadyWind
-      ? "Coloured by tailwind/headwind for wind from " + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0): each stretch by the angle between the way you ride and the wind. Green is tailwind, red is headwind and grey is crosswind; darker means closer to dead-on."
-      : "Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there, from the start time.";
+      ? tx("Coloured by tailwind/headwind for wind from ", "Gekleurd naar rugwind/tegenwind bij wind uit ") + degreesToCompass16(result.windFromDeg) + " (" + Math.round(result.windFromDeg) + "\u00b0)" +
+        tx(": each stretch by the angle between the way you ride and the wind. Green is tailwind, red is headwind and grey is crosswind; darker means closer to dead-on.",
+          ": elk stuk naar de hoek tussen je rijrichting en de wind. Groen is rugwind, rood is tegenwind en grijs is zijwind; donkerder betekent dichter bij pal mee of pal tegen.")
+      : tx("Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there, from the start time.",
+          "Gekleurd naar rugwind/tegenwind bij de voorspelde wind, die tijdens de rit verandert: elk stuk wordt beoordeeld tegen de wind die verwacht wordt als je daar bent, gerekend vanaf de starttijd.");
     renderPolarSweep(result);
     if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
     renderRouteStats(result);
@@ -4049,22 +4149,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (result.sweep.easyFwd[bd] > result.sweep.easyFwd[bestFwdDeg]) bestFwdDeg = bd;
     }
     document.getElementById("sweepCallout").innerHTML =
-      '<div class="best-wind-line">Best wind for this route: <b>' + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "\u00b0)</b>, " + (100 * result.sweep.easyFwd[bestFwdDeg]).toFixed(1) + "% tailwind.</div>";
+      '<div class="best-wind-line">' + tx("Best wind for this route: <b>", "Beste wind voor deze route: <b>") + degreesToCompass16(bestFwdDeg) + " (" + bestFwdDeg + "\u00b0)</b>, " +
+        num(100 * result.sweep.easyFwd[bestFwdDeg], 1) + tx("% tailwind.", "% rugwind.") + "</div>";
 
     renderLastHalf(result);
     renderRideCharts(result);
     updateRideTiming(result);
     updateWindTimelineHint(result);
     document.getElementById("speedHint").textContent = result.ride.mode === "power"
-      ? "Wind speed and your calm-day speed (Your ride, above) set your steady power and the ride time below."
-      : "Wind speed and your speed (Your ride, above) feed the last-50% wind-effort estimate below.";
+      ? tx("Wind speed and your calm-day speed (Your ride, above) set your steady power and the ride time below.",
+          "Windkracht en je snelheid op een windstille dag (Jouw rit, hierboven) bepalen je constante vermogen en de rittijd hieronder.")
+      : tx("Wind speed and your speed (Your ride, above) feed the last-50% wind-effort estimate below.",
+          "Windkracht en je snelheid (Jouw rit, hierboven) bepalen de inschatting van de windinspanning hieronder.");
     var styleHint = document.getElementById("rideStyleHint");
     styleHint.hidden = result.ride.mode !== "power";
     styleHint.textContent = result.ride.mode === "power"
-      ? "About " + Math.round(result.ride.powerW) + " W at the pedals holds " + fmtSpeed(result.effort.cruiseSpeedKmh, 0) + " on a calm, flat day (" + result.ride.rider.massKg + " kg, CdA " + result.ride.rider.cda + ", Crr " + result.ride.rider.crr + ")."
+      ? tx("About ", "Ongeveer ") + Math.round(result.ride.powerW) + tx(" W at the pedals holds ", " W op de pedalen houdt ") + fmtSpeed(result.effort.cruiseSpeedKmh, 0) +
+        tx(" on a calm, flat day (", " vast op een windstille, vlakke dag (") + numStr(result.ride.rider.massKg) + " kg, CdA " + numStr(result.ride.rider.cda) + ", Crr " + numStr(result.ride.rider.crr) + ")."
       : "";
 
-    if (!isPhone) document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel);
+    if (!isPhone) {
+      var pageLang = LANG;
+      LANG = "en";                               // the Full report is always English
+      try { document.getElementById("reportText").textContent = buildReportText(result, state.fileLabel); } finally { LANG = pageLang; }
+    }
     lastResult = result;
   }
 
@@ -4073,7 +4181,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var btn = document.getElementById("copyBtn");
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function () {
-        var prev = btn.textContent; btn.textContent = "Copied";
+        var prev = btn.textContent; btn.textContent = tx("Copied", "Gekopieerd");
         setTimeout(function () { btn.textContent = prev; }, 1400);
       }).catch(function () {});
     }
@@ -4162,7 +4270,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var prevText = btn.textContent;
       var filename = filenameFn();
       btn.disabled = true;
-      btn.textContent = "Preparing\u2026";
+      btn.textContent = tx("Preparing\u2026", "Voorbereiden\u2026");
       svgStringToPngBlob(svgString, vb[2], vb[3], 2).then(function (blob) {
         if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
         return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
@@ -4175,7 +4283,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }).catch(function () {
         return "error";
       }).then(function (outcome) {
-        btn.textContent = outcome === "saved" ? "Saved" : outcome === "error" ? "Couldn't render" : prevText;
+        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
         setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
       });
     });
@@ -4286,15 +4394,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     function block(blockTop, title, stats) {
       heading(blockTop + 18, title);
       bar(pad, blockTop + 24, width - 2 * pad, 8, stats);
-      item(colX[0], blockTop + 52, "veryeasy", "Full tailwind", stats.veryeasy);
-      item(colX[1], blockTop + 52, "easy", "Tailwind", stats.easy);
-      item(colX[2], blockTop + 52, "neutral", "Crosswind", stats.neutral);
-      item(colX[0], blockTop + 74, "hard", "Headwind", stats.hard);
-      item(colX[1], blockTop + 74, "veryhard", "Full headwind", stats.veryhard);
-      if (stats.calm > 0) item(colX[2], blockTop + 74, "calm", "Calm", stats.calm);
+      item(colX[0], blockTop + 52, "veryeasy", catLabel("veryeasy"), stats.veryeasy);
+      item(colX[1], blockTop + 52, "easy", catLabel("easy"), stats.easy);
+      item(colX[2], blockTop + 52, "neutral", catLabel("neutral"), stats.neutral);
+      item(colX[0], blockTop + 74, "hard", catLabel("hard"), stats.hard);
+      item(colX[1], blockTop + 74, "veryhard", catLabel("veryhard"), stats.veryhard);
+      if (stats.calm > 0) item(colX[2], blockTop + 74, "calm", catLabel("calm"), stats.calm);
     }
-    block(top, "FULL ROUTE", result.fiveWay.full);
-    block(top + BLOCK_H, "LAST 50% OF THE ROUTE", result.fiveWay.lastHalfForward);
+    block(top, tx("FULL ROUTE", "HELE ROUTE"), result.fiveWay.full);
+    block(top + BLOCK_H, tx("LAST 50% OF THE ROUTE", "LAATSTE 50% VAN DE ROUTE"), result.fiveWay.lastHalfForward);
   }
 
   // Redraw the map's currently-loaded tiles (already same-origin blob:
@@ -4343,14 +4451,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     btn.addEventListener("click", function () {
       if (!leafletMap || !lastResult) {
         var prevText0 = btn.textContent;
-        btn.textContent = "No map yet";
+        btn.textContent = tx("No map yet", "Nog geen kaart");
         setTimeout(function () { btn.textContent = prevText0; }, 1500);
         return;
       }
       var prevText = btn.textContent;
-      var filename = "tailwind-tally-route-" + degreesToCompass16(state.windFromDeg) + ".png";
+      var filename = "tailwind-tally-route-" + compassCodeEn(state.windFromDeg) + ".png";
       btn.disabled = true;
-      btn.textContent = "Preparing\u2026";
+      btn.textContent = tx("Preparing\u2026", "Voorbereiden\u2026");
       exportMapToPngBlob(lastResult).then(function (blob) {
         if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
         return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
@@ -4363,7 +4471,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }).catch(function () {
         return "error";
       }).then(function (outcome) {
-        btn.textContent = outcome === "saved" ? "Saved" : outcome === "error" ? "Couldn't render" : prevText;
+        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
         setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
       });
     });
@@ -4372,7 +4480,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   bindSaveMapButton("saveRouteBtn");
 
   bindSaveImageButton("saveSweepBtn", "polarSvg", function () {
-    return "tailwind-tally-sweep-" + degreesToCompass16(state.windFromDeg) + ".png";
+    return "tailwind-tally-sweep-" + compassCodeEn(state.windFromDeg) + ".png";
   });
   bindSaveImageButton("saveWindRideBtn", "windRideSvg", function () {
     return "tailwind-tally-wind-during-ride.png";
@@ -4383,6 +4491,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // data-about naming the topic) are turned into button + popover here; their text may be
   // set by the script later, and an empty one hides its button. The callout's popover is
   // regenerated by innerHTML on every render(), so the listeners are delegated on document.
+  function infoLabel(pop) { return tx("More about " + (pop.getAttribute("data-about") || "this"), "Meer uitleg"); }
   function closeInfo() {
     document.querySelectorAll(".info-popover").forEach(function (p) { p.hidden = true; });
     document.querySelectorAll(".info-btn").forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
@@ -4398,7 +4507,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var wrap = document.createElement("span"), btn = document.createElement("button");
     wrap.className = "info-wrap";
     btn.type = "button"; btn.className = "info-btn"; btn.textContent = "?";
-    btn.setAttribute("aria-label", "More about " + (pop.getAttribute("data-about") || "this"));
+    btn.setAttribute("aria-label", infoLabel(pop));
     btn.setAttribute("aria-expanded", "false");
     pop.className = "info-popover"; pop.hidden = true; pop.setAttribute("role", "note");
     pop.parentNode.insertBefore(wrap, pop);
@@ -4417,6 +4526,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeInfo(); });
+
+  // ---- Language switch (EN | NL, top right) ----------------------------------------
+  // Page text: an element's Dutch is in its data-nl attribute; its English is what the
+  // page was written with (kept on the element the first time). Text the script writes
+  // is rebuilt by render() and the sync functions below.
+  var langEnBtn = document.getElementById("langEn"), langNlBtn = document.getElementById("langNl");
+  function applyLang() {
+    document.documentElement.lang = LANG;
+    langEnBtn.setAttribute("aria-pressed", String(LANG === "en"));
+    langNlBtn.setAttribute("aria-pressed", String(LANG === "nl"));
+    document.querySelectorAll("[data-nl]").forEach(function (node) {
+      if (node._en === undefined) node._en = node.innerHTML;
+      node.innerHTML = LANG === "nl" ? node.getAttribute("data-nl") : node._en;
+    });
+    document.querySelectorAll("[data-nl-aria-label]").forEach(function (node) {
+      if (node._enAria === undefined) node._enAria = node.getAttribute("aria-label");
+      node.setAttribute("aria-label", LANG === "nl" ? node.getAttribute("data-nl-aria-label") : node._enAria);
+    });
+    document.querySelectorAll(".info-btn").forEach(function (b) { b.setAttribute("aria-label", infoLabel(b.nextElementSibling)); });
+    document.getElementById("privacyLink").href = tx("privacy.html", "privacy-nl.html");
+    syncCompassLabels();
+    syncBeaufortOptions();
+    syncRideStyleUI();
+    syncMapBadge();
+    renderForecastNote();
+    renderStravaStatus();
+    if (strava.routes.length) { var picked = stravaRouteSelect.value; stravaRenderRoutePicker(); stravaRouteSelect.value = picked; }
+    if (/[A-Za-z]/.test(windInput.value)) windInput.value = degreesToCompass16(state.windFromDeg);   // a compass code, not degrees
+  }
+  function setLang(lang) {
+    if (lang === LANG) return;
+    LANG = lang;
+    try { localStorage.setItem("tailwind-tally-lang", lang); } catch (e) { /* storage blocked: the switch still works for this visit */ }
+    closeInfo();
+    applyLang();
+    scheduleRender();
+  }
+  langEnBtn.addEventListener("click", function () { setLang("en"); });
+  langNlBtn.addEventListener("click", function () { setLang("nl"); });
+  applyLang();
 
   // Opening the app at ...#how-it-works shows that tab straight away.
   if (window.location.hash === "#how-it-works") setView("how");

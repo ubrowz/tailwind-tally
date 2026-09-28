@@ -12,7 +12,7 @@ the map tiles (CORS) and the Strava callback keep working.
 """
 import argparse, os, re, subprocess, sys
 
-FILES = ["index.html", "privacy.html", "favicon.svg", "favicon-32.png", "apple-touch-icon.png", ".nojekyll"]
+FILES = ["index.html", "privacy.html", "privacy-nl.html", "favicon.svg", "favicon-32.png", "apple-touch-icon.png", ".nojekyll"]
 BETA_URL = "https://ubrowz.github.io/tailwind-tally-beta/"
 RELEASED_URL = "https://ubrowz.github.io/tailwind-tally/"
 
@@ -62,11 +62,13 @@ def main():
         except subprocess.CalledProcessError:
             if name == ".nojekyll":
                 data = b""
+            elif name == "privacy-nl.html":      # not in branches from before the Dutch translation
+                continue
             else:
                 raise
         if name == "index.html":
             data = betaify_index(data.decode("utf-8")).encode("utf-8")
-        elif name == "privacy.html":
+        elif name in ("privacy.html", "privacy-nl.html"):
             data = betaify_privacy(data.decode("utf-8")).encode("utf-8")
         with open(os.path.join(a.dir, name), "wb") as f:
             f.write(data)

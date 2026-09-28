@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacybeleid — Tailwind Tally</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --font-display: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --ink: #0b0b0b;
+    --ink-secondary: #52514e;
+    --ink-muted: #898781;
+    --paper: #f9f9f7;
+    --panel: #fcfcfb;
+    --border: rgba(11, 11, 11, 0.10);
+    --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ffffff;
+      --ink-secondary: #c3c2b7;
+      --ink-muted: #898781;
+      --paper: #0d0d0d;
+      --panel: #1a1a19;
+      --border: rgba(255, 255, 255, 0.11);
+      --accent: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+    --paper: #0d0d0d;
+    --panel: #1a1a19;
+    --border: rgba(255, 255, 255, 0.11);
+    --accent: #3987e5;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); }
+  body {
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .page { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+  a { color: var(--accent); }
+  header { margin-bottom: 40px; }
+  header .eyebrow {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
+  }
+  h1 { font-family: var(--font-display); font-size: 28px; font-weight: 600; margin: 0 0 8px; }
+  header p { color: var(--ink-secondary); margin: 0; font-size: 14px; }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 36px 0 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  h2:first-of-type { border-top: none; padding-top: 0; }
+  p, li { font-size: 15px; color: var(--ink-secondary); }
+  strong { color: var(--ink); font-weight: 600; }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  code {
+    font-family: var(--font-display);
+    font-size: 0.9em;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; }
+  td { color: var(--ink-secondary); }
+  .back { display: inline-block; margin-top: 40px; font-size: 14px; }
+  .lang-link { margin-top: 10px !important; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <span class="eyebrow">Tailwind Tally</span>
+    <h1>Privacybeleid</h1>
+    <p>Geldig vanaf 28 september 2026 &middot; geldt voor de webapp Tailwind Tally en de iOS-app Tailwind Tally, die dezelfde webapp in een eigen app laat zien.</p>
+    <p class="lang-link"><a href="privacy.html" lang="en">English version</a></p>
+  </header>
+
+  <h2>In het kort</h2>
+  <p>Tailwind Tally heeft geen accounts, zet geen eigen trackingcookies en bewaart niets op een server, behalve kaarttegels en Strava-gegevens die het kort voor je doorgeeft. Je GPX-routegegevens worden volledig op je eigen apparaat verwerkt, met &eacute;&eacute;n optionele uitzondering: als je om een windverwachting vraagt, gaan drie afgeronde plaatsen van je route naar een weerdienst (zie &ldquo;Windverwachting&rdquo; hieronder). De onderdelen hieronder leggen precies uit wat er gebeurt, en waarom.</p>
+
+  <h2>Routebestanden (GPX)</h2>
+  <p>Of je nu een bestand in de browser sleept, er een deelt vanuit een andere app op je telefoon, of er een laadt vanuit Strava: de routegegevens worden <strong>volledig op je apparaat</strong> gelezen en geanalyseerd &mdash; in de JavaScript van je eigen browser, of binnen de iOS-app. Ze worden nooit ge&uuml;pload naar, of bewaard op, een server van ons.</p>
+
+  <h2>Verbinden met Strava (optioneel)</h2>
+  <p>Als je op &ldquo;Verbind met Strava&rdquo; tikt, ga je naar de eigen inlogpagina van Strava om Tailwind Tally toestemming te geven je routes te lezen. We vragen de rechten <code>read</code> en <code>read_all</code>, waarmee de app je Strava-routes kan tonen en exporteren (ook priv&eacute;routes).</p>
+  <p>Wat we ontvangen en hoe het wordt gebruikt:</p>
+  <ul>
+    <li><strong>Een toegangssleutel (access token)</strong>, door Strava beperkt tot jouw account en de rechten die je goedkeurde. Die staat alleen tijdens de huidige sessie in het geheugen van je browser en verdwijnt als je de pagina herlaadt of de app sluit. Hij wordt nooit in een database, een bestand of de opslag van je browser gezet (geen <code>localStorage</code>, geen cookies van ons).</li>
+    <li><strong>Je Strava-naam en atleet-id</strong>, getoond in de app zodat je ziet welk account verbonden is (bijv. &ldquo;Verbonden als &hellip;&rdquo;). Dit wordt getoond, niet bewaard.</li>
+    <li><strong>Je lijst met routes en de GPX-inhoud van een route die je kiest</strong>, alleen gebruikt voor de kaart en berekeningen waar je om vroeg.</li>
+  </ul>
+  <p>Een kleine achterliggende dienst van ons (zie &ldquo;Infrastructuur&rdquo; hieronder) doet twee dingen waarvoor het geheim van onze Strava-applicatie nodig is, dat niet veilig in een browser of app kan staan: Strava's eenmalige inlogcode omwisselen voor die toegangssleutel, en de verzoeken voor de routelijst en het exporteren van routes doorgeven (alleen omdat Strava's API geen rechtstreekse verzoeken uit browsers toestaat - niet omdat daar ons geheim voor nodig is). Die dienst logt, bewaart of houdt geen Strava-gegevens vast die erdoorheen gaan.</p>
+  <p>Verbinding verbreken is zo simpel als de pagina herladen of de app opnieuw starten - er is niets bewaard dat verwijderd moet worden.</p>
+
+  <h2>Kaarttegels</h2>
+  <p>De kaartbeelden komen van MapTiler en worden via onze achterliggende dienst opgevraagd, zodat onze MapTiler-sleutel geheim blijft. MapTiler ontvangt het kaartgebied dat je bekijkt en je IP-adres, net als bij elk verzoek om kaarttegels - er worden geen persoonsgegevens van Tailwind Tally aan deze verzoeken toegevoegd.</p>
+
+  <h2>Windverwachting (optioneel)</h2>
+  <p>Als je &ldquo;Weersverwachting&rdquo; kiest en op &ldquo;Verwachting ophalen&rdquo; tikt, vraagt de app aan <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, een gratis weerdienst, welke wind er wordt verwacht op de datum die je koos. Daarvoor ontvangt Open-Meteo maximaal drie plaatsen van je route (het begin, het midden en het eind), elk <strong>afgerond op ongeveer 11 km</strong>, en die datum. Het ontvangt niet je routebestand, je exacte co&ouml;rdinaten of iets over wie je bent. Zoals bij elk verzoek op internet ziet het ook je IP-adres.</p>
+  <p>Het verzoek gaat rechtstreeks van je apparaat naar Open-Meteo, niet via onze dienst, en we bewaren geen kopie. Er wordt niets verstuurd tenzij je op &ldquo;Verwachting ophalen&rdquo; tikt; de wind zelf instellen neemt nooit contact op met een weerdienst. Weergegevens van <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, onder licentie <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>; zie <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">de voorwaarden van Open-Meteo</a>.</p>
+
+  <h2>Taalinstelling</h2>
+  <p>Als je met de schakelaar EN | NL voor Engels of Nederlands kiest, wordt die keuze in de lokale opslag van je browser (<code>localStorage</code>) op je eigen apparaat bewaard, zodat de app de volgende keer in dezelfde taal opent. Die keuze wordt nooit ergens naartoe gestuurd. Zolang je niet kiest, volgt de app de taal van je telefoon of browser.</p>
+
+  <h2>Bezoekersstatistieken</h2>
+  <p>We gebruiken <a href="https://www.goatcounter.com/" target="_blank" rel="noopener">GoatCounter</a> om paginabezoeken te tellen. Het zet geen cookies en verzamelt geen gegevens waarmee je te identificeren bent - zie <a href="https://www.goatcounter.com/privacy" target="_blank" rel="noopener">het privacybeleid van GoatCounter</a>.</p>
+
+  <h2>Lettertypen</h2>
+  <p>De tekst op de pagina gebruikt lettertypen die rechtstreeks van Google Fonts worden geladen. Google kan daarbij gebruikelijke gegevens van webverzoeken vastleggen (zoals je IP-adres), zoals bij elk lettertype van hun servers.</p>
+
+  <h2>De iOS-app in het bijzonder</h2>
+  <p>De iOS-app is een dunne schil rond dezelfde webapp als hierboven beschreven, dus alles op deze pagina geldt er ook voor. Het enige wat alleen in de app zit: Tailwind Tally kan worden aangeboden als &ldquo;Open in&hellip;&rdquo;-bestemming voor <code>.gpx</code>-bestanden die vanuit andere apps worden gedeeld (de eigen app van Strava, Mail, Bestanden, AirDrop). Dat bestand wordt op het apparaat gelezen en doorgegeven aan dezelfde webpagina in de app - de app zelf uploadt het nergens naartoe.</p>
+
+  <h2>Wat we niet doen</h2>
+  <ul>
+    <li>Geen gebruikersaccounts, wachtwoorden of aanmelding van welke soort ook bij ons.</li>
+    <li>Geen advertenties, advertentietracking of SDK's van advertentienetwerken.</li>
+    <li>Geen verkoop of delen van je gegevens met derden, behalve zoals hierboven beschreven (en die zien alleen een verzoek dat jij zelf in gang zette).</li>
+    <li>Geen database op een server - de dienst achter deze app bewaart bewust niets.</li>
+  </ul>
+
+  <h2>Infrastructuur (wie er echt bij betrokken zijn)</h2>
+  <table>
+    <thead><tr><th>Dienst</th><th>Rol</th></tr></thead>
+    <tbody>
+      <tr><td>GitHub Pages</td><td>Host de bestanden van de webapp.</td></tr>
+      <tr><td>Render</td><td>Host de kleine dienst die kaarttegels en Strava-verzoeken doorgeeft.</td></tr>
+      <tr><td>Strava</td><td>Levert routegegevens die je zelf verbindt en goedkeurt.</td></tr>
+      <tr><td>MapTiler</td><td>Levert de kaartbeelden.</td></tr>
+      <tr><td>Open-Meteo</td><td>Levert de windverwachting, alleen als je &ldquo;Weersverwachting&rdquo; gebruikt.</td></tr>
+      <tr><td>GoatCounter</td><td>Telt paginabezoeken zonder cookies.</td></tr>
+      <tr><td>Google Fonts</td><td>Levert de lettertypen van de pagina.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Privacy van kinderen</h2>
+  <p>Tailwind Tally is niet op kinderen gericht en we verzamelen niet bewust gegevens van kinderen.</p>
+
+  <h2>Wijzigingen in dit beleid</h2>
+  <p>Als dit beleid verandert, verschijnt de nieuwe versie op ditzelfde adres, met een nieuwe datum bovenaan. Bij verschillen tussen deze Nederlandse en de <a href="privacy.html">Engelse versie</a> geldt de Engelse versie.</p>
+
+  <h2>Contact</h2>
+  <p>Vragen over dit beleid of je gegevens kun je sturen naar <a href="mailto:gjjnwhxcb@mozmail.com">gjjnwhxcb@mozmail.com</a>.</p>
+
+  <a class="back" href="./">&larr; Terug naar Tailwind Tally</a>
+</div>
+</body>
+</html>
