@@ -1579,7 +1579,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card" id="rideCard">
-    <h2><span data-nl="Jouw rit">Your ride</span> <span class="info-pop" data-about="your ride" data-nl="Constante snelheid houdt je kruissnelheid vast, wat de wind ook doet. Constant vermogen houdt je inspanning vast en laat de snelheid meebewegen: tegen de wind in ga je langzamer, met de wind mee sneller (alleen vlakke weg). Je snelheid en rijstijl bepalen hoe lang de rit duurt, en dus hoe laat je op een punt van de route bent. Met de weersverwachting bepaalt dat welke wind je krijgt op elk punt van de route.">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the wind you meet.</span></h2>
+    <h2><span data-nl="Jouw rit">Your ride</span> <span class="info-pop" data-about="your ride" data-nl="Constante snelheid houdt je kruissnelheid vast, wat de wind ook doet. Constant vermogen houdt je inspanning vast en laat de snelheid meebewegen: tegen de wind in ga je langzamer, met de wind mee sneller (alleen vlakke weg). Je snelheid en rijstijl bepalen hoe lang de rit duurt, en dus hoe laat je op een punt van de route bent. Bij gebruik van de weersverwachting wordt bepaald welke wind je krijgt op elk punt van de route.">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the wind you meet.</span></h2>
     <div class="mode-toggle" role="group" aria-label="Units" data-nl-aria-label="Eenheden" id="unitsToggle">
       <button type="button" id="unitsMetric" aria-pressed="true" data-nl="Metrisch (km, &deg;C)">Metric (km, &deg;C)</button>
       <button type="button" id="unitsUS" aria-pressed="false" data-nl="VS (mi, &deg;F)">US (mi, &deg;F)</button>
@@ -1795,7 +1795,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="tabpanel" id="panelRain" role="tabpanel" aria-labelledby="tabRain" hidden>
     <div class="card">
-      <h2><span data-nl="Regen">Rain</span> <span class="info-pop" data-about="the rain forecast" data-nl="De regenverwachting voor het moment en de plek waar je op elk stuk van de route zou zijn: dezelfde klok als de temperatuur en de wind. Hoeveelheden zijn millimeters per uur. De kans is de waarschijnlijkheid van meer dan 0,1 mm in dat uur. Weermodellen plaatsen buien maar ruwweg, een paar kilometer en ongeveer een uur ernaast.">The rain forecast for the time and place at which you would be on every stretch of the route: the same clock as the temperature and the wind. Amounts are millimetres per hour. The chance is the probability of more than 0.1 mm in that hour. Forecast models place showers only roughly, a few kilometres and about an hour either way.</span></h2>
+      <h2><span data-nl="Regen">Rain</span> <span class="info-pop" data-about="the rain forecast" data-nl="De regenverwachting voor het moment en de plek waar je op elk stuk van de route zou zijn: dezelfde tijd als de temperatuur en de wind. Hoeveelheden zijn millimeters per uur. De kans is de waarschijnlijkheid van meer dan 0,1 mm in dat uur. Weermodellen plaatsen buien maar ruwweg, een paar kilometer en ongeveer een uur ernaast.">The rain forecast for the time and place at which you would be on every stretch of the route: the same clock as the temperature and the wind. Amounts are millimetres per hour. The chance is the probability of more than 0.1 mm in that hour. Forecast models place showers only roughly, a few kilometres and about an hour either way.</span></h2>
       <p class="climb-summary" id="rainSummary"></p>
       <div class="ride-chart" id="rainRideChart" hidden>
         <div class="ride-head">
@@ -3833,7 +3833,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var probText = a.peakProb === null ? "" : tx("chance up to ", "kans tot ") + Math.round(a.peakProb) + "%";
     summary.innerHTML = a.wetM <= 0
       ? tx("<b>Dry all the way.</b>", "<b>De hele rit droog.</b>") +
-        (a.peakProb === null ? "" : tx(" The highest chance of rain on the route is ", " De hoogste kans op regen op de route is ") + Math.round(a.peakProb) + "%.")
+        (a.peakProb === null ? "" : tx(" The highest chance of rain on the route is ", " De grootste kans op regen op de route is ") + Math.round(a.peakProb) + "%.")
       : tx("<b>Rain on ", "<b>Regen op ") + kmText(a.wetM) + tx(" of ", " van ") + kmText(a.totalM) + " " + distUnitLabel() + " (" + Math.round(a.wetPct) + "%).</b>" +
         tx(" Peak ", " Piek ") + fmtRainRate(a.peakMm, 1) + (probText ? ", " + probText : "") +
         tx(". About ", ". Ongeveer ") + fmtRainMm(a.accumMm, 1) + tx(" falls on you during the ride.", " valt er tijdens de rit op je.");
