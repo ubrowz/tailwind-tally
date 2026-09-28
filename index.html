@@ -1524,7 +1524,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </svg>
     <div class="masthead-text">
       <h1>Tailwind Tally</h1>
-      <p id="mastheadIntro" data-nl="Laad de GPX-track van een rit en een windrichting &mdash; zelf ingesteld, of uit de weersverwachting voor je rit &mdash; en zie hoeveel kilometer rugwind (&ldquo;makkelijk&rdquo;) is en hoeveel tegenwind (&ldquo;zwaar&rdquo;).">Upload a ride's GPX track and a wind direction &mdash; set by hand, or taken from the forecast for your ride &mdash; to see how many kilometres are tailwind ("easy") versus headwind ("hard").</p>
+      <p id="mastheadIntro" data-nl="Laad de GPX-track van een rit en een windrichting &mdash; zelf ingesteld, of via de weersverwachting voor je rit &mdash; en zie hoeveel kilometer je rugwind (&ldquo;makkelijk&rdquo;) hebt en hoeveel kilometer tegenwind (&ldquo;zwaar&rdquo;).">Upload a ride's GPX track and a wind direction &mdash; set by hand, or taken from the forecast for your ride &mdash; to see how many kilometres are tailwind ("easy") versus headwind ("hard").</p>
     </div>
     <div class="mode-toggle lang-toggle" role="group" aria-label="Language / Taal">
       <button type="button" id="langEn" aria-pressed="true" lang="en">EN</button>
@@ -1535,14 +1535,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="card">
     <h2 data-nl="Laad een route">Load a route</h2>
     <div class="route-section">
-      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a GPX file" data-nl-aria-label="Een GPX-bestand laden">
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a GPX file" data-nl-aria-label="Laad een GPX-bestand">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 3v12M12 3l-4 4M12 3l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <div class="dropzone-text">
           <strong data-nl="Sleep hier een .gpx-bestand naartoe, of klik om te bladeren">Drop a .gpx file here, or click to browse</strong>
-          <span data-nl="Wordt helemaal in je browser verwerkt &mdash; het bestand gaat nergens naartoe.">Parsed entirely in your browser &mdash; the file is never uploaded anywhere.</span>
+          <span data-nl="Wordt helemaal in je browser verwerkt &mdash; het bestand gaat niet naar de cloud.">Parsed entirely in your browser &mdash; the file is never uploaded anywhere.</span>
         </div>
         <input type="file" id="fileInput" accept=".gpx,application/gpx+xml,text/xml,application/xml">
       </div>
@@ -1582,12 +1582,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card" id="rideCard">
-    <h2><span data-nl="Jouw rit">Your ride</span> <span class="info-pop" data-about="your ride" data-nl="Constante snelheid houdt je kruissnelheid vast, wat de wind ook doet. Constant vermogen houdt je inspanning vast en laat de snelheid meebewegen: tegen de wind in ga je langzamer, met de wind mee sneller (alleen vlakke weg). Je snelheid en rijstijl bepalen hoe lang de rit duurt, en dus hoe laat je op elk stuk bent. Met de weersverwachting bepaalt dat welke wind je tegenkomt.">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the wind you meet.</span></h2>
+    <h2><span data-nl="Jouw rit">Your ride</span> <span class="info-pop" data-about="your ride" data-nl="Constante snelheid houdt je kruissnelheid vast, wat de wind ook doet. Constant vermogen houdt je inspanning vast en laat de snelheid meebewegen: tegen de wind in ga je langzamer, met de wind mee sneller (alleen vlakke weg). Je snelheid en rijstijl bepalen hoe lang de rit duurt, en dus hoe laat je op een punt van de route bent. Met de weersverwachting bepaalt dat welke wind je krijgt op elk punt van de route.">Steady speed holds your cruising speed whatever the wind. Steady power holds your effort and lets the speed change: you slow into a headwind and speed up with a tailwind (flat road only). Your speed and riding style set how long the ride takes, and so the time of day at each stretch. In forecast mode that decides the wind you meet.</span></h2>
     <div class="mode-toggle" role="group" aria-label="Units" data-nl-aria-label="Eenheden" id="unitsToggle">
       <button type="button" id="unitsMetric" aria-pressed="true" data-nl="Metrisch (km)">Metric (km)</button>
       <button type="button" id="unitsUS" aria-pressed="false" data-nl="VS (mi)">US (mi)</button>
     </div>
-    <p class="field-hint" data-nl="Ingesteld op basis van waar de route ligt; je kunt het hier altijd aanpassen. Snelheid en afstand volgen het.">Set from the route&rsquo;s own location; change it here any time. Speed and distance follow it.</p>
+    <p class="field-hint" data-nl="Ingesteld op basis van waar de route ligt; je kunt het hier altijd aanpassen. Eenheden voor snelheid en afstand.">Set from the route&rsquo;s own location; change it here any time. Speed and distance follow it.</p>
     <div class="two-col-grid">
       <div class="field">
         <label for="cruiseSpeedInput" id="cruiseSpeedLabel">Cruising speed (km/h)</label>
@@ -1610,7 +1610,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <input type="number" id="riderMassInput" value="85" min="40" max="200" step="1">
         </div>
         <div class="field">
-          <label for="riderCdaInput"><span data-nl="Luchtweerstand CdA (m&sup2;)">Drag area CdA (m&sup2;)</span> <span class="info-pop" data-about="the rider settings" data-nl="Massa, luchtweerstand en rolweerstand worden alleen gebruikt bij <b>Constant vermogen</b>. Gangbare CdA: 0,28 laag in de beugel, 0,32 op de remgrepen, 0,40 rechtop.">The mass, drag area and rolling resistance are used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</span></label>
+          <label for="riderCdaInput"><span data-nl="Frontaal oppervlak CdA (m&sup2;)">Drag area CdA (m&sup2;)</span> <span class="info-pop" data-about="the rider settings" data-nl="Massa, frontaal oppervlak en rolweerstand worden alleen gebruikt bij <b>Constant vermogen</b>. Gangbare CdA: 0,28 laag in de beugel, 0,32 op de remgrepen, 0,40 rechtop.">The mass, drag area and rolling resistance are used only by <b>Steady power</b>. Typical CdA: 0.28 low on the drops, 0.32 on the hoods, 0.40 upright.</span></label>
           <input type="number" id="riderCdaInput" value="0.32" min="0.15" max="0.8" step="0.01">
         </div>
         <div class="field">
@@ -1622,7 +1622,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <div class="card" id="weatherCard">
-    <h2><span data-nl="Weer tijdens de rit">Weather for the ride</span> <span class="info-pop" data-about="the weather options" data-nl="<b>Zelf instellen:</b> vul de wind zelf in, bij het tabblad Wind. <b>Weersverwachting:</b> tijden zijn de lokale tijd van de route, waar ter wereld die ook ligt. De rit duurt zo lang als de route nodig heeft bij je kruissnelheid, en de verwachting volgt de klok onderweg: de wind verandert van stuk tot stuk zoals de verwachting verandert. Verwachtingen reiken zo&rsquo;n twee weken vooruit; stel voor andere data de wind zelf in. De verwachting vult de wind in, en je kunt die daarna nog aanpassen."><b>Set manually:</b> type the wind yourself, in the Wind tab. <b>From forecast:</b> times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: the wind changes from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind, and you can still adjust it.</span></h2>
+    <h2><span data-nl="Weer tijdens de rit">Weather for the ride</span> <span class="info-pop" data-about="the weather options" data-nl="<b>Zelf instellen:</b> vul de wind zelf in, bij het tabblad Wind. <b>Via weersverwachting:</b> tijden zijn de lokale tijd van de route, waar ter wereld die ook ligt. De rit duurt zo lang als de route nodig heeft op basis van jouw kruissnelheid, en de weersverwachting volgt de tijd onderweg: de wind verandert van segment tot segment met de verwachting op dat moment. Verwachtingen zijn beschikbaar voor zo&rsquo;n twee weken vooruit; stel voor andere data de wind zelf in. De verwachting vult de wind in, en je kunt die daarna nog aanpassen."><b>Set manually:</b> type the wind yourself, in the Wind tab. <b>From forecast:</b> times are local to the route, wherever in the world it is. The ride takes as long as the route needs at your cruising speed, and the forecast follows the clock along the way: the wind changes from stretch to stretch as the forecast changes. Forecasts reach about two weeks ahead; for anything else, set the wind manually. The forecast fills in the wind, and you can still adjust it.</span></h2>
     <div class="mode-toggle" role="group" aria-label="Wind source" data-nl-aria-label="Bron van de wind">
       <button type="button" id="modeManual" aria-pressed="true" data-nl="Zelf instellen">Set manually</button>
       <button type="button" id="modeForecast" aria-pressed="false" data-nl="Weersverwachting">From forecast</button>
@@ -1643,7 +1643,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <button type="button" class="action-btn" id="fcGetBtn" data-nl="Verwachting ophalen">Get forecast</button>
       </div>
       <p class="forecast-note" id="forecastNote" hidden><span id="forecastNoteText"></span> <a href="https://open-meteo.com/" target="_blank" rel="noopener" data-nl="Weergegevens van Open-Meteo.com">Weather data by Open-Meteo.com</a></p>
-      <p class="forecast-note stale" id="forecastStale" hidden data-nl="Je hebt de datum veranderd, of de rit loopt nu door na de opgehaalde uren. De wind volgt een andere starttijd en snelheid vanzelf; tik opnieuw op Verwachting ophalen voor een andere datum of latere uren.">You changed the date, or the ride now runs past the hours that were fetched. The wind follows a changed start time and speed on its own; tap Get forecast again to pick up a different date or later hours.</p>
+      <p class="forecast-note stale" id="forecastStale" hidden data-nl="Je hebt de datum veranderd, of de rit loopt nu na de ingestelde tijd. De wind volgt een andere starttijd en snelheid vanzelf; tik opnieuw op Verwachting ophalen voor een andere datum of latere tijd.">You changed the date, or the ride now runs past the hours that were fetched. The wind follows a changed start time and speed on its own; tap Get forecast again to pick up a different date or later hours.</p>
       <p class="error-text" id="forecastError"></p>
     </div>
   </div>
@@ -1677,11 +1677,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <select id="windSpeedInput"></select>
         </div>
         <div class="field">
-          <label for="neutralInput"><span data-nl="Zijwindband (&deg;)">Crosswind band (&deg;)</span> <span class="info-pop" data-about="the crosswind band" data-nl="Totale breedte van de zijwindband, gecentreerd op zijwind (haaks op de wind) &mdash; bijv. 10&deg; betekent &plusmn;5&deg; aan beide kanten. Stukken met zijwind tellen niet als makkelijk of zwaar (Neutraal buiten de routekaart, Zijwind erop).">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) &mdash; e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</span></label>
+          <label for="neutralInput"><span data-nl="Zijwindhoek (&deg;)">Crosswind band (&deg;)</span> <span class="info-pop" data-about="the crosswind band" data-nl="Totale grootte van de zijwindhoek, gecentreerd op zijwind (haaks op de wind) &mdash; bijv. 10&deg; betekent &plusmn;5&deg; aan beide kanten. Stukken met zijwind tellen niet als makkelijk of zwaar (Neutraal buiten de routekaart, Zijwind erop).">Total width of the crosswind band, centered on crosswind (perpendicular to the wind) &mdash; e.g. 10&deg; means &plusmn;5&deg; either side. Crosswind segments count as neither easy nor hard (labeled Neutral outside the Route map, Crosswind on it).</span></label>
           <input type="number" id="neutralInput" value="10" min="0" max="45" step="1">
         </div>
         <div class="field">
-          <label for="veryInput"><span data-nl="Band volle rugwind / volle tegenwind (&deg;)">Full tailwind / full headwind band (&deg;)</span> <span class="info-pop" data-about="the full tailwind and headwind band" data-nl="Totale breedte van de &ldquo;volle&rdquo; banden, gecentreerd op pal rugwind (0&deg;) en pal tegenwind (180&deg;) &mdash; bijv. 40&deg; betekent dat de 20&deg; het dichtst bij elk ervan telt als volle rugwind/volle tegenwind. Gebruikt door de routekaart en de berekeningen eronder, niet door de rest van de pagina.">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) &mdash; e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</span></label>
+          <label for="veryInput"><span data-nl="Volle rugwind / volle tegenwind hoek (&deg;)">Full tailwind / full headwind band (&deg;)</span> <span class="info-pop" data-about="the full tailwind and headwind band" data-nl="Totale grootte van de hoek die als volledig rugwind of volledig tegenwind wordt gebruikt, gecentreerd op pal rugwind (0&deg;) en pal tegenwind (180&deg;) &mdash; bijv. 40&deg; betekent dat de 20&deg; links/rechts van pal rugwind/tegenwind telt als volledige rugwind/tegenwind. Gebruikt door de routekaart en de berekeningen eronder, niet door de rest van de pagina.">Total width of the "full" bands, centered on dead-on tailwind (0&deg;) and dead-on headwind (180&deg;) &mdash; e.g. 40&deg; means the closest 20&deg; to either counts as full tailwind/full headwind. Used by the Route map and its calculations below, not the rest of the page.</span></label>
           <input type="number" id="veryInput" value="40" min="0" max="90" step="1">
         </div>
         <details class="advanced">

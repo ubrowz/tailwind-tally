@@ -114,7 +114,7 @@
     <li><strong>Je Strava-naam en atleet-id</strong>, getoond in de app zodat je ziet welk account verbonden is (bijv. &ldquo;Verbonden als &hellip;&rdquo;). Dit wordt getoond, niet bewaard.</li>
     <li><strong>Je lijst met routes en de GPX-inhoud van een route die je kiest</strong>, alleen gebruikt voor de kaart en berekeningen waar je om vroeg.</li>
   </ul>
-  <p>Een kleine achterliggende dienst van ons (zie &ldquo;Infrastructuur&rdquo; hieronder) doet twee dingen waarvoor het geheim van onze Strava-applicatie nodig is, dat niet veilig in een browser of app kan staan: Strava's eenmalige inlogcode omwisselen voor die toegangssleutel, en de verzoeken voor de routelijst en het exporteren van routes doorgeven (alleen omdat Strava's API geen rechtstreekse verzoeken uit browsers toestaat - niet omdat daar ons geheim voor nodig is). Die dienst logt, bewaart of houdt geen Strava-gegevens vast die erdoorheen gaan.</p>
+  <p>Een kleine backend service van ons (zie &ldquo;Infrastructuur&rdquo; hieronder) doet twee dingen waarvoor het Strava-applicatie client secret nodig is, dat niet veilig in een browser of app opgeslagen kan zijn: Strava's eenmalige inlogcode omwisselen voor die toegangssleutel, en de verzoeken voor de routelijst en het exporteren van routes doorgeven (alleen omdat Strava's API geen rechtstreekse verzoeken uit browsers toestaat - niet omdat daar ons geheim voor nodig is). Die dienst logt, bewaart of houdt geen Strava-gegevens vast.</p>
   <p>Verbinding verbreken is zo simpel als de pagina herladen of de app opnieuw starten - er is niets bewaard dat verwijderd moet worden.</p>
 
   <h2>Kaarttegels</h2>
@@ -125,7 +125,7 @@
   <p>Het verzoek gaat rechtstreeks van je apparaat naar Open-Meteo, niet via onze dienst, en we bewaren geen kopie. Er wordt niets verstuurd tenzij je op &ldquo;Verwachting ophalen&rdquo; tikt; de wind zelf instellen neemt nooit contact op met een weerdienst. Weergegevens van <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, onder licentie <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>; zie <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">de voorwaarden van Open-Meteo</a>.</p>
 
   <h2>Taalinstelling</h2>
-  <p>Als je met de schakelaar EN | NL voor Engels of Nederlands kiest, wordt die keuze in de lokale opslag van je browser (<code>localStorage</code>) op je eigen apparaat bewaard, zodat de app de volgende keer in dezelfde taal opent. Die keuze wordt nooit ergens naartoe gestuurd. Zolang je niet kiest, volgt de app de taal van je telefoon of browser.</p>
+  <p>Als je met de switch EN | NL voor Engels of Nederlands kiest, wordt die keuze in de lokale opslag van je browser (<code>localStorage</code>) op je eigen apparaat bewaard, zodat de app de volgende keer in dezelfde taal opent. Die keuze wordt nooit ergens naartoe gestuurd. Zolang je niet kiest, volgt de app de taal van je telefoon of browser.</p>
 
   <h2>Bezoekersstatistieken</h2>
   <p>We gebruiken <a href="https://www.goatcounter.com/" target="_blank" rel="noopener">GoatCounter</a> om paginabezoeken te tellen. Het zet geen cookies en verzamelt geen gegevens waarmee je te identificeren bent - zie <a href="https://www.goatcounter.com/privacy" target="_blank" rel="noopener">het privacybeleid van GoatCounter</a>.</p>
