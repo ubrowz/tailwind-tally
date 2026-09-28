@@ -1,20 +1,15 @@
-// Unit tests for the pure calculation code in index.html (forecast timing and
-// wind along the ride, steady power, reversing, units). Run with:
-//   node tests/pure.test.js
-// The functions are cut out of index.html between "BEGIN/END <name>-pure"
-// markers and run as they are: nothing is copied or mocked.
-//
-// This is the wind-forecast-only release: the chill-pure, rain-pure and
-// climb-pure blocks (Temperature/Rain/Climbs tabs) do not exist on this
-// branch, so they are not grabbed here either. See forecast-wind for the
-// full-featured version and its own tests.
+// Unit tests for the pure calculation code in index.html (forecast timing, wind and
+// temperature along the ride, wind chill, apparent temperature, heat index, colour
+// classes). Run with:  node tests/pure.test.js
+// The functions are cut out of index.html between the "BEGIN/END forecast-pure" and
+// "BEGIN/END chill-pure" markers and run as they are: nothing is copied or mocked.
 const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, mirrorLocations, mirrorTimeline, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, STANDARD_TEMP_C, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters } =
-  new Function(grab("forecast-pure") + grab("series-pure") + grab("mirror-pure") + grab("units-pure") + grab("power-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, mirrorLocations, mirrorTimeline, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, STANDARD_TEMP_C, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") + grab("climb-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, CLIMB_DEFAULTS, CLIMB_SLOPE_EDGES, climbSlopeClass, median3, smoothMean, elevationProfile, profileExtremes, profileAscentDescent, detectClimbs, analyzeTerrain, climbSegmentClasses, cumulativeDistances, sampleAlongRoute, elevationUrls, climbMidSegment, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, mirrorProfile, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -96,10 +91,517 @@ t("forecast temperature: absent -> null", () => {
   assert.strictEqual(summarizeForecast([mk(flat(10), flat(90))], day, 600, 840).tempC, null);
 });
 
+// ---- wind chill
+// NWS's own formula (F / mph), coefficients from weather.gov/safety/cold-wind-chill-chart,
+// valid at <= 50 F and > 3 mph. Independent of the C / km/h form used in the app.
+const nwsF = (tF, mph) => 35.74 + 0.6215 * tF - 35.75 * Math.pow(mph, 0.16) + 0.4275 * tF * Math.pow(mph, 0.16);
+const cToF = (c) => c * 9 / 5 + 32, fToC = (f) => (f - 32) * 5 / 9, kmhToMph = (k) => k / 1.609344;
+t("wind chill reproduces NWS's published example (0 F, 15 mph -> -19 F)", () => {
+  const f = cToF(windChillC(fToC(0), 15 * 1.609344));
+  assert.strictEqual(Math.round(f), -19, "got " + f);
+});
+t("wind chill agrees with NWS's F/mph formula across a grid", () => {
+  let worst = 0, cases = 0;
+  for (let tC = -40; tC <= 10; tC += 2.5) for (let kmh = 6; kmh <= 70; kmh += 4) {
+    const mine = cToF(windChillC(tC, kmh));
+    const ref = nwsF(cToF(tC), kmhToMph(kmh));
+    worst = Math.max(worst, Math.abs(mine - ref)); cases++;
+  }
+  assert(worst < 0.4, "worst disagreement " + worst.toFixed(3) + " F over " + cases + " cases");
+});
+t("thresholds match NWS's validity range (50 F ~ 10 C, 3 mph ~ 4.8 km/h)", () => {
+  assert.strictEqual(WIND_CHILL_OFFICIAL_MAX_C, 10);
+  assert(Math.abs(3 * 1.609344 - WIND_CHILL_MIN_KMH) < 0.05);
+});
+t("wind chill: colder or faster never feels warmer", () => {
+  assert(windChillC(-5, 30) < windChillC(-5, 20));
+  assert(windChillC(-10, 25) < windChillC(-5, 25));
+});
+t("wind chill: no effect at/below 4.8 km/h", () => {
+  assert.strictEqual(windChillC(-5, 4.8), -5);
+  assert.strictEqual(windChillC(-5, 0), -5);
+  assert.strictEqual(windChillC(15, 3), 15);
+});
+
+// ---- the extension above 10 C (option A)
+t("no jump at the 10 C edge, for any airspeed", () => {
+  for (const V of [6, 12, 20, 30, 45, 70, 100]) {
+    const below = windChillC(10, V), above = windChillC(10.0001, V);
+    assert(Math.abs(below - above) < 0.001, `V=${V}: ${below} vs ${above}`);
+    assert(windChillC(10, V) < 10, "still cools at exactly 10 C, as the official formula says");
+  }
+});
+t("continuous everywhere: no step between neighbouring temperatures", () => {
+  let worst = 0;
+  for (const V of [6, 20, 35, 60, 100]) for (let T = -40; T < 45; T += 0.01) {
+    worst = Math.max(worst, Math.abs(windChillC(T + 0.01, V) - windChillC(T, V)));
+  }
+  assert(worst < 0.02, "largest step per 0.01 C: " + worst);      // slope <= ~1.4 => 0.014 expected
+});
+t("never feels WARMER than the air, at any temperature or airspeed", () => {
+  for (const V of [5, 6, 15, 30, 60, 100]) for (let T = -50; T <= 60; T += 0.5) {
+    assert(windChillC(T, V) <= T + 1e-12, `T=${T} V=${V}`);
+  }
+});
+t("above 10 C the cooling only ever shrinks as it gets warmer", () => {
+  for (const V of [6, 15, 25, 35, 45, 100]) {
+    let prev = Infinity;
+    for (let T = 10; T <= 40; T += 0.25) {
+      const cooling = T - windChillC(T, V);
+      assert(cooling <= prev + 1e-12, `V=${V} T=${T}`);
+      prev = cooling;
+    }
+  }
+});
+t("cooling fades to zero by ~19-23 C and stays zero (matches the proposal's numbers)", () => {
+  const zeroAt = (V) => { let T = 10; while (T - windChillC(T, V) > 1e-9 && T < 60) T += 0.01; return T; };
+  assert(Math.abs(zeroAt(15) - 19.0) < 0.1, "V=15 " + zeroAt(15));
+  assert(Math.abs(zeroAt(25) - 20.7) < 0.1, "V=25 " + zeroAt(25));
+  assert(Math.abs(zeroAt(35) - 21.6) < 0.1, "V=35 " + zeroAt(35));
+  assert(Math.abs(zeroAt(45) - 22.2) < 0.1, "V=45 " + zeroAt(45));
+  for (const V of [6, 25, 60, 100]) assert.strictEqual(windChillC(25, V), 25);
+});
+t("spot values from the proposal table (feels-like minus air)", () => {
+  const cool = (T, V) => (windChillC(T, V) - T);
+  assert(Math.abs(cool(15, 25) - (-1.6)) < 0.06, String(cool(15, 25)));
+  assert(Math.abs(cool(10, 25) - (-3.1)) < 0.06, String(cool(10, 25)));
+  assert(Math.abs(cool(20, 45) - (-0.8)) < 0.06, String(cool(20, 45)));
+});
+
+const L = Array(40).fill(25);                                    // 40 segments of 25 m = 1 km
+const ms = (kmh) => kmh / 3.6;
+// ---- heat index
+// Independent copy of the published NWS algorithm (wpc.ncep.noaa.gov/html/heatindex_equation.shtml), T in F.
+const nwsSimple = (T, RH) => 0.5 * (T + 61.0 + (T - 68.0) * 1.2 + RH * 0.094);
+const nwsRoth = (T, RH) => {
+  let hi = -42.379 + 2.04901523*T + 10.14333127*RH - .22475541*T*RH - .00683783*T*T - .05481717*RH*RH
+         + .00122874*T*T*RH + .00085282*T*RH*RH - .00000199*T*T*RH*RH;
+  if (RH < 13 && T >= 80 && T <= 112) hi -= ((13 - RH) / 4) * Math.sqrt((17 - Math.abs(T - 95)) / 17);
+  if (RH > 85 && T >= 80 && T <= 87) hi += ((RH - 85) / 10) * ((87 - T) / 5);
+  return hi;
+};
+const nwsHI = (T, RH) => ((nwsSimple(T, RH) + T) / 2 >= 80 ? nwsRoth(T, RH) : nwsSimple(T, RH));
+t("regression agrees with NWS chart values (within 1 F)", () => {
+  for (const [tF, rh, chart] of [[80,40,80],[80,60,82],[90,50,95],[90,70,105],[100,40,109],[100,50,118],[110,40,136]])
+    assert(Math.abs(heatIndexRothfuszF(tF, rh) - chart) <= 1, `${tF}F ${rh}%: ${heatIndexRothfuszF(tF, rh)} vs ${chart}`);
+});
+t("heat: nothing at or below 22 C, whatever the humidity", () => {
+  for (const rh of [0, 30, 60, 100]) for (const tc of [-10, 0, 15, 22]) assert.strictEqual(heatDeltaC(tc, rh), 0);
+});
+t("heat: exactly the published NWS value from 29 C up to the chart's top (43 C)", () => {
+  let worst = 0;
+  for (let rh = 0; rh <= 100; rh += 5) for (let tc = 29; tc <= 43; tc += 0.25) {
+    const official = ((nwsHI(tc * 9 / 5 + 32, rh) - 32) * 5 / 9) - tc;
+    worst = Math.max(worst, Math.abs(heatDeltaC(tc, rh) - official));
+  }
+  assert(worst < 1e-9, "worst |diff| " + worst);
+});
+t("heat: no step anywhere (published algorithm has ~1 C steps at 80 F; ours must not)", () => {
+  // Steepest legitimate slope is the regression's own at its hot, humid corner (~11 C per C). A 1 C step
+  // over a 0.01 C scan would read as ~100 C per C.
+  let worst = 0, at = "";
+  const rhs = []; for (let rh = 0; rh <= 100; rh += 5) rhs.push(rh); rhs.push(12.9, 13, 13.1, 84.9, 85, 85.1, 99.9);
+  for (const rh of rhs) for (let tc = 10; tc < 50; tc += 0.01) {
+    const sl = Math.abs(heatDeltaC(tc + 0.01, rh) - heatDeltaC(tc, rh)) / 0.01;
+    if (sl > worst) { worst = sl; at = `T=${tc.toFixed(2)} RH=${rh}`; }
+  }
+  assert(worst < 12, `steepest slope ${worst.toFixed(1)} C/C at ${at}`);
+});
+t("published algorithm DOES step at its switch (this is what we are avoiding)", () => {
+  let worst = 0;
+  for (const rh of [70, 80, 90, 95]) for (let tc = 24; tc < 29; tc += 0.01)
+    worst = Math.max(worst, Math.abs(((nwsHI((tc + 0.01) * 9 / 5 + 32, rh) - nwsHI(tc * 9 / 5 + 32, rh)) * 5 / 9)));
+  assert(worst > 0.5, "expected the published algorithm to jump > 0.5 C, got " + worst);
+});
+t("heat: humid air feels hotter, and more so the more humid; dry heat feels a little cooler", () => {
+  assert(heatDeltaC(32, 80) > heatDeltaC(32, 60) && heatDeltaC(32, 60) > heatDeltaC(32, 40));
+  assert(heatDeltaC(32, 90) > 5);
+  assert(heatDeltaC(35, 20) < 0, "very dry heat cools by evaporation");
+});
+t("heat: hotter air always feels hotter overall (T + delta rises with T)", () => {
+  for (const rh of [30, 60, 90]) {
+    let prev = -Infinity;
+    for (let tc = 22; tc <= 43; tc += 0.1) { const f = tc + heatDeltaC(tc, rh); assert(f >= prev - 1e-9, `RH${rh} T${tc}`); prev = f; }
+  }
+});
+t("heat: inputs are clamped (humidity outside 0-100, air above the chart) instead of exploding", () => {
+  assert.strictEqual(heatDeltaC(35, 150), heatDeltaC(35, 100));
+  assert.strictEqual(heatDeltaC(35, -20), heatDeltaC(35, 0));
+  assert(isFinite(heatDeltaC(60, 100)) && heatDeltaC(60, 100) === heatDeltaC(43.3, 100));
+});
+t("forecast humidity: plain mean over window hours, null when absent", () => {
+  const loc = mk(flat(10), flat(90)); loc.hourly.relative_humidity_2m = flat(0).map((_, i) => i * 2);
+  assert.strictEqual(summarizeForecast([loc], day, 600, 840).rhPercent, (20 + 22 + 24 + 26) / 4);
+  assert.strictEqual(summarizeForecast([mk(flat(10), flat(90))], day, 600, 840).rhPercent, null);
+});
+
+// ---- apparent temperature and the blended feels-like
+t("apparent temperature: hand-computed value (20 C, 50%, calm)", () => {
+  // e = 0.5 * 6.105 * exp(17.27*20/257.7) = 11.660 hPa;  AT = 20 + 0.33*11.660 - 0 - 4.0
+  assert(Math.abs(apparentTempC(20, 50, 0) - 19.848) < 0.005, String(apparentTempC(20, 50, 0)));
+});
+t("apparent temperature: wind term is exactly 0.7 C per m/s", () => {
+  const d = apparentTempC(25, 60, 0) - apparentTempC(25, 60, 18);          // 18 km/h = 5 m/s
+  assert(Math.abs(d - 3.5) < 1e-9, String(d));
+});
+t("apparent temperature: humid feels hotter than dry, same air and wind", () => {
+  assert(apparentTempC(30, 90, 20) > apparentTempC(30, 50, 20) && apparentTempC(30, 50, 20) > apparentTempC(30, 10, 20));
+});
+t("feels-like IS the official wind chill at and below 10 C, whatever the humidity", () => {
+  for (const T of [-30, -10, 0, 5, 10]) for (const V of [6, 25, 45]) for (const RH of [0, 50, 100])
+    assert.strictEqual(feelsLikeC(T, RH, V), windChillC(T, V));
+});
+t("feels-like IS the apparent temperature from 20 C up", () => {
+  for (const T of [20, 25, 32, 40]) for (const V of [0, 10, 25, 45]) for (const RH of [10, 60, 95])
+    assert.strictEqual(feelsLikeC(T, RH, V), apparentTempC(T, RH, V));
+});
+t("feels-like has no jump anywhere (blend between the two models)", () => {
+  let worst = 0, at = "";
+  for (const V of [6, 15, 25, 40, 60]) for (const RH of [10, 50, 90]) for (let T = -40; T < 45; T += 0.01) {
+    const sl = Math.abs(feelsLikeC(T + 0.01, RH, V) - feelsLikeC(T, RH, V)) / 0.01;
+    if (sl > worst) { worst = sl; at = `T=${T.toFixed(2)} V=${V} RH=${RH}`; }
+  }
+  assert(worst < 4, `steepest slope ${worst.toFixed(2)} C/C at ${at}`);       // a 1 C step over 0.01 C would read ~100
+});
+const worstDrop = (RH, V) => { let w = 0;   // largest fall in feels-like as the air gets warmer, blend zone included
+  for (let T0 = 8; T0 < 24; T0 += 0.1) for (let T1 = T0 + 0.1; T1 <= 24; T1 += 0.1) w = Math.max(w, feelsLikeC(T0, RH, V) - feelsLikeC(T1, RH, V));
+  return w; };
+t("warmer air always feels warmer up to 25 km/h of airspeed, at any humidity", () => {
+  for (const V of [6, 15, 25]) for (const RH of [0, 20, 50, 100]) {
+    let prev = -Infinity;
+    for (let T = -40; T <= 45; T += 0.05) { const f = feelsLikeC(T, RH, V); assert(f >= prev - 1e-9, `V=${V} RH=${RH} T=${T.toFixed(2)}`); prev = f; }
+  }
+});
+t("known limit: at 40 km/h airspeed the blend can dip, but by under 1 C, and not at all in humid air", () => {
+  for (const RH of [0, 20, 40, 60, 80, 100]) assert(worstDrop(RH, 40) < 1, `RH=${RH}: ${worstDrop(RH, 40)}`);
+  for (const RH of [40, 60, 80, 100]) assert(worstDrop(RH, 40) < 1e-9, `RH=${RH}`);
+});
+t("known limit: the worst case is bone-dry air at 60 km/h in the 10-20 C zone (about 3 C), and stays bounded", () => {
+  assert(worstDrop(0, 60) > 1 && worstDrop(0, 60) < 3.5, String(worstDrop(0, 60)));
+});
+t("faster airspeed always feels cooler (above the 4.8 km/h floor)", () => {
+  for (const T of [-15, 0, 10, 15, 20, 30, 38]) for (const RH of [20, 60, 95]) {
+    let prev = Infinity;
+    for (let V = 6; V <= 80; V += 2) { const f = feelsLikeC(T, RH, V); assert(f <= prev + 1e-9, `T=${T} RH=${RH} V=${V}`); prev = f; }
+  }
+});
+t("riding speed matters in the heat: 30 C, 60% humid feels cooler at 25 km/h than at 10 km/h", () => {
+  assert(feelsLikeC(30, 60, 25) < feelsLikeC(30, 60, 10) - 2);
+});
+t("at riding speed it feels cooler than the NWS still-air heat index (wind helps in the heat)", () => {
+  for (const [T, RH] of [[30, 70], [33, 60], [35, 80]])
+    assert(feelsLikeC(T, RH, 25) < T + heatDeltaC(T, RH), `${T}C ${RH}%`);
+});
+
+t("feels stats: no wind -> the same everywhere, so avg == coldest == warmest", () => {
+  for (const T of [0, 15, 30]) {
+    const r = feelsStats(L, Array(40).fill(0), ms(25), 0, T, 50);
+    assert(Math.abs(r.avgFeelsC - feelsLikeC(T, 50, 25)) < 1e-9);
+    assert(Math.abs(r.coldestFeelsC - r.avgFeelsC) < 1e-9 && Math.abs(r.warmestFeelsC - r.avgFeelsC) < 1e-9);
+  }
+});
+t("feels stats: a headwind stretch feels colder than a tailwind one, cold day AND hot day", () => {
+  for (const T of [0, 15, 32]) {
+    const head = feelsStats(L, Array(40).fill(-1), ms(25), ms(20), T, 60);   // cosphi -1 = headwind
+    const tail = feelsStats(L, Array(40).fill(1), ms(25), ms(20), T, 60);
+    assert(head.avgFeelsC < tail.avgFeelsC, `T=${T}`);
+    assert(Math.abs(head.avgFeelsC - feelsLikeC(T, 60, 45)) < 1e-9);         // 25 + 20 km/h
+    assert(Math.abs(tail.avgFeelsC - feelsLikeC(T, 60, 5)) < 1e-9);          // 25 - 20 km/h
+  }
+});
+t("feels stats: coldest / warmest tenth = mean of the coldest / warmest 10% of distance", () => {
+  // 200 segments (5 km) so the 1 km headwind/tailwind runs at each end have a
+  // 600 m core beyond the 400 m smoothing window's reach - wide enough that
+  // the coldest/warmest 10% (500 m) sits entirely in undiluted core, still
+  // matching the pure value exactly.
+  const bigL = Array(200).fill(25);
+  const cos = Array(200).fill(0); for (let i = 0; i < 40; i++) cos[i] = -1; for (let i = 160; i < 200; i++) cos[i] = 1;
+  const r = feelsStats(bigL, cos, ms(25), ms(20), 30, 60);
+  assert(Math.abs(r.coldestFeelsC - feelsLikeC(30, 60, 45)) < 1e-9);
+  assert(Math.abs(r.warmestFeelsC - feelsLikeC(30, 60, 5)) < 1e-9);
+  assert(r.coldestFeelsC < r.avgFeelsC && r.avgFeelsC < r.warmestFeelsC);
+});
+t("feels stats: a single backwards GPS blip does not set the headline", () => {
+  // Diluted twice over: smoothByDistance already blends it into its
+  // neighbours before the coldest/warmest tenth ever sees it.
+  const cos = Array(40).fill(1); cos[7] = -1;                               // 1 of 40 = 2.5% of distance
+  const r = feelsStats(L, cos, ms(25), ms(20), 0, 50);
+  assert(r.coldestFeelsC > feelsLikeC(0, 50, 45) + 0.5, "coldest tenth should dilute one bad segment");
+});
+t("smoothByDistance: a uniform series is left unchanged", () => {
+  assert.deepStrictEqual(smoothByDistance([5, 5, 5, 5], [25, 25, 25, 25], 400), [5, 5, 5, 5]);
+});
+t("smoothByDistance: window 0 (or 1 point) is the identity", () => {
+  assert.deepStrictEqual(smoothByDistance([1, 9, 2], [25, 25, 25], 0), [1, 9, 2]);
+  assert.deepStrictEqual(smoothByDistance([7], [25], 400), [7]);
+  assert.deepStrictEqual(smoothByDistance([], [], 400), []);
+});
+t("smoothByDistance: a lone spike is pulled toward its neighbours over the window's width", () => {
+  const lengths = Array(20).fill(25);                                       // 500 m
+  const values = Array(20).fill(10); values[10] = 100;                      // one 25 m spike mid-route
+  const out = smoothByDistance(values, lengths, 400);
+  assert(out[10] > 10 && out[10] < 100, "the spike itself should soften a lot");
+  assert(out[10] < values[10], "never sharper than the input");
+  // 250 m (10 segments) from the spike, past the 200 m half-window: untouched.
+  assert.strictEqual(out[0], 10); assert.strictEqual(out[19], 10);
+});
+t("smoothByDistance: clamped at the route's ends - only forward neighbours exist there, nothing is invented", () => {
+  const values = [100, 10, 10, 10, 10, 10, 10, 10, 10, 10];                 // spike at the very first segment
+  const out = smoothByDistance(values, Array(10).fill(25), 400);
+  // The 200 m half-window from segment 0 only reaches forward (segments 0-8,
+  // 9 of them): (100 + 8*10) / 9, still exactly a length-weighted average of
+  // whatever exists, not padded with anything before the route's start.
+  assert(Math.abs(out[0] - 180 / 9) < 1e-9);
+  assert(out[0] < values[0], "the spike itself is still diluted, just by fewer neighbours");
+});
+t("smoothByDistance: it is a true distance-weighted average, not a plain sample average", () => {
+  // One long 300 m segment and one short 25 m segment, both inside each
+  // other's 400 m window: a plain sample average of the two raw values would
+  // be 50; length-weighted it sits far closer to the 300 m segment's value.
+  const out = smoothByDistance([0, 100], [300, 25], 400);
+  assert(out[0] < 25 && out[1] < 25, `expected well under the 300 m segment's weight to dominate, got ${out}`);
+});
+t("feels stats: one value per segment; empty route does not crash", () => {
+  assert.strictEqual(feelsStats(L, Array(40).fill(1), ms(25), ms(20), 5, 50).perSeg.length, 40);
+  const e = feelsStats([], [], ms(25), ms(10), 3, 50);
+  assert(e.avgFeelsC === 3 && e.avgAirC === 3 && e.perSeg.length === 0 && e.airSeg.length === 0);
+});
+
+// ---- feels like in full sun (a separate, lower-bound estimate)
+t("apparentTempSunC: at Q=0 it is close to the shade formula (same shape, slightly different fitted constants)", () => {
+  const withSun = apparentTempSunC(25, 50, 25, 0), shade = apparentTempC(25, 50, 25);
+  assert(Math.abs(withSun - shade) < 1, `Q=0 should track the shade value closely, got ${withSun} vs ${shade}`);
+});
+t("apparentTempSunC: more shortwave radiation only ever adds warmth", () => {
+  const t0 = apparentTempSunC(20, 50, 20, 0), t1 = apparentTempSunC(20, 50, 20, 600), t2 = apparentTempSunC(20, 50, 20, 900);
+  assert(t0 < t1 && t1 < t2, `${t0}, ${t1}, ${t2}`);
+});
+t("apparentTempSunC: never exceeds the ~8 C real-world ceiling, even standing still in the most extreme recorded sun", () => {
+  // A regression test for two real bugs, both caught only by checking real
+  // numbers (see the long comment above apparentTempSunC):
+  //  1. An earlier version scaled Q straight off shortwave_radiation
+  //     (Q = 0.7 * raw), which at a common midday value (800 W/m^2) added
+  //     over 20 C - far past the ~8 C ceiling Steadman and the NWS both
+  //     report for full sun.
+  //  2. Copying Open-Meteo's own baseline+scaling fixed the overshoot but
+  //     then read as NO boost at all on a real, clear (low cloud) morning -
+  //     that baseline was tuned for a bar this app's rides rarely clear.
+  // 1100 W/m^2 and airspeed 0 (standing still) is the single most extreme
+  // case the formula can be given.
+  // The radiation term itself is calibrated to exactly 8 here; the shade
+  // and sun formulas also differ by a small fixed amount in their own
+  // fitted constants (0.348 e vs 0.33 e, -4.25 vs -4.00), worth well under
+  // half a degree - hence the small allowance rather than a hard 8.0 cap.
+  const boost = apparentTempSunC(25, 50, 0, 1100) - apparentTempC(25, 50, 0);
+  assert(boost >= 0 && boost <= 8.5, `expected at most ~8 C even in the most extreme case, got ${boost}`);
+});
+t("apparentTempSunC: a real, clear (low cloud cover) morning gives a real, non-zero boost, not nothing", () => {
+  // The exact regression this was tuned against: 2026-09-26, a genuinely
+  // clear morning along a real route (Dag 1 2026 verhard.gpx), whose actual
+  // forecast shortwave_radiation peaked around 591 W/m^2 - the previous
+  // (Open-Meteo-baseline) version read this as zero boost.
+  const boost = apparentTempSunC(20, 55, 25, 591) - apparentTempC(20, 55, 25);
+  assert(boost > 1, `expected a clearly noticeable boost on a real clear morning, got ${boost}`);
+});
+t("apparentTempSunC: negative radiation is treated as none (never subtracts warmth)", () => {
+  assert.strictEqual(apparentTempSunC(20, 50, 20, -100), apparentTempSunC(20, 50, 20, 0));
+});
+t("feelsLikeSunC: below the wind chill cutoff, sun adds nothing (a known, documented gap)", () => {
+  assert.strictEqual(feelsLikeSunC(5, 50, 20, 900), windChillC(5, 20));
+});
+t("feelsLikeSunC: from 20 C up it is exactly apparentTempSunC; the blend zone sits between the two", () => {
+  assert.strictEqual(feelsLikeSunC(25, 50, 20, 700), apparentTempSunC(25, 50, 20, 700));
+  // Order-agnostic: at 15 C apparentTempSunC actually reads BELOW windChillC
+  // here (the same seam the shade formula already has, see section 11 of
+  // the docs) - the blend just needs to sit between whichever is smaller
+  // and whichever is larger, not assume which one that is.
+  const blend = feelsLikeSunC(15, 50, 20, 700), wc = windChillC(15, 20), atSun = apparentTempSunC(15, 50, 20, 700);
+  assert(blend > Math.min(wc, atSun) - 1e-9 && blend < Math.max(wc, atSun) + 1e-9, `${blend} not between ${wc} and ${atSun}`);
+});
+t("feels stats: with no qWm2 argument, the sun fields are all null (unaffected, back-compatible)", () => {
+  const r = feelsStats(L, Array(40).fill(0), ms(25), 0, 25, 50);
+  assert.strictEqual(r.perSegSun, null); assert.strictEqual(r.avgSunC, null);
+  assert.strictEqual(r.coldestSunC, null); assert.strictEqual(r.warmestSunC, null);
+  assert.strictEqual(r.sunStartC, null); assert.strictEqual(r.sunEndC, null);
+});
+t("feels stats: with qWm2, the sun series is its own smoothed, summarised set of numbers", () => {
+  const q = Array(40).fill(0); for (let i = 20; i < 40; i++) q[i] = 800;      // sun for the second half only
+  const r = feelsStats(L, Array(40).fill(0), ms(25), 0, 25, 50, q);
+  assert.strictEqual(r.perSegSun.length, 40);
+  assert(r.sunStartC < r.sunEndC, "sunnier at the end should read warmer");
+  assert(r.avgSunC > r.avgFeelsC, "with any real sun, the sun estimate is never colder than the plain one");
+  assert(r.warmestSunC >= r.coldestSunC);
+});
+t("feels stats: a scalar qWm2 behaves like a constant array of it", () => {
+  const a = feelsStats(L, Array(40).fill(0.2), ms(25), ms(15), 22, 55, 700);
+  const b = feelsStats(L, Array(40).fill(0.2), ms(25), ms(15), 22, 55, Array(40).fill(700));
+  assert(Math.abs(a.avgSunC - b.avgSunC) < 1e-9);
+  assert(a.avgSunC > a.avgFeelsC, "700 W/m^2 is above the baseline, so this should actually exercise a non-zero boost");
+});
+
+// ---- colour classes for the map
+t("classes: 9 edges -> 10 contiguous classes, index 5 is the neutral one around 0", () => {
+  const c = feelsClasses([0], [25], 0).classes;
+  assert.strictEqual(FEELS_CLASS_EDGES.length, 9); assert.strictEqual(c.length, 10);
+  for (let k = 0; k < 9; k++) assert.strictEqual(c[k].hiC, c[k + 1].loC);
+  assert.strictEqual(c[5].loC, -1); assert.strictEqual(c[5].hiC, 1);
+});
+t("classes: known deltas land in the right class (edges belong to the class above)", () => {
+  const cases = [[-13, 0], [-12, 1], [-9, 1], [-8, 2], [-5, 3], [-3, 4], [-1.01, 4], [-1, 5], [0, 5], [0.99, 5], [1, 6], [3, 7], [5, 8], [7.9, 8], [8, 9], [30, 9]];
+  for (const [d, k] of cases) assert.strictEqual(feelsClasses([20 + d], [25], 20).cls[0], k, `delta ${d}`);
+});
+t("classes: depend only on feels-like MINUS air temperature (same colour means the same on any day)", () => {
+  const per = [-9, -4, -0.3, 2, 6];
+  assert.deepStrictEqual(feelsClasses(per.map(v => v + 30), L.slice(0, 5), 30).cls, feelsClasses(per.map(v => v - 12), L.slice(0, 5), -12).cls);
+});
+t("classes: distances add up to the route and colder never lands in a milder class", () => {
+  const per = Array.from({ length: 40 }, (_, i) => -14 + i * 0.6);
+  const r = feelsClasses(per, L, 0);
+  assert(Math.abs(r.classes.reduce((a, c) => a + c.dist, 0) - 1000) < 1e-9);
+  for (let i = 1; i < 40; i++) assert(r.cls[i] >= r.cls[i - 1]);
+});
+t("classes: 25 C and 26 C sit next to each other on the scale (no blue-to-red flip)", () => {
+  // The bug this replaces: a hue switch between neighbouring temperatures. Now colour follows a smooth number.
+  for (const V of [10, 25, 40]) {
+    const k25 = feelsClasses([feelsLikeC(25, 50, V)], [25], 25).cls[0], k26 = feelsClasses([feelsLikeC(26, 50, V)], [25], 26).cls[0];
+    assert(Math.abs(k25 - k26) <= 1, `V=${V}: class ${k25} at 25 C vs ${k26} at 26 C`);
+  }
+});
+
+// ---- the ride follows the clock
+t("forecastMinutes: same day, next day, and a month boundary", () => {
+  assert.strictEqual(forecastMinutes("2026-09-20T10:00", "2026-09-20"), 600);
+  assert.strictEqual(forecastMinutes("2026-09-21T01:30", "2026-09-20"), 1440 + 90);
+  assert.strictEqual(forecastMinutes("2026-10-01T00:00", "2026-09-30"), 1440);
+  assert.strictEqual(addDaysToDateStr("2026-09-30", 1), "2026-10-01");
+  assert.strictEqual(addDaysToDateStr("2026-12-31", 1), "2027-01-01");
+});
+t("rideMinutes: 25 km at 25 km/h is 60 min; slower takes longer", () => {
+  assert(Math.abs(rideMinutes(25000, 25) - 60) < 1e-9); assert(Math.abs(rideMinutes(25000, 20) - 75) < 1e-9);
+});
+t("summarizeForecast: a ride that crosses midnight uses the next day's hours too", () => {
+  const two = { hourly: { time: [], wind_speed_10m: [], wind_direction_10m: [], wind_gusts_10m: [], temperature_2m: [] } };
+  for (let h = 0; h < 48; h++) {
+    const d = h < 24 ? "2026-09-20" : "2026-09-21";
+    two.hourly.time.push(`${d}T${String(h % 24).padStart(2, "0")}:00`);
+    two.hourly.wind_speed_10m.push(h < 24 ? 10 : 30); two.hourly.wind_direction_10m.push(90);
+    two.hourly.wind_gusts_10m.push(0); two.hourly.temperature_2m.push(h);
+  }
+  const r = summarizeForecast([two], "2026-09-20", 23 * 60, 25 * 60);            // 23:00 to 01:00 next day
+  assert.strictEqual(r.hourCount, 2); assert.strictEqual(r.speedKmh, 20);          // hours 23 (10) and 24 (30)
+});
+t("forecast sample plan: unique places + where along the route each sample sits", () => {
+  // three points ~0.11 deg apart on a meridian: fractions 0, 0.5, 1 by distance
+  const route = [[51.0, 5.0], [51.1, 5.0], [51.2, 5.0]];
+  const p = forecastSamplePlan(route);
+  assert.strictEqual(p.unique.length, 3);
+  assert.deepStrictEqual(p.samples.map((x) => Math.round(x.frac * 1000) / 1000), [0, 0.5, 1]);
+});
+t("forecast sample plan: a loop keeps its start place at BOTH ends (fraction 0 and 1, one unique place)", () => {
+  const loop = [[51.4173, 5.5117], [51.3, 5.9], [51.42, 5.51]];
+  const p = forecastSamplePlan(loop);
+  assert.strictEqual(p.unique.length, 2); assert.strictEqual(p.samples.length, 3);
+  assert.strictEqual(p.samples[0].unique, p.samples[2].unique); assert(Math.abs(p.samples[2].frac - 1) < 1e-9);
+});
+t("cumulative metres: 0.1 deg of latitude is about 11.1 km", () => {
+  const c = cumulativeMeters([[51.0, 5.0], [51.1, 5.0]]);
+  assert(Math.abs(c[1] - 11119) < 30, String(c[1]));
+});
+t("interpSeries: linear between hours, held outside, missing hours skipped", () => {
+  const ser = { t: [600, 660, 720], v: [10, 20, 40] };
+  assert.strictEqual(interpSeries(ser, 630), 15); assert.strictEqual(interpSeries(ser, 690), 30);
+  assert.strictEqual(interpSeries(ser, 0), 10); assert.strictEqual(interpSeries(ser, 9999), 40);
+  assert.strictEqual(interpSeries({ t: [], v: [] }, 5), null);
+  const loc = { hourly: { time: ["2026-09-20T10:00", "2026-09-20T11:00", "2026-09-20T12:00"], temperature_2m: [10, null, 20] } };
+  const fs = forecastSeries(loc, "temperature_2m", "2026-09-20");
+  assert.deepStrictEqual(fs, { t: [600, 720], v: [10, 20] }); assert.strictEqual(interpSeries(fs, 660), 15);
+});
+t("valueAtPlace: piecewise linear along the route, held beyond the end places", () => {
+  const locs = [{ frac: 0, temp: { t: [0], v: [10] } }, { frac: 0.5, temp: { t: [0], v: [20] } }, { frac: 1, temp: { t: [0], v: [10] } }];
+  assert.strictEqual(valueAtPlace(locs, "temp", 0.25, 0), 15); assert.strictEqual(valueAtPlace(locs, "temp", 0.5, 0), 20);
+  assert.strictEqual(valueAtPlace(locs, "temp", 0.75, 0), 15); assert.strictEqual(valueAtPlace(locs, "temp", 1, 0), 10);
+  assert.strictEqual(valueAtPlace(locs, "temp", -1, 0), 10);
+});
+t("valueAtPlace: a field missing from every place (not just missing hours) returns null, not a crash", () => {
+  const locs = [{ frac: 0, temp: { t: [0], v: [10] } }, { frac: 1, temp: { t: [0], v: [20] } }];
+  assert.strictEqual(valueAtPlace(locs, "solar", 0.5, 0), null);
+});
+// spatially uniform, warming 1 C per hour: T(t) = 10 + (t - 600) / 60
+const warming = [{ frac: 0, temp: { t: [0, 1440], v: [10 - 10, 10 - 10 + 24] }, rh: { t: [0], v: [50] } }];   // 1 C per hour from midnight
+const T_at = (min) => min / 60;
+const segs = Array(100).fill(250);                                 // 25 km in 100 segments
+t("segmentEnvironment: forward - each segment gets the temperature at the moment the rider arrives", () => {
+  const env = segmentEnvironment(segs, warming, 600, 25);   // start 10:00 at 25 km/h: the ride takes 60 min
+  assert(Math.abs(env.tempC[0] - T_at(600 + 0.3)) < 0.01, String(env.tempC[0]));          // first segment: ~0.3 min in
+  assert(Math.abs(env.tempC[99] - T_at(600 + 59.7)) < 0.01, String(env.tempC[99]));
+  for (let i = 1; i < 100; i++) assert(env.tempC[i] > env.tempC[i - 1]);                  // warms all the way
+});
+t("segmentEnvironment: speed sets how fast the clock runs (slower = more warming over the same route)", () => {
+  const fast = segmentEnvironment(segs, warming, 600, 25), slow = segmentEnvironment(segs, warming, 600, 12.5);
+  assert(slow.tempC[99] - slow.tempC[0] > 1.9 * (fast.tempC[99] - fast.tempC[0]));
+});
+t("segmentEnvironment: start time shifts everything by the same amount", () => {
+  const a = segmentEnvironment(segs, warming, 600, 25), b = segmentEnvironment(segs, warming, 660, 25);
+  for (let i = 0; i < 100; i += 11) assert(Math.abs((b.tempC[i] - a.tempC[i]) - 1) < 1e-9);
+});
+t("segmentEnvironment: places differ too - cold start, warm middle, cold end, read at the same clock", () => {
+  const locs = [{ frac: 0, temp: { t: [0], v: [10] }, rh: { t: [0], v: [50] } }, { frac: 0.5, temp: { t: [0], v: [20] }, rh: { t: [0], v: [50] } }, { frac: 1, temp: { t: [0], v: [10] }, rh: { t: [0], v: [50] } }];
+  const env = segmentEnvironment(segs, locs, 600, 25);
+  assert(env.tempC[0] < 10.3 && env.tempC[49] > 19.7 && env.tempC[99] < 10.3);
+});
+t("segmentEnvironment: carries solar (shortwave radiation) the same way as temp and rh, null where absent", () => {
+  assert.strictEqual(segmentEnvironment(segs, warming, 600, 25).solar.every((v) => v === null), true);
+  const sunny = [{ frac: 0, temp: { t: [0], v: [20] }, rh: { t: [0], v: [50] }, solar: { t: [0], v: [800] } }];
+  assert.strictEqual(segmentEnvironment(segs, sunny, 600, 25).solar[0], 800);
+});
+t("ride summary: start, end and mean of a steadily warming ride", () => {
+  const r = rideEnvSummary(25000, warming, 600, 25);
+  assert(Math.abs(r.startC - T_at(600.3)) < 0.01 && Math.abs(r.endC - T_at(659.7)) < 0.01 && Math.abs(r.meanC - T_at(630)) < 0.01);
+  assert.strictEqual(r.meanRh, 50);
+});
+
+// ---- per-segment air temperature through the statistics
+t("feels stats: per-segment temperatures are used (each segment's own air temperature and humidity)", () => {
+  // perSeg is smoothed (see smoothByDistance above), so it no longer matches
+  // the raw formula segment-for-segment - but a steadily warming route must
+  // still come out steadily warming, and avgAirC/airStartC/airEndC read the
+  // raw per-segment air temperature directly, unaffected by the feels-like
+  // smoothing.
+  const temps = Array.from({ length: 40 }, (_, i) => 5 + i * 0.5), rhs = Array(40).fill(60);
+  const r = feelsStats(L, Array(40).fill(0), ms(25), 0, temps, rhs);
+  for (let i = 1; i < 40; i++) assert(r.perSeg[i] >= r.perSeg[i - 1], `perSeg should not dip at ${i}`);
+  assert(r.perSeg[39] > r.perSeg[0] + 10, "cold end to warm end should still show clearly");
+  assert(Math.abs(r.avgAirC - (5 + 19.5 / 2)) < 1e-9, String(r.avgAirC));
+  assert.strictEqual(r.airStartC, 5); assert.strictEqual(r.airEndC, 24.5); assert.strictEqual(r.avgRh, 60);
+});
+t("feels stats: a constant array behaves exactly like the plain number", () => {
+  const a = feelsStats(L, Array(40).fill(0.3), ms(25), ms(20), 12, 60), b = feelsStats(L, Array(40).fill(0.3), ms(25), ms(20), Array(40).fill(12), Array(40).fill(60));
+  assert(Math.abs(a.avgFeelsC - b.avgFeelsC) < 1e-9 && Math.abs(a.coldestFeelsC - b.coldestFeelsC) < 1e-9 && Math.abs(a.avgAirC - b.avgAirC) < 1e-9);
+});
+t("feels stats: still-air heat index is the hottest moment of the ride", () => {
+  const temps = Array.from({ length: 40 }, (_, i) => 26 + i * 0.2), rhs = Array(40).fill(70);      // 26 -> 33.8 C, humid
+  const r = feelsStats(L, Array(40).fill(0), ms(25), 0, temps, rhs);
+  assert(Math.abs(r.stillHiC - (33.8 + heatDeltaC(33.8, 70))) < 1e-9);
+  assert(r.stillDeltaC > 0 && Math.abs(r.stillDeltaC - heatDeltaC(33.8, 70)) < 1e-9);
+});
+t("classes: colour is relative to the air temperature at that segment (a warming day does not read as chill)", () => {
+  // every segment feels exactly 3 C colder than ITS OWN air temperature -> one class, even though the air warms 10 C
+  const air = Array.from({ length: 40 }, (_, i) => 5 + i * 0.25), per = air.map((a) => a - 3);
+  const r = feelsClasses(per, L, air);
+  assert(r.cls.every((c) => c === r.cls[0]), JSON.stringify(r.cls));
+  assert.notStrictEqual(feelsClasses(per, L, 5).cls[39], r.cls[0], "against a fixed 5 C it would have read very differently");
+});
+
+t("ride summary ends agree with the per-segment ones (what the note and the card each show)", () => {
+  const locs = [{ frac: 0, temp: { t: [0, 1440], v: [4, 28] }, rh: { t: [0], v: [50] } }, { frac: 1, temp: { t: [0, 1440], v: [8, 32] }, rh: { t: [0], v: [50] } }];
+  const lens = Array(1030).fill(25);                                            // the app's 25 m segments
+  const sum = rideEnvSummary(25750, locs, 400, 15), env = segmentEnvironment(lens, locs, 400, 15);
+  assert(Math.abs(sum.startC - env.tempC[0]) < 0.005, `${sum.startC} vs ${env.tempC[0]}`);
+  assert(Math.abs(sum.endC - env.tempC[1029]) < 0.005, `${sum.endC} vs ${env.tempC[1029]}`);
+});
 
 // ---- wind that changes during the ride
 const near = (a, b, e = 1e-9) => Math.abs(a - b) < e;
-const segs = Array(100).fill(250);                                 // 25 km in 100 segments
 t("lerpAngleDeg: shortest arc, wraps through north, endpoints exact", () => {
   assert(near(lerpAngleDeg(350, 10, 0.5), 0) || near(lerpAngleDeg(350, 10, 0.5), 360));
   assert(near(lerpAngleDeg(10, 350, 0.5), 0) || near(lerpAngleDeg(10, 350, 0.5), 360));
@@ -275,6 +777,171 @@ t("each stretch of a profile satisfies the power balance at its own wind and den
   }
 });
 
+// ---- climbs (elevation profile, detection, slope classes)
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+// a profile from [lengthM, slopePct] pieces, one value per 25 m, starting at 100 m
+function prof(pieces, z0 = 100) { const z = [z0]; pieces.forEach(([len, pct]) => { for (let i = 0; i < len / 25; i++) z.push(z[z.length - 1] + 25 * pct / 100); }); return z; }
+const RAW = { deadbandM: 3, mergeDipFrac: 0.25, mergeGapM: 400, minGainM: 25, minAvgPct: 2, slopeWindowM: 100, stepM: 25 };
+
+t("slope classes: edges belong to the class above (under 5 / 5-8 / 8-12 / 12-16 / 16 up)", () => {
+  assert.deepStrictEqual(CLIMB_SLOPE_EDGES, [5, 8, 12, 16]);
+  [[0, 0], [4.99, 0], [5, 1], [7.9, 1], [8, 2], [11.99, 2], [12, 3], [15.9, 3], [16, 4], [30, 4]].forEach(([m, c]) => assert.strictEqual(climbSlopeClass(m), c, `max ${m}%`));
+});
+t("median3 removes a single-point spike but keeps a step; smoothMean keeps a ramp and a constant", () => {
+  const flat = Array(20).fill(50); flat[10] = 80;
+  assert(median3(flat).every((v) => v === 50));
+  const step = [10, 10, 10, 20, 20, 20]; assert.deepStrictEqual(median3(step), step);
+  const ramp = Array.from({ length: 30 }, (_, i) => i * 2), sm = smoothMean(ramp, 3);
+  for (let i = 3; i < 27; i++) assert(near(sm[i], ramp[i], 1e-9));
+  assert(smoothMean(Array(10).fill(7), 3).every((v) => near(v, 7)));
+});
+t("elevation profile: a linear elevation is reproduced exactly on the 25 m grid", () => {
+  const s = [0, 100, 200, 300, 400], e = [10, 14, 18, 22, 26], p = elevationProfile(s, e, 25);
+  assert(p.available && p.z.length === 17); p.z.forEach((v, i) => assert(near(v, 10 + i * 1, 1e-9), `g${i}: ${v}`));
+});
+t("elevation profile: gaps in the elevation are interpolated over distance", () => {
+  const s = Array.from({ length: 41 }, (_, i) => i * 100), e = s.map((x) => 100 + x / 10); e[7] = null; e[8] = null; e[15] = undefined;   // 3 of 41 missing: 93% coverage
+  const p = elevationProfile(s, e, 25);
+  assert(p.available); p.z.forEach((v, i) => assert(near(v, 100 + i * 25 / 10, 1e-6), `g${i}`));
+});
+t("elevation profile: refuses to invent data (none, too sparse, constant, implausible, too short)", () => {
+  const s = Array.from({ length: 20 }, (_, i) => i * 100);
+  assert.strictEqual(elevationProfile(s, s.map(() => null), 25).available, false);
+  const sparse = s.map((x, i) => (i % 10 === 0 ? 50 + i : null)); const sp = elevationProfile(s, sparse, 25);
+  assert(!sp.available && /too few/.test(sp.reason) && near(sp.coverage, 0.1));
+  assert(!elevationProfile(s, s.map(() => 0), 25).available); assert(!elevationProfile(s, s.map(() => 42.5), 25).available);
+  assert(!elevationProfile(s, s.map((x) => 20000 + x), 25).available);
+  assert(!elevationProfile([0], [10], 25).available);
+});
+t("dead-banded ascent and descent: a 20 m triangle wave counts 20 m per rise, and noise within the dead-band counts nothing", () => {
+  const z = []; for (let c = 0; c < 4; c++) { for (let i = 0; i < 20; i++) z.push(i); for (let i = 20; i > 0; i--) z.push(i); }
+  const ad = profileAscentDescent(z, 3); assert(near(ad.ascentM, 80, 1e-9), String(ad.ascentM)); assert(near(ad.descentM, 79, 1e-9), String(ad.descentM));   // 4 rises of 20 m; the last cycle ends on the way down at 1
+  const r = rng(7), noisy = Array.from({ length: 4000 }, () => 100 + (r() - 0.5) * 4);         // +/- 2 m about flat: range 4 m
+  assert(profileAscentDescent(smoothMean(noisy, 3), 3).ascentM < 1);
+});
+t("detect: one 5% climb of 50 m is found exactly; a smaller 20 m rise and the descent are not climbs", () => {
+  const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -5], [500, 4], [1000, 0]]);
+  const c = detectClimbs(z, RAW);
+  assert.strictEqual(c.length, 1, JSON.stringify(c.map((x) => x.startM)));
+  assert(near(c[0].startM, 1000, 1e-6) && near(c[0].endM, 2000, 1e-6) && near(c[0].gainM, 50, 1e-6) && near(c[0].avgPct, 5, 1e-6) && near(c[0].maxPct, 5, 1e-6) && c[0].cls === 1);
+});
+t("detect: the steepest 100 m sets the max slope (4% with a 12% pinch in the middle)", () => {
+  const z = prof([[500, 0], [700, 4], [100, 12], [700, 4], [500, 0]]);
+  const c = detectClimbs(z, RAW)[0];
+  assert(near(c.maxPct, 12, 1e-6), String(c.maxPct)); assert(c.avgPct < 5 && c.cls === 3);
+});
+t("detect: raising the minimum gain never adds climbs", () => {
+  for (let seed = 1; seed <= 30; seed++) {
+    const r = rng(seed), pieces = Array.from({ length: 12 }, () => [200 + Math.floor(r() * 12) * 100, (r() - 0.5) * 16]), z = prof(pieces);
+    let prev = Infinity;
+    for (const g of [5, 10, 25, 40, 60, 100]) { const n = detectClimbs(z, { ...RAW, minGainM: g }).length; assert(n <= prev, `seed ${seed} gain ${g}`); prev = n; }
+  }
+});
+t("detect: a long gentle rise (30 m over 10 km) is not a climb unless the average-slope floor is off", () => {
+  const z = prof([[10000, 0.3]]);
+  assert.strictEqual(detectClimbs(z, RAW).length, 0); assert.strictEqual(detectClimbs(z, { ...RAW, minAvgPct: 0 }).length, 1);
+});
+t("detect: two ramps split by a small dip are one climb; split by a big dip they are two", () => {
+  const small = prof([[800, 5], [200, -2.5], [800, 5]]);                                          // 40 m up, 5 m down, 40 m up
+  const cs = detectClimbs(small, RAW); assert.strictEqual(cs.length, 1); assert(near(cs[0].gainM, 75, 1e-6));
+  const big = prof([[800, 5], [400, -5], [800, 5]]);                                              // 40 m up, 20 m down (> 25% of 40), 40 m up
+  assert.strictEqual(detectClimbs(big, RAW).length, 2);
+});
+t("a reversed profile: the recorded descent becomes the climb (what pressing Reverse route does)", () => {
+  const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -3], [1000, 0]]);                      // up 50, down 30
+  const fwd = detectClimbs(z, RAW), rev = detectClimbs(z.slice().reverse(), RAW);
+  assert(fwd.length === 1 && near(fwd[0].gainM, 50, 1e-6)); assert(rev.length === 1 && Math.abs(rev[0].gainM - 30) <= 2 && Math.abs(rev[0].avgPct - 3) < 0.15, JSON.stringify(rev));   // within the end-trim (<= 1 m per end) of the exact 30 m at 3%
+});
+t("segment classes: a climb lands on the stretch of the route where it is", () => {
+  const z = prof([[1000, 0], [1000, 5], [1000, 0], [1000, -5], [1000, 0]]), gridM = (z.length - 1) * 25, lens = Array(z.length - 1).fill(25);
+  const f = climbSegmentClasses(detectClimbs(z, RAW), gridM, lens);
+  const idx = (a) => a.map((c, i) => (c >= 0 ? i : -1)).filter((i) => i >= 0);
+  assert(Math.min(...idx(f)) >= 39 && Math.max(...idx(f)) <= 81, "the climb is km 1-2");
+  assert(idx(f).every((i) => f[i] === 1));
+  const rr = climbSegmentClasses(detectClimbs(z.slice().reverse(), RAW), gridM, lens);
+  assert(Math.min(...idx(rr)) >= 39 && Math.max(...idx(rr)) <= 81, "on the reversed profile the recorded descent (km 3-4) is the climb, now at km 1-2");
+});
+t("noise: +/-2 m random elevation on a 40 km flat route gives no climbs and almost no ascent (through the whole pipeline)", () => {
+  for (let seed = 1; seed <= 10; seed++) {
+    const r = rng(seed * 101), s = Array.from({ length: 1601 }, (_, i) => i * 25), e = s.map(() => 30 + (r() - 0.5) * 4);
+    const a = analyzeTerrain(s, e); assert(a.available && a.fwd.length === 0, `seed ${seed}`); assert(a.ascentM < 5, `ascent ${a.ascentM}`);
+  }
+});
+t("noise on top of a real climb: the climb is still found, with about the right gain", () => {
+  const r = rng(99), z = prof([[3000, 0], [2000, 4], [3000, 0]]), s = z.map((_, i) => i * 25), e = z.map((v) => v + (r() - 0.5) * 4);
+  const a = analyzeTerrain(s, e), c = a.fwd; assert.strictEqual(c.length, 1); assert(Math.abs(c[0].gainM - 80) < 6, String(c[0].gainM)); assert(Math.abs(c[0].startM - 3000) < 250);
+});
+// real terrain: a straight line Valkenburg -> Vaals (South Limburg), 90 m terrain model, a value every 100 m
+const fs2 = require("fs"), fx = JSON.parse(fs2.readFileSync(path.join(__dirname, "fixtures", "limburg-line.json"), "utf8"));
+t("real terrain (South Limburg line): six climbs, each matching a valley-to-peak rise of the raw data, the steep short ramp is the steepest", () => {
+  const s = fx.elevation.map((_, i) => i * fx.stepM), a = analyzeTerrain(s, fx.elevation);
+  assert(a.available); assert.strictEqual(a.fwd.length, 6, JSON.stringify(a.fwd.map((c) => [Math.round(c.startM), Math.round(c.gainM)])));
+  const gains = a.fwd.map((c) => c.gainM); [51, 35, 35, 56, 55, 46].forEach((g, i) => assert(Math.abs(gains[i] - g) < 6, `climb ${i}: ${gains[i]} vs ~${g}`));
+  a.fwd.forEach((c) => { assert(c.gainM >= 25 && c.avgPct >= 2, JSON.stringify(c)); assert(c.zEnd - c.zStart === c.gainM || near(c.zEnd - c.zStart, c.gainM, 1e-9)); });
+  const steep = a.fwd.reduce((m, c) => (c.maxPct > m.maxPct ? c : m)); assert(steep.lengthM < 500 && steep.cls === 4 && steep.avgPct > 10, JSON.stringify(steep));
+  assert(a.zMax > 190 && a.zMin < 80); assert(a.ascentM > a.descentM, "the line ends higher than it starts");
+});
+t("real terrain: a higher minimum gain removes exactly the smaller climbs and never changes the others (stability)", () => {
+  const s = fx.elevation.map((_, i) => i * fx.stepM), all = analyzeTerrain(s, fx.elevation).fwd, big = analyzeTerrain(s, fx.elevation, { minGainM: 40 }).fwd;
+  assert.strictEqual(big.length, 4);
+  big.forEach((c) => assert(all.some((d) => d.startM === c.startM && d.endM === c.endM), "same climb, same extent"));
+  assert(all.filter((d) => !big.some((c) => c.startM === d.startM)).every((d) => d.gainM < 40));
+  assert(analyzeTerrain(s, fx.elevation, { minGainM: 100 }).fwd.length === 0);
+});
+t("real terrain: max slope depends on smoothing (that is why the app labels it) but the climbs and their gains hold", () => {
+  const s = fx.elevation.map((_, i) => i * fx.stepM), a100 = analyzeTerrain(s, fx.elevation, { smoothWindowM: 100 }), a250 = analyzeTerrain(s, fx.elevation, { smoothWindowM: 250 });
+  assert(Math.abs(a100.fwd.length - a250.fwd.length) <= 1, `${a100.fwd.length} vs ${a250.fwd.length}`);
+  const st = (a) => a.fwd.reduce((m, c) => (c.maxPct > m.maxPct ? c : m)).maxPct; assert(st(a100) > st(a250) + 2, `${st(a100)} vs ${st(a250)}`);
+  const big100 = a100.fwd.filter((c) => c.gainM > 45).map((c) => Math.round(c.startM / 1000)), big250 = a250.fwd.filter((c) => c.gainM > 45).map((c) => Math.round(c.startM / 1000));
+  assert.deepStrictEqual(big100.slice(0, 3), big250.slice(0, 3), "the big climbs are where they are whatever the smoothing");
+});
+
+// looking elevation up: which points are sent, and in what requests
+t("cumulativeDistances: running length along the track", () => {
+  const d = cumulativeDistances([[0, 0], [3, 4], [3, 4], [6, 8]]); assert.deepStrictEqual(d, [0, 5, 5, 10]);
+});
+t("sampleAlongRoute: even spacing, first and last point included, positions on the line", () => {
+  const pts = [[50, 5, null], [50.01, 5, null], [50.01, 5.02, null]], sRaw = [0, 1113, 1113 + 1432];   // an L-shaped track
+  const r = sampleAlongRoute(pts, sRaw, 100, 1500), total = sRaw[2];
+  assert.strictEqual(r.s.length, Math.ceil(total / 100) + 1); assert.strictEqual(r.s[0], 0); assert(near(r.s[r.s.length - 1], total, 1e-9));
+  assert(near(r.spacingM, total / (r.s.length - 1), 1e-9) && r.spacingM <= 100 && r.spacingM > 95);
+  assert(near(r.lat[0], 50, 1e-12) && near(r.lon[0], 5, 1e-12)); assert(near(r.lat[r.lat.length - 1], 50.01, 1e-12) && near(r.lon[r.lon.length - 1], 5.02, 1e-12));
+  for (let i = 1; i < r.s.length; i++) assert(near(r.s[i] - r.s[i - 1], r.spacingM, 1e-9));
+  // the sample at the corner (s = 1113) is at the corner; one 500 m before it is half way up the first leg
+  const half = sampleAlongRoute(pts, sRaw, 556.5, 1500);   // 2545/556.5 -> spacing 2545/5: samples at 0, 509, 1018, 1527, ...
+  assert(near(half.lon[1], 5, 1e-12) && near(half.lat[1], 50 + 0.01 * (half.s[1] / 1113), 1e-9), "on the first leg");
+  const onSecond = half.s.map((v, i) => i).filter((i) => half.s[i] > 1113 && half.s[i] < sRaw[2]);
+  onSecond.forEach((i) => { assert(near(half.lat[i], 50.01, 1e-12) && near(half.lon[i], 5 + 0.02 * ((half.s[i] - 1113) / 1432), 1e-9), "on the second leg"); });
+});
+t("sampleAlongRoute: a long route gets a wider spacing, never more than maxN points; degenerate tracks give null", () => {
+  const pts = [[0, 0, null], [0, 1, null]], sRaw = [0, 200000], r = sampleAlongRoute(pts, sRaw, 100, 1500);
+  assert.strictEqual(r.s.length, 1500); assert(near(r.spacingM, 200000 / 1499, 1e-9));
+  assert.strictEqual(sampleAlongRoute([[0, 0, null], [0, 0, null]], [0, 0], 100, 1500), null); assert.strictEqual(sampleAlongRoute([[0, 0, null]], [0], 100, 1500), null);
+});
+t("sampleAlongRoute: repeated points (zero-length pieces) do not produce NaN", () => {
+  const pts = [[50, 5, null], [50, 5, null], [50.001, 5, null], [50.001, 5, null], [50.002, 5, null]], sRaw = [0, 0, 111, 111, 222];
+  const r = sampleAlongRoute(pts, sRaw, 50, 1500); r.lat.concat(r.lon, r.s).forEach((v) => assert(Number.isFinite(v))); assert(near(r.lat[r.lat.length - 1], 50.002, 1e-9));
+});
+t("elevationUrls: batches of at most 100, in order, every point once, rounded", () => {
+  const lat = [], lon = []; for (let i = 0; i < 250; i++) { lat.push(50 + i * 0.000123456); lon.push(5 - i * 0.000234567); }
+  const urls = elevationUrls("https://x/e", lat, lon, 4, 100); assert.strictEqual(urls.length, 3);
+  const sizes = urls.map((u) => u.split("latitude=")[1].split("&")[0].split(",").length); assert.deepStrictEqual(sizes, [100, 100, 50]);
+  urls.forEach((u) => assert(/^https:\/\/x\/e\?latitude=[-\d.,]+&longitude=[-\d.,]+$/.test(u), u));
+  const all = urls.flatMap((u) => u.split("latitude=")[1].split("&")[0].split(",")); assert.deepStrictEqual(all, lat.map((v) => v.toFixed(4)));
+  const allLon = urls.flatMap((u) => u.split("longitude=")[1].split(",")); assert.deepStrictEqual(allLon, lon.map((v) => v.toFixed(4)));
+  assert.strictEqual(elevationUrls("https://x/e", [], [], 4, 100).length, 0); assert.strictEqual(elevationUrls("https://x/e", [50], [5], 4, 100).length, 1);
+});
+t("a looked-up profile (integer metres, no noise handling of its own) gives the same climbs through analyzeTerrain as a file would", () => {
+  const s = fx.elevation.map((_, i) => i * fx.stepM), e = fx.elevation.map(Math.round);
+  assert.deepStrictEqual(analyzeTerrain(s, e).fwd.map((c) => Math.round(c.gainM / 5)), analyzeTerrain(s, fx.elevation).fwd.map((c) => Math.round(c.gainM / 5)));
+});
+
+t("climbMidSegment: the segment half way along a climb, and the last segment as a fallback", () => {
+  const lengths = Array(100).fill(25), gridM = 2500, c = { startM: 500, endM: 1000 };      // km 0.5 - 1.0 of a 2.5 km route
+  assert.strictEqual(climbMidSegment(c, gridM, lengths), 30);                                 // 750 m -> segment 30
+  assert.strictEqual(climbMidSegment({ startM: 2400, endM: 2500 }, gridM, lengths), 98);
+  assert.strictEqual(climbMidSegment({ startM: 2500, endM: 2500 }, gridM, lengths), 99);
+});
 
 // the "During the ride" series
 t("buildRideSeries: km counted along the ride, the clock ascends, thinned evenly, ends included", () => {
@@ -292,6 +959,52 @@ t("seriesIndexAtTime: nearest point, clamped at both ends", () => {
   assert.strictEqual(seriesIndexAtTime([], 5), -1);
 });
 
+// rain along the ride
+const rainLoc = (mm, prob) => ({ hourly: { time: mm.map((_, i) => `${day}T${String(i).padStart(2, "0")}:00`), precipitation: mm, precipitation_probability: prob } });
+t("rainClass: dry below 0.1 mm/h, then the four classes at their edges", () => {
+  assert.deepStrictEqual([0, 0.05, 0.0999, 0.1, 0.49, 0.5, 2.49, 2.5, 7.59, 7.6, 40, null, undefined, NaN].map(rainClass), [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 0, 0]);
+  assert.strictEqual(RAIN_CLASS_LABELS.length, RAIN_EDGES.length + 1);
+});
+t("forecastRainSeries: minute stamps, hours without an amount dropped, a missing probability stays null", () => {
+  const mm = Array(24).fill(0); mm[9] = 1.2; mm[10] = null; mm[11] = 0.4;
+  const r = forecastRainSeries(rainLoc(mm, Array(24).fill(30)), day);
+  assert.strictEqual(r.t.length, 23); assert.strictEqual(r.t[0], 0); assert(r.t.includes(540) && !r.t.includes(600) && r.t.includes(660));
+  assert.strictEqual(r.mm[r.t.indexOf(540)], 1.2); assert.strictEqual(r.prob[r.t.indexOf(540)], 30);
+  const noProb = forecastRainSeries(rainLoc(mm, undefined), day); assert(noProb.prob.every((v) => v === null));
+  assert.strictEqual(forecastRainSeries({ hourly: { time: [`${day}T00:00`] } }, day).t.length, 0); assert.strictEqual(forecastRainSeries({}, day).t.length, 0);
+});
+t("rainStepAt: a stamp describes the hour that ENDS at it (step, not slope); clamped at both ends", () => {
+  const ser = { t: [540, 600, 660], mm: [1, 5, 0], prob: [40, 90, null] };
+  const at = (x) => rainStepAt(ser, x).mm;
+  assert.deepStrictEqual([500, 540, 541, 600, 601, 660, 700].map(at), [1, 1, 5, 5, 0, 0, 0]);
+  assert.strictEqual(rainStepAt(ser, 570).prob, 90); assert.strictEqual(rainStepAt({ t: [], mm: [], prob: [] }, 5), null);
+});
+t("rainAtPlace: step in time at each place, linear along the route between places, missing probabilities skipped", () => {
+  const mk3 = (mm, prob) => ({ t: [600], mm: [mm], prob: [prob] });
+  const locs = [{ frac: 0, rain: mk3(0, 10) }, { frac: 0.5, rain: mk3(4, null) }, { frac: 1, rain: mk3(8, 50) }];
+  const r = (f) => rainAtPlace(locs, f, 590);
+  assert.strictEqual(r(0).mm, 0); assert(near(r(0.25).mm, 2, 1e-12)); assert(near(r(0.5).mm, 4, 1e-12)); assert(near(r(0.75).mm, 6, 1e-12)); assert.strictEqual(r(1).mm, 8);
+  assert(near(r(0.5).prob, 30, 1e-12), "probability interpolated between the two places that have one"); assert.strictEqual(r(0).prob, 10);
+  assert.strictEqual(rainAtPlace([{ frac: 0, rain: mk3(1, null) }], 0.3, 0).prob, null); assert.strictEqual(rainAtPlace([], 0.3, 0), null);
+});
+t("rainDirectionStats: wet distance, classes, runs in ride order, and the rain that falls on the rider", () => {
+  const lengths = Array(10).fill(1000), dt = Array(10).fill(3);                  // 10 km at 20 km/h
+  const mm = [0, 0, 0.3, 1.0, 3.0, 0, 0, 0, 0, 9.0], prob = mm.map((v) => (v > 0 ? 70 : 10));
+  const f = rainDirectionStats(lengths, mm, prob, dt), r = rainDirectionStats(lengths, mm.slice().reverse(), prob.slice().reverse(), dt.slice().reverse());   // r: the same rain met from the other end
+  assert.strictEqual(f.wetM, 4000); assert(near(f.wetPct, 40, 1e-9)); assert.deepStrictEqual(f.classM, [6000, 1000, 1000, 1000, 1000]);
+  assert.deepStrictEqual(f.runs.map((x) => [x.fromKm, x.toKm, x.peakMm, x.cls]), [[2, 3, 0.3, 1], [3, 4, 1, 2], [4, 5, 3, 3], [9, 10, 9, 4]], "one run per class, as coloured on the map");
+  assert.deepStrictEqual(r.runs.map((x) => [x.fromKm, x.toKm, x.peakMm, x.cls]), [[0, 1, 9, 4], [5, 6, 3, 3], [6, 7, 1, 2], [7, 8, 0.3, 1]], "from the other end: the heavy stretch comes first");
+  const twoOfOne = rainDirectionStats([1000, 1000, 1000], [0.3, 0.4, 0.2], [null, null, null], [1, 1, 1]).runs; assert.strictEqual(twoOfOne.length, 1); assert.strictEqual(twoOfOne[0].peakMm, 0.4); assert.strictEqual(twoOfOne[0].toKm, 3);
+  assert(near(f.accumMm, (0.3 + 1 + 3 + 9) * 3 / 60, 1e-12) && near(r.accumMm, f.accumMm, 1e-12), "the rain that falls on the rider is the same sum from either end here (equal times)");
+  assert.strictEqual(f.peakMm, 9); assert.strictEqual(f.peakProb, 70); assert(near(f.minutes, 30, 1e-12) && near(f.wetMinutes, 12, 1e-12));
+  const dry = rainDirectionStats(lengths, Array(10).fill(0), Array(10).fill(null), dt); assert.strictEqual(dry.wetM, 0); assert.strictEqual(dry.runs.length, 0); assert.strictEqual(dry.peakProb, null);
+});
+t("buildRideSeries carries the rain along", () => {
+  const lengths = Array(10).fill(100), tt = lengths.map((_, i) => i), mm = lengths.map((_, i) => i), pr = lengths.map((_, i) => 10 * i);
+  const f = buildRideSeries({ lengths, t: tt, rainMm: mm, rainProb: pr, maxPoints: 5 });
+  assert.strictEqual(f[0].rainMm, 0); assert.strictEqual(f[4].rainMm, 9); assert.strictEqual(f[4].rainProb, 90);
+  assert.strictEqual(buildRideSeries({ lengths, t: tt, maxPoints: 3 })[0].rainMm, null);
+});
 
 // reversing the route: what was fetched for it stays valid, seen from the other end
 t("mirrorLocations: places turn around (fractions 1 - f, order reversed), everything else is kept, the input is untouched", () => {
@@ -304,6 +1017,16 @@ t("mirrorLocations: places turn around (fractions 1 - f, order reversed), everyt
 t("mirrorTimeline: keeps the start time, mirrors the places, and null stays null", () => {
   const tl = { locations: [{ frac: 0, x: 1 }, { frac: 1, x: 2 }], startMin: 480 }, m = mirrorTimeline(tl);
   assert.strictEqual(m.startMin, 480); assert.deepStrictEqual(m.locations.map((l) => l.x), [2, 1]); assert.strictEqual(mirrorTimeline(null), null);
+});
+t("mirrorProfile: distances measured from the other end, elevations reversed, points replaced; twice is the identity", () => {
+  const dem = { points: "old", s: [0, 100, 250, 400], ele: [10, 20, 35, 30], spacingM: 100 }, pts = ["new"], m = mirrorProfile(dem, pts);
+  assert.deepStrictEqual(m.s, [0, 150, 300, 400]); assert.deepStrictEqual(m.ele, [30, 35, 20, 10]); assert.strictEqual(m.points, pts); assert.strictEqual(m.spacingM, 100);
+  const back = mirrorProfile(m, "old"); assert.deepStrictEqual(back.s, dem.s); assert.deepStrictEqual(back.ele, dem.ele); assert.strictEqual(mirrorProfile(null, pts), null);
+});
+t("a wind and a rain series read on mirrored places give the mirrored answer", () => {
+  const mk = (mm) => ({ t: [600], mm: [mm], prob: [null] });
+  const locs = [{ frac: 0, rain: mk(0) }, { frac: 0.5, rain: mk(2) }, { frac: 1, rain: mk(8) }], m = mirrorLocations(locs);
+  for (const f of [0, 0.1, 0.3, 0.5, 0.8, 1]) assert(near(rainAtPlace(locs, f, 590).mm, rainAtPlace(m, 1 - f, 590).mm, 1e-12), `at ${f}`);
 });
 
 // units: US bounding box vs metric everywhere else
@@ -325,6 +1048,48 @@ t("unit conversion constants: round trips are close to 1", () => {
   assert(near(25.4 * MM_TO_IN, 1, 1e-9));
 });
 
+// thunderstorm risk: CAPE against two rule-of-thumb thresholds (a WMO storm code can raise the
+// level too), read the same "hour ending at the stamp" way as rain, the WORST across the sample
+// places (not blended), and merged into ride-order runs by level
+t("isThunderstormCode: only 95, 96 and 99 count", () => {
+  assert.deepStrictEqual([0, 1, 51, 61, 80, 94, 95, 96, 97, 98, 99, 100, null, undefined].map(isThunderstormCode), [false, false, false, false, false, false, true, true, false, false, true, false, false, false]);
+});
+t("stormLevel: CAPE against the two thresholds, and a storm code always reaches 'likely'", () => {
+  assert.strictEqual(CAPE_POSSIBLE, 1000); assert.strictEqual(CAPE_LIKELY, 2500);
+  assert.deepStrictEqual([0, 500, 999, 1000, 1500, 2499, 2500, 4000].map((c) => stormLevel(c, 0)), [0, 0, 0, 1, 1, 1, 2, 2]);
+  assert.strictEqual(stormLevel(0, 95), 2, "a storm code wins even over low CAPE"); assert.strictEqual(stormLevel(null, 96), 2); assert.strictEqual(stormLevel(null, 0), 0);
+});
+t("forecastStormSeries: minute stamps, an hour with neither field dropped, the other field null", () => {
+  const cape = Array(24).fill(0), codes = Array(24).fill(0); cape[9] = 1800; codes[9] = null; cape[10] = null; codes[10] = 3; cape[11] = null; codes[11] = null;
+  const loc = { hourly: { time: cape.map((_, h) => `${day}T${String(h).padStart(2, "0")}:00`), cape: cape, weather_code: codes } };
+  const r = forecastStormSeries(loc, day);
+  assert.strictEqual(r.t.length, 23, "hour 11 (both null) is dropped, hours 9 and 10 (one field each) are kept");
+  assert.strictEqual(r.cape[r.t.indexOf(540)], 1800); assert.strictEqual(r.code[r.t.indexOf(540)], null);
+  assert.strictEqual(r.cape[r.t.indexOf(600)], null); assert.strictEqual(r.code[r.t.indexOf(600)], 3);
+  assert.strictEqual(forecastStormSeries({ hourly: { time: [] } }, day).t.length, 0); assert.strictEqual(forecastStormSeries({}, day).t.length, 0);
+});
+t("stormStepAt: a stamp describes the hour that ENDS at it, clamped at both ends", () => {
+  const ser = { t: [540, 600, 660], cape: [1800, 0, 400], code: [null, 0, 3] };
+  assert.deepStrictEqual([500, 540, 541, 600, 660, 700].map((x) => stormStepAt(ser, x).cape), [1800, 1800, 0, 0, 400, 400]);
+  assert.strictEqual(stormStepAt({ t: [], cape: [], code: [] }, 5), null);
+});
+t("stormLevelAt: the WORST level of any sample place at that hour - not blended like rain", () => {
+  const mk = (cape, code) => ({ t: [600], cape: [cape], code: [code === undefined ? null : code] });
+  const locs = [{ frac: 0, storm: mk(0, 0) }, { frac: 0.5, storm: mk(3000, 0) }, { frac: 1, storm: mk(0, 0) }];
+  assert.strictEqual(stormLevelAt(locs, 590), 2);
+  assert.strictEqual(stormLevelAt([{ frac: 0, storm: mk(0) }, { frac: 1, storm: mk(1200) }], 590), 1);
+  assert.strictEqual(stormLevelAt([{ frac: 0, storm: mk(0) }], 590), 0);
+  assert.strictEqual(stormLevelAt([], 590), 0);
+});
+t("stormRuns: contiguous same-level stretches in ride order, split where the level changes, with both their km and clock extent", () => {
+  const lengths = Array(10).fill(1000), t = lengths.map((_, i) => 600 + i * 3), dt = Array(10).fill(3);
+  const levels = [0, 0, 1, 1, 2, 0, 0, 1, 0, 0];
+  const runs = stormRuns(lengths, t, dt, levels);
+  assert.strictEqual(runs.length, 3, "the level-1/level-2 change at index 4 splits what would otherwise be one run");
+  assert.deepStrictEqual(runs.map((r) => [r.fromKm, r.toKm, r.level]), [[2, 4, 1], [4, 5, 2], [7, 8, 1]]);
+  assert(near(runs[0].fromT, t[2] - dt[2] / 2, 1e-9) && near(runs[0].toT, t[3] + dt[3] / 2, 1e-9));
+  assert.strictEqual(stormRuns(lengths, t, dt, Array(10).fill(0)).length, 0);
+  assert.strictEqual(stormRuns(lengths, t, dt, Array(10).fill(1)).length, 1);
+});
 
-console.log(`
-${n} tests passed`);
+console.log(`\n${n} tests passed`);
