@@ -3739,6 +3739,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
     badge.className = "badge " + (mapBadgeState === "live" ? "loaded" : "blocked");
   }
 
+  // What the route map shows on the current tab: each segment's class, the colour per
+  // class and the line width. Shared by the live map and the saved image; the image
+  // needs real colours (resolve = true), since a canvas cannot use CSS variables.
+  function routeStyle(result, resolve) {
+    var col = function (v, fallback) { return resolve ? resolvedColor(v, fallback) : "var(" + v + ")"; };
+    if (state.view === "rain") {
+      // Wet stretches thick and coloured by intensity, dry ones a thin grey line.
+      var rainColors = {};
+      rainClassColors().forEach(function (c, k) { rainColors[k] = c; });
+      return { cats: result.rain ? result.rain.fwd.cls : result.fiveWay.categories.map(function () { return 0; }),
+               colorFor: rainColors, weightFor: function (c) { return c > 0 ? 6 : 3; } };
+    }
+    if (state.view === "temp") {
+      // Same runs-of-one-colour drawing as the wind view, but the "category"
+      // of each segment is its feels-like class.
+      return { cats: result.chill.classes.cls, colorFor: feelsClassColors(), weightFor: function () { return 4; } };
+    }
+    return { cats: result.fiveWay.categories, weightFor: function () { return 4; }, colorFor: {
+      veryeasy: col("--status-good-strong", "#075e07"), easy: col("--status-good", "#0ca30c"), neutral: col("--status-neutral", "#898781"),
+      hard: col("--status-critical", "#d03b3b"), veryhard: col("--status-critical-strong", "#7a1f1f"), calm: col("--accent", "#2a78d6") } };
+  }
+
   function renderMap(result) {
     if (typeof L === "undefined") { mapBadgeState = "blocked"; syncMapBadge(); return; }
 
@@ -3767,25 +3789,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     leafletTileLayer._proxiedUrl = url;
 
     leafletRouteLayer.clearLayers();
-    var latLon = result.latLon, cats, colorFor, weightFor = function () { return 4; };
-    if (state.view === "rain") {
-      // Wet stretches thick and coloured by intensity, dry ones a thin grey line.
-      colorFor = {};
-      rainClassColors().forEach(function (c, k) { colorFor[k] = c; });
-      weightFor = function (c) { return c > 0 ? 6 : 3; };
-      cats = result.rain ? result.rain.fwd.cls : result.fiveWay.categories.map(function () { return 0; });
-    } else if (state.view === "temp") {
-      // Same runs-of-one-colour drawing as the wind view, but the "category"
-      // of each segment is its feels-like class.
-      cats = result.chill.classes.cls;
-      colorFor = feelsClassColors();
-    } else {
-      cats = result.fiveWay.categories;
-      colorFor = {
-        veryeasy: "var(--status-good-strong)", easy: "var(--status-good)", neutral: "var(--status-neutral)",
-        hard: "var(--status-critical)", veryhard: "var(--status-critical-strong)", calm: "var(--accent)"
-      };
-    }
+    var latLon = result.latLon, style = routeStyle(result, false), cats = style.cats, colorFor = style.colorFor, weightFor = style.weightFor;
     var i = 0;
     while (i < cats.length) {
       var cat = cats[i], j = i;
@@ -4883,7 +4887,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var routeCard = document.getElementById("routeCard");
   var routeSlotWind = document.getElementById("routeSlotWind"), routeSlotTemp = document.getElementById("routeSlotTemp");
   var tabRain = document.getElementById("tabRain"), panelRain = document.getElementById("panelRain"), routeSlotRain = document.getElementById("routeSlotRain");
-  var saveRouteBtnEl = document.getElementById("saveRouteBtn");
 
   // The "How it works" tab is for larger screens. It is left out
   //  - inside the iOS app's embedded web view (no "Safari/" in its user agent, unlike Safari
@@ -4937,9 +4940,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
     if (!how) {
       (v === "temp" ? routeSlotTemp : v === "rain" ? routeSlotRain : routeSlotWind).appendChild(routeCard);
-      // The image export is built around the wind colours and wind statistics,
-      // so it only makes sense on the wind view.
-      saveRouteBtnEl.hidden = v !== "wind";
     } else {
       paintHowSwatches();
     }
@@ -5709,20 +5709,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return v || fallback;
   }
 
-  // Draw the same five-way polyline + start marker used on the live map,
+  // Draw the same coloured route + start marker as the live map (for the current tab),
   // but onto a plain canvas via latLngToContainerPoint - lets the
   // exported image match the map's current pan/zoom exactly.
   function drawRouteOnCanvas(ctx, result) {
-    var latLon = result.latLon, cats = result.fiveWay.categories;
-    var colorFor = {
-      veryeasy: resolvedColor("--status-good-strong", "#075e07"),
-      easy: resolvedColor("--status-good", "#0ca30c"),
-      hard: resolvedColor("--status-critical", "#d03b3b"),
-      veryhard: resolvedColor("--status-critical-strong", "#7a1f1f"),
-      neutral: resolvedColor("--status-neutral", "#898781"),
-      calm: resolvedColor("--accent", "#2a78d6")
-    };
-    ctx.lineWidth = 4;
+    var latLon = result.latLon, style = routeStyle(result, true), cats = style.cats;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.globalAlpha = 0.9;
@@ -5737,7 +5728,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         ctx.lineTo(p.x, p.y);
         j++;
       }
-      ctx.strokeStyle = colorFor[cat];
+      ctx.lineWidth = style.weightFor(cat);
+      ctx.strokeStyle = style.colorFor[cat];
       ctx.stroke();
       i = j;
     }
@@ -5752,72 +5744,77 @@ svg.leaflet-image-layer.leaflet-interactive path {
     ctx.stroke();
   }
 
-  // The same Easy/Hard/Neutral breakdown shown below the map in the page
-  // (#routeStats), drawn onto the export canvas below the captured map
-  // area so the saved image matches what's on screen, not just the map.
-  var ROUTE_STATS_FOOTER_H = 244;
-  function drawRouteStatsFooterOnCanvas(ctx, result, top, width) {
-    var pad = 16;
-    var inkColor = resolvedColor("--ink", "#0b0b0b");
-    var mutedColor = resolvedColor("--ink-muted", "#898781");
-    var gridColor = resolvedColor("--grid", "#e1e0d9");
-    var colorFor = {
-      veryeasy: resolvedColor("--status-good-strong", "#075e07"),
-      easy: resolvedColor("--status-good", "#0ca30c"),
-      neutral: resolvedColor("--status-neutral", "#898781"),
-      hard: resolvedColor("--status-critical", "#d03b3b"),
-      veryhard: resolvedColor("--status-critical-strong", "#7a1f1f"),
-      calm: resolvedColor("--accent", "#2a78d6")
-    };
-    var colW = (width - 2 * pad) / 3;
-    var colX = [pad, pad + colW, pad + 2 * colW];
-
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(pad, top + 8);
-    ctx.lineTo(width - pad, top + 8);
-    ctx.stroke();
-
-    ctx.textBaseline = "alphabetic";
-    function heading(y, text) {
-      ctx.fillStyle = mutedColor;
-      ctx.font = "600 10.5px 'IBM Plex Sans', sans-serif";
-      ctx.fillText(text, pad, y);
+  // The breakdown shown below the map on the page (#routeStats) for the current tab,
+  // as blocks of { title, segs: [{ color, m }], items: [{ color, label }] }, so the saved
+  // image matches what is on screen, not just the map.
+  function routeFooterBlocks(result) {
+    var blocks = [];
+    function add(title, entries) {           // entries: [{ color, m, label }], only the ones on the route
+      blocks.push({ title: title.toUpperCase(), segs: entries.filter(function (e) { return e.m > 0; }), items: entries });
     }
-    function item(x, y, cat, label, meters) {
-      ctx.fillStyle = colorFor[cat];
-      ctx.fillRect(x, y - 9, 10, 10);
-      ctx.fillStyle = inkColor;
-      ctx.font = "12px 'IBM Plex Sans', sans-serif";
-      ctx.fillText(label + " " + fmtDistKm(meters / 1000, 2), x + 15, y);
-    }
-    function bar(x, y, w, h, stats) {
-      var total = stats.veryeasy + stats.easy + stats.neutral + stats.hard + stats.veryhard + stats.calm;
-      if (total <= 0) return;
-      var cx = x;
-      ["veryeasy", "easy", "neutral", "hard", "veryhard", "calm"].forEach(function (cat) {
-        var m = stats[cat];
-        if (m <= 0) return;
-        var segW = (m / total) * w;
-        ctx.fillStyle = colorFor[cat];
-        ctx.fillRect(cx, y, segW, h);
-        cx += segW;
+    if (state.view === "temp") {
+      var fc = feelsClassColors(), feels = [];
+      result.chill.classes.classes.forEach(function (c, k) {
+        if (c.dist > 0) feels.push({ color: fc[k], m: c.dist, label: feelsClassLabel(k, c) + " " + fmtDistKm(c.dist / 1000, 2) });
+      });
+      add(tx("Feels like, compared with the air", "Gevoelstemperatuur vergeleken met de lucht"), feels);
+    } else if (state.view === "rain") {
+      if (!result.rain) return blocks;
+      var st = result.rain.fwd.stats, rc = rainClassColors(), rl = rainRangeLabels(), rain = [];
+      st.classM.forEach(function (m, k) {
+        if (m > 0) rain.push({ color: rc[k], m: m, label: rainClassLabel(k) + " (" + rl[k] + ") " + fmtDistKm(m / 1000, 2) });
+      });
+      add(tx("Rain intensity along the route", "Regenintensiteit langs de route"), rain);
+    } else {
+      var wc = routeStyle(result, true).colorFor;
+      [[tx("Full route", "Hele route"), result.fiveWay.full], [tx("Last 50% of the route", "Laatste 50% van de route"), result.fiveWay.lastHalfForward]].forEach(function (b) {
+        var cats = ["veryeasy", "easy", "neutral", "hard", "veryhard"].concat(b[1].calm > 0 ? ["calm"] : []);
+        add(b[0], cats.map(function (c) { return { color: wc[c], m: b[1][c], label: catLabel(c) + " " + fmtDistKm(b[1][c] / 1000, 2) }; }));
       });
     }
-    var BLOCK_H = 106;
-    function block(blockTop, title, stats) {
-      heading(blockTop + 18, title);
-      bar(pad, blockTop + 24, width - 2 * pad, 8, stats);
-      item(colX[0], blockTop + 52, "veryeasy", catLabel("veryeasy"), stats.veryeasy);
-      item(colX[1], blockTop + 52, "easy", catLabel("easy"), stats.easy);
-      item(colX[2], blockTop + 52, "neutral", catLabel("neutral"), stats.neutral);
-      item(colX[0], blockTop + 74, "hard", catLabel("hard"), stats.hard);
-      item(colX[1], blockTop + 74, "veryhard", catLabel("veryhard"), stats.veryhard);
-      if (stats.calm > 0) item(colX[2], blockTop + 74, "calm", catLabel("calm"), stats.calm);
+    return blocks;
+  }
+  // Lays the blocks out for a given width (as many columns as the longest label allows,
+  // at most three) and returns their total height and a function that draws them.
+  var FOOTER_FONT = "12px 'IBM Plex Sans', sans-serif", FOOTER_HEAD_FONT = "600 10.5px 'IBM Plex Sans', sans-serif";
+  function layoutRouteFooter(blocks, width) {
+    var pad = 16, rowH = 22, measure = document.createElement("canvas").getContext("2d");
+    measure.font = FOOTER_FONT;
+    var plan = blocks.map(function (b) {
+      var widest = 0;
+      b.items.forEach(function (it) { widest = Math.max(widest, measure.measureText(it.label).width + 15); });
+      var cols = Math.max(1, Math.min(3, Math.floor((width - 2 * pad + 20) / (widest + 20))));
+      return { block: b, cols: cols, rows: Math.ceil(b.items.length / cols), h: 52 + Math.max(0, Math.ceil(b.items.length / cols) - 1) * rowH + 32 };
+    });
+    var height = blocks.length ? 16 + plan.reduce(function (sum, q) { return sum + q.h; }, 0) : 0;
+    function draw(ctx, top) {
+      if (!blocks.length) return;
+      ctx.strokeStyle = resolvedColor("--grid", "#e1e0d9");
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad, top + 8); ctx.lineTo(width - pad, top + 8); ctx.stroke();
+      ctx.textBaseline = "alphabetic";
+      var y = top, colW;
+      plan.forEach(function (q) {
+        var b = q.block, total = 0, x = pad;
+        ctx.fillStyle = resolvedColor("--ink-muted", "#898781");
+        ctx.font = FOOTER_HEAD_FONT;
+        ctx.fillText(b.title, pad, y + 18);
+        b.segs.forEach(function (sg) { total += sg.m; });
+        b.segs.forEach(function (sg) {
+          var w = total > 0 ? sg.m / total * (width - 2 * pad) : 0;
+          ctx.fillStyle = sg.color; ctx.fillRect(x, y + 24, w, 8); x += w;
+        });
+        colW = (width - 2 * pad) / q.cols;
+        ctx.font = FOOTER_FONT;
+        b.items.forEach(function (it, n) {
+          var ix = pad + (n % q.cols) * colW, iy = y + 52 + Math.floor(n / q.cols) * rowH;
+          ctx.fillStyle = it.color; ctx.fillRect(ix, iy - 9, 10, 10);
+          ctx.fillStyle = resolvedColor("--ink", "#0b0b0b"); ctx.fillText(it.label, ix + 15, iy);
+        });
+        y += q.h;
+      });
     }
-    block(top, tx("FULL ROUTE", "HELE ROUTE"), result.fiveWay.full);
-    block(top + BLOCK_H, tx("LAST 50% OF THE ROUTE", "LAATSTE 50% VAN DE ROUTE"), result.fiveWay.lastHalfForward);
+    return { height: height, draw: draw };
   }
 
   // Redraw the map's currently-loaded tiles (already same-origin blob:
@@ -5829,16 +5826,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var size = leafletMap.getSize();
       if (!size.x || !size.y) { reject(new Error("Map has no size yet.")); return; }
       try {
-        var scale = 2;
+        var scale = 2, footer = layoutRouteFooter(routeFooterBlocks(result), size.x);
         var canvas = document.createElement("canvas");
         canvas.width = Math.round(size.x * scale);
-        canvas.height = Math.round((size.y + ROUTE_STATS_FOOTER_H) * scale);
+        canvas.height = Math.round((size.y + footer.height) * scale);
         var ctx = canvas.getContext("2d");
         ctx.scale(scale, scale);
         ctx.fillStyle = resolvedColor("--grid", "#e5e5e3");
         ctx.fillRect(0, 0, size.x, size.y);
         ctx.fillStyle = resolvedColor("--panel", "#ffffff");
-        ctx.fillRect(0, size.y, size.x, ROUTE_STATS_FOOTER_H);
+        ctx.fillRect(0, size.y, size.x, footer.height);
 
         var containerRect = leafletMap.getContainer().getBoundingClientRect();
         var tileImgs = leafletMap.getPane("tilePane").querySelectorAll("img.leaflet-tile-loaded");
@@ -5850,7 +5847,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         }
 
         drawRouteOnCanvas(ctx, result);
-        drawRouteStatsFooterOnCanvas(ctx, result, size.y, size.x);
+        footer.draw(ctx, size.y);
 
         canvas.toBlob(function (blob) {
           if (blob) resolve(blob); else reject(new Error("Could not render the map as an image."));
@@ -5871,7 +5868,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         return;
       }
       var prevText = btn.textContent;
-      var filename = "tailwind-tally-route-" + compassCodeEn(state.windFromDeg) + ".png";
+      var filename = state.view === "temp" ? "tailwind-tally-route-temperature.png" : state.view === "rain" ? "tailwind-tally-route-rain.png"
+        : "tailwind-tally-route-" + compassCodeEn(state.windFromDeg) + ".png";
       btn.disabled = true;
       btn.textContent = tx("Preparing\u2026", "Voorbereiden\u2026");
       exportMapToPngBlob(lastResult).then(function (blob) {
