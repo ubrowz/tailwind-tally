@@ -12,7 +12,7 @@ the map tiles (CORS) and the Strava callback keep working.
 """
 import argparse, os, re, subprocess, sys
 
-FILES = ["index.html", "privacy.html", "privacy-nl.html", "favicon.svg", "favicon-32.png", "apple-touch-icon.png", ".nojekyll"]
+FILES = ["index.html", "privacy.html", "privacy-nl.html", "favicon.svg", "favicon-32.png", "apple-touch-icon.png", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png", ".nojekyll"]
 BETA_URL = "https://ubrowz.github.io/tailwind-tally-beta/"
 RELEASED_URL = "https://ubrowz.github.io/tailwind-tally/"
 
