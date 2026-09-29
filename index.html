@@ -548,6 +548,11 @@
   .live-dir { font-family: var(--font-display); font-size: 22px; color: var(--ink); margin: 2px 0 4px; }
   .live-speed { font-size: 15px; color: var(--ink-secondary); margin: 0 0 10px; }
   .live-meta { font-size: 12.5px; color: var(--ink-muted); margin: 0 0 4px; }
+  .live-extra { list-style: none; padding: 0; margin: 0 auto 12px; max-width: 360px; text-align: left; font-size: 14px; color: var(--ink-secondary); }
+  .live-extra li { padding: 7px 2px; border-top: 1px solid var(--border); }
+  .live-extra li:last-child { border-bottom: 1px solid var(--border); }
+  .live-extra b { color: var(--ink); }
+  .live-extra .live-warn { color: var(--status-warning); font-weight: 600; }
   .tabbar { display: flex; gap: 6px; padding: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
   .tabbar button {
     flex: 1 1 0;
@@ -1836,7 +1841,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="tabpanel" id="panelLive" role="tabpanel" aria-labelledby="tabLive" hidden>
     <div class="card">
-      <h2><span data-nl="Wind hier en nu">Wind here and now</span> <span class="info-pop" data-about="the live wind" data-nl="De voorspelde wind op jouw plek voor het huidige kwartier (Open-Meteo). Je locatie wordt afgerond op ongeveer 11 km voordat die wordt verstuurd, en er wordt niets bewaard. De pijl wijst waar de wind naartoe waait en draait mee met je telefoon: houd hem plat voor je, de N wijst naar het noorden. Een dikkere pijl en een warmere kleur betekenen meer wind.">The forecast wind at your location for the current quarter of an hour (Open-Meteo). Your location is rounded to about 11 km before it is sent, and nothing is stored. The arrow points where the wind blows to and turns with your phone: hold it flat in front of you, the N points north. A thicker arrow and a warmer colour mean more wind.</span></h2>
+      <h2><span data-nl="Wind hier en nu">Wind here and now</span> <span class="info-pop" data-about="the live wind" data-nl="De voorspelde wind op jouw plek voor het huidige kwartier (Open-Meteo), met de luchttemperatuur, de kracht van de zon en de kans op regen en onweer in het komende uur. Je locatie wordt afgerond op ongeveer 11 km voordat die wordt verstuurd, en er wordt niets bewaard. De pijl wijst waar de wind naartoe waait en draait mee met je telefoon: houd hem plat voor je, de N wijst naar het noorden. Een dikkere pijl en een warmere kleur betekenen meer wind.">The forecast wind at your location for the current quarter of an hour (Open-Meteo), with the air temperature, the strength of the sun, and rain and thunderstorm risk for the next hour. Your location is rounded to about 11 km before it is sent, and nothing is stored. The arrow points where the wind blows to and turns with your phone: hold it flat in front of you, the N points north. A thicker arrow and a warmer colour mean more wind.</span></h2>
       <p class="field-hint" id="liveIntro" data-nl="Toont de wind waar je nu bent, met een pijl die meedraait met je telefoon. Je locatie wordt pas gevraagd als je op de knop tikt.">Shows the wind where you are now, with an arrow that turns with your phone. Your location is only asked for when you tap the button.</p>
       <div class="forecast-actions" id="liveStart">
         <button type="button" class="action-btn" id="liveStartBtn" data-nl="Toon de wind hier">Show the wind here</button>
@@ -1845,6 +1850,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <svg id="liveSvg" viewBox="-150 -150 300 300" role="img" aria-label="Wind direction arrow" data-nl-aria-label="Pijl met de windrichting"></svg>
         <p class="live-dir" id="liveDir"></p>
         <p class="live-speed" id="liveSpeed"></p>
+        <ul class="live-extra" id="liveExtra"></ul>
         <p class="live-meta" id="liveCompassNote"></p>
         <p class="live-meta" id="liveMeta"></p>
         <button type="button" class="copy-btn" id="liveRefreshBtn" data-nl="Vernieuwen">Refresh</button>
@@ -2977,6 +2983,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (prev === null || prev === undefined) return next;
     var d = ((next - prev + 540) % 360) - 180;
     return (((prev + k * d) % 360) + 360) % 360;
+  }
+  // Sun strength from the current shortwave radiation (W/m2, cloud already included):
+  // 0 none (night, or under 30), 1 hardly any (under 100), 2 weak (under 300), 3 moderate (under 600), 4 strong.
+  function liveSunClass(wm2, isDay) {
+    if (isDay === 0 || wm2 === null || wm2 < 30) return 0;
+    return wm2 < 100 ? 1 : wm2 < 300 ? 2 : wm2 < 600 ? 3 : 4;
+  }
+  // The next hour from Open-Meteo's 15-minute rain (each value = the sum of the 15 minutes BEFORE its
+  // stamp) and its hourly chance/CAPE/weather code. nowStamp: the "current" time ("YYYY-MM-DDTHH:MM").
+  // -> { mm: total, peakMmH, peakStart ("HH:MM", start of the wettest quarter) or null, prob (max %) or
+  //      null, storm (0/1/2, the Rain tab's stormLevel rule) }
+  function liveNextHour(minutely, hourly, nowStamp) {
+    var out = { mm: 0, peakMmH: 0, peakStart: null, prob: null, storm: 0 }, n = 0;
+    if (minutely && minutely.time) {
+      for (var i = 0; i < minutely.time.length && n < 4; i++) {
+        if (minutely.time[i] <= nowStamp) continue;
+        var v = minutely.precipitation ? minutely.precipitation[i] : null;
+        n++;
+        if (typeof v !== "number") continue;
+        out.mm += v;
+        if (v * 4 > out.peakMmH) {
+          out.peakMmH = v * 4;
+          var m = /T(\d\d):(\d\d)/.exec(minutely.time[i]), t = m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + 1425) % 1440 : null;
+          out.peakStart = t === null ? null : (t < 600 ? "0" : "") + Math.floor(t / 60) + ":" + (t % 60 < 10 ? "0" : "") + (t % 60);
+        }
+      }
+    }
+    if (hourly && hourly.time) {
+      hourly.time.forEach(function (tt, k) {
+        var p = hourly.precipitation_probability ? hourly.precipitation_probability[k] : null;
+        if (typeof p === "number" && (out.prob === null || p > out.prob)) out.prob = p;
+        var cape = hourly.cape && typeof hourly.cape[k] === "number" ? hourly.cape[k] : null;
+        var code = hourly.weather_code ? hourly.weather_code[k] : null;
+        out.storm = Math.max(out.storm, stormLevel(cape, code));
+      });
+    }
+    out.mm = Math.round(out.mm * 100) / 100;
+    return out;
   }
   // END live-pure
 
@@ -5111,7 +5155,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     navigator.geolocation.getCurrentPosition(function (pos) {
       var lat = coarseCoord(pos.coords.latitude), lon = coarseCoord(pos.coords.longitude);
       fetch(FORECAST_API + "?latitude=" + lat.toFixed(1) + "&longitude=" + lon.toFixed(1) +
-            "&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=auto").then(function (res) {
+            "&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,shortwave_radiation,is_day" +
+            "&minutely_15=precipitation&forecast_minutely_15=5&hourly=precipitation_probability,cape,weather_code&forecast_hours=2" +
+            "&wind_speed_unit=kmh&timezone=auto").then(function (res) {
         return res.json().then(function (d) { return { ok: res.ok, d: d }; }, function () { return { ok: false, d: {} }; });
       }, function () {
         throw new Error(tx("Couldn't reach the forecast service. Check your connection and try again.", "De weerdienst is niet bereikbaar. Controleer je verbinding en probeer het opnieuw."));
@@ -5121,7 +5167,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           throw new Error(tx("The forecast service couldn't answer. Try again in a moment.", "De weerdienst kon geen antwoord geven. Probeer het zo opnieuw."));
         }
         live.data = { lat: lat, lon: lon, time: String(c.time || ""), kmh: c.wind_speed_10m, dir: c.wind_direction_10m,
-                      gust: typeof c.wind_gusts_10m === "number" ? c.wind_gusts_10m : null, fetched: Date.now() };
+                      gust: typeof c.wind_gusts_10m === "number" ? c.wind_gusts_10m : null, fetched: Date.now(),
+                      tempC: typeof c.temperature_2m === "number" ? c.temperature_2m : null,
+                      sun: typeof c.shortwave_radiation === "number" ? c.shortwave_radiation : null, isDay: c.is_day,
+                      next: liveNextHour(r.d.minutely_15, r.d.hourly, String(c.time || "")) };
         renderLive();
       }).catch(function (err) { liveShowError(err.message || String(err)); }).then(done);
     }, function (err) {
@@ -5183,6 +5232,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("liveDir").innerHTML = tx("Wind from ", "Wind uit ") + "<b>" + degreesToCompass16(d.dir) + "</b> &middot; " + Math.round(d.dir) + "&deg;";
     document.getElementById("liveSpeed").textContent = fmtSpeed(d.kmh, 0) + " \u00b7 Beaufort " + st.beaufort + " (" + beaufortName(st.beaufort) + ")" +
       (d.gust !== null ? tx(" \u00b7 gusts ", " \u00b7 windstoten ") + fmtSpeed(d.gust, 0) : "");
+    var extra = [];
+    if (d.tempC !== null) extra.push(tx("Air temperature ", "Luchttemperatuur ") + "<b>" + fmtTemp1(d.tempC) + "</b>");
+    var sc = liveSunClass(d.sun, d.isDay);
+    extra.push(tx("Sun: ", "Zon: ") + (sc === 0 && d.isDay === 0 ? "<b>" + tx("none, it is night", "geen, het is nacht") + "</b>"
+      : "<b>" + [tx("none", "geen"), tx("hardly any", "nauwelijks"), tx("weak", "zwak"), tx("moderate", "matig"), tx("strong", "sterk")][sc] + "</b>" +
+        (d.sun !== null ? " (" + Math.round(d.sun) + " W/m&sup2;)" : "")));
+    var nx = d.next;
+    if (nx) {
+      extra.push(nx.mm < 0.1
+        ? tx("Rain in the next hour: <b>dry</b>", "Regen komend uur: <b>droog</b>") + (nx.prob !== null ? tx(" (chance up to ", " (kans tot ") + Math.round(nx.prob) + "%)" : "")
+        : tx("Rain in the next hour: <b>about ", "Regen komend uur: <b>ongeveer ") + fmtRainMm(nx.mm, 1) + "</b>" +
+          (nx.peakStart ? tx(", heaviest from ", ", het hevigst vanaf ") + nx.peakStart + " (" + fmtRainRate(nx.peakMmH, 1) + ")" : "") +
+          (nx.prob !== null ? tx(", chance up to ", ", kans tot ") + Math.round(nx.prob) + "%" : ""));
+      extra.push(nx.storm === 0 ? tx("Thunderstorm in the next hour: not expected", "Onweer komend uur: niet verwacht")
+        : '<span class="live-warn">' + (nx.storm === 2 ? tx("Thunderstorm likely in the next hour", "Onweer waarschijnlijk in het komende uur")
+                                                       : tx("Thunderstorm possible in the next hour", "Onweer mogelijk in het komende uur")) + "</span>");
+    }
+    document.getElementById("liveExtra").innerHTML = extra.map(function (x) { return "<li>" + x + "</li>"; }).join("");
     var hhmm = /T(\d\d:\d\d)/.exec(d.time);
     document.getElementById("liveMeta").textContent = tx("Around ", "Rond ") + numStr(Math.abs(d.lat)) + "\u00b0" + (d.lat >= 0 ? "N" : tx("S", "Z")) + " " +
       numStr(Math.abs(d.lon)) + "\u00b0" + (d.lon >= 0 ? tx("E", "O") : "W") + (hhmm ? tx(" \u00b7 forecast for ", " \u00b7 verwachting voor ") + hhmm[1] : "") + " \u00b7 Open-Meteo";
