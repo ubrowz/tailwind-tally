@@ -133,6 +133,35 @@ least 12 testers who stay opted in for 14 days in a row** before you can apply f
 
 This is the longest step: plan roughly **3 to 4 weeks** from first upload to public.
 
+### What testers must do (checked against Google's help page, 2026-09-29)
+
+Source: [App testing requirements for new personal developer accounts](https://support.google.com/googleplay/android-developer/answer/14151465).
+
+- **The hard rule is being opted in**: "At least 12 testers must be opted in to your closed test when you
+  apply for production access, and they must have been opted in continuously for the preceding 14 days."
+  Testers who opt out before 14 days do not count. Installing, using the app or giving feedback is not
+  explicitly required.
+- **But the production-access application asks about real use**:
+  - *About your closed test*: how easy recruiting testers was, whether testers used all features, whether
+    their use matched what you expected, and how you collected feedback.
+  - *About your app*: target audience, value to users, expected number of installs.
+  - *About production readiness*: what you changed based on the closed test, and how you decided the app
+    was ready.
+  Developers report that applications with little real tester use are rejected, after which another 14 days
+  of testing are needed (experience of others, not an official rule).
+
+**Ask each tester to:**
+1. Accept the invitation and **stay opted in for at least 14 days** (do not leave the test).
+2. **Install the app** and open it a few times during those two weeks, trying the main parts:
+   load a route (file or Strava), get a forecast, look at the Wind, Temperature and Rain tabs,
+   save an image, switch EN/NL.
+3. Send a short reaction (email or WhatsApp): what worked, what was unclear, anything broken.
+
+**Keep a short log** of the feedback and what you changed because of it (even small text fixes) -
+that answers the application questions directly.
+
+Tip: recruit 15-20 testers rather than exactly 12, so one or two who drop out do not reset the 14 days.
+
 ---
 
 ## 8. Phase 2 - opening a shared .gpx file
@@ -169,6 +198,6 @@ Start with the share target; test with Strava's app, Files and Gmail attachments
 6. [ ] Put the Play signing key's SHA-256 in `assetlinks.json`; confirm the URL bar disappears.
 7. [ ] Store listing: descriptions, icon, feature graphic, Android screenshots, privacy URL.
 8. [ ] App content: Data safety, ads, access, content rating, target audience.
-9. [ ] Closed test: 12+ testers, 14 days.
+9. [ ] Closed test: 12+ testers (aim for 15-20), 14 days opted in, real use + feedback log (see section 7).
 10. [ ] Apply for production access, release.
 11. [ ] Phase 2: `.gpx` share target.
