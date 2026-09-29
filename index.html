@@ -5152,7 +5152,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
       liveStartBtn.disabled = liveRefreshBtn.disabled = false;
       liveStartBtn.textContent = tx("Show the wind here", "Toon de wind hier");
     }
-    navigator.geolocation.getCurrentPosition(function (pos) {
+    // Low accuracy first (Wi-Fi/cell network, fast, battery-friendly). A device without a network
+    // position (no SIM and Wi-Fi off, some tablets) answers "unavailable" or times out: then ask once
+    // more with GPS. Either way the position is rounded to about 11 km before anything is sent.
+    function locate(high) {
+      navigator.geolocation.getCurrentPosition(gotPosition, function (err) {
+        if (!high && err && err.code !== 1) { locate(true); return; }
+        noPosition(err);
+      }, high ? { enableHighAccuracy: true, maximumAge: 10 * 60000, timeout: 30000 }
+              : { enableHighAccuracy: false, maximumAge: 10 * 60000, timeout: 15000 });
+    }
+    function gotPosition(pos) {
       var lat = coarseCoord(pos.coords.latitude), lon = coarseCoord(pos.coords.longitude);
       fetch(FORECAST_API + "?latitude=" + lat.toFixed(1) + "&longitude=" + lon.toFixed(1) +
             "&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,shortwave_radiation,is_day" +
@@ -5173,12 +5183,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
                       next: liveNextHour(r.d.minutely_15, r.d.hourly, String(c.time || "")) };
         renderLive();
       }).catch(function (err) { liveShowError(err.message || String(err)); }).then(done);
-    }, function (err) {
+    }
+    function noPosition(err) {
       liveShowError(err && err.code === 1
         ? tx("No access to your location. Allow it in your settings to see the wind where you are.", "Geen toegang tot je locatie. Sta die toe in je instellingen om de wind op jouw plek te zien.")
         : tx("Your location could not be found. Try again.", "Je locatie kon niet worden bepaald. Probeer het opnieuw."));
       done();
-    }, { enableHighAccuracy: false, maximumAge: 10 * 60000, timeout: 20000 });
+    }
+    locate(false);
   }
   // Leaving the tab stops the compass (battery); coming back restarts it and refreshes a stale value.
   function liveVisibilityChanged(shown) {
