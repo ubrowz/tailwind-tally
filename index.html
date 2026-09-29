@@ -5071,7 +5071,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // Android (Chrome, and the Play Store app, which runs in Chrome): pulling down at the top of the page
   // would reload it (pull-to-refresh) and lose the loaded route, which lives only in memory. Only on
   // Android, so the iPhone app and Safari keep their usual scrolling feel.
-  if (/Android/.test(ua)) document.documentElement.style.overscrollBehaviorY = "contain";
+  // "none" rather than "contain": also no stretch effect at the top and bottom of the page.
+  if (/Android/.test(ua)) document.documentElement.style.overscrollBehaviorY = "none";
   var phoneBrowser = !embeddedIos && isPhone;
   // The full text report is for larger screens too: a wall of monospaced text on a phone.
   document.getElementById("reportCard").hidden = isPhone;
