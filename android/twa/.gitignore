@@ -1,0 +1,9 @@
+# build output and local machine settings - never commit the keystore
+.gradle/
+build/
+app/build/
+out/
+local.properties
+*.jks
+*.keystore
+*.idsig
