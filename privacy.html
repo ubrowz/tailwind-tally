@@ -101,7 +101,7 @@
   </header>
 
   <h2>The short version</h2>
-  <p>Tailwind Tally doesn't have accounts, doesn't set its own tracking cookies, and doesn't store anything server-side beyond map tiles and Strava data it briefly relays on your behalf. Your GPX route data is processed entirely on your own device, with one optional exception: if you ask for a weather forecast, three rounded locations from your route are sent to a weather service (see "Weather forecast" below). The sections below explain exactly what does happen, and why.</p>
+  <p>Tailwind Tally doesn't have accounts, doesn't set its own tracking cookies, and doesn't store anything server-side beyond map tiles and Strava data it briefly relays on your behalf. Your GPX route data is processed entirely on your own device, with two optional exceptions: if you ask for a weather forecast, three rounded locations from your route are sent to a weather service (see "Weather forecast" below), and if you use the Live tab, your own location, rounded to about 11 km, is sent to that same service (see "Live wind" below). The sections below explain exactly what does happen, and why.</p>
 
   <h2>Route files (GPX)</h2>
   <p>Whether you drop a file in the browser, share one from another app on your phone, or load one from Strava, the route data is parsed and analyzed <strong>entirely on your device</strong> &mdash; in your browser's own JavaScript, or inside the iOS app. It is never uploaded to, or stored on, any server we operate.</p>
@@ -123,6 +123,10 @@
   <h2>Weather forecast (optional)</h2>
   <p>If you choose "From forecast" and tap "Get forecast," the app asks <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, a free weather service, what the wind, temperature, humidity and rain are expected to be on the date you picked. To answer, Open-Meteo receives up to three places from your route (its start, middle and end), each <strong>rounded to about 11 km</strong>, and that date. It does not receive your route file, your exact coordinates, or anything about who you are. Like any web request, it also sees your IP address.</p>
   <p>The request goes from your device straight to Open-Meteo, not through our backend, and we don't keep a copy. Nothing is sent unless you tap "Get forecast"; setting the wind and temperature by hand never contacts any weather service. Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>; see <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">Open-Meteo's terms</a>.</p>
+
+  <h2>Live wind (optional)</h2>
+  <p>If you open the Live tab and tap "Show the wind here," the app asks your device for its location - your device asks your permission first - at low accuracy (a network-based position is enough). On your device the location is <strong>rounded to about 11 km</strong>, and only that rounded position is sent to <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> to get the current wind there. Your exact location never leaves your device, and nothing is stored - not by the app and not by us. Nothing is sent unless you tap the button (or "Refresh").</p>
+  <p>To turn the arrow with your phone, the app reads your device's compass (on iPhone after you allow access to "motion and orientation"). That reading is used on your device only and is never sent anywhere.</p>
 
   <h2>Language setting</h2>
   <p>If you choose English or Dutch with the EN | NL switch, that choice is saved in your browser's local storage (<code>localStorage</code>) on your own device, so the app opens in the same language next time. It is never sent anywhere. Until you choose, the app follows your phone's or browser's language.</p>
@@ -152,7 +156,7 @@
       <tr><td>Render</td><td>Hosts the small backend that proxies map tiles and Strava API calls.</td></tr>
       <tr><td>Strava</td><td>Provides route data you explicitly connect and authorize.</td></tr>
       <tr><td>MapTiler</td><td>Provides map tile imagery.</td></tr>
-      <tr><td>Open-Meteo</td><td>Provides the weather forecast (wind, temperature, humidity and rain), only if you use "From forecast."</td></tr>
+      <tr><td>Open-Meteo</td><td>Provides the weather forecast (wind, temperature, humidity and rain), only if you use "From forecast," and the current wind at your rounded location, only if you use the Live tab.</td></tr>
       <tr><td>GoatCounter</td><td>Cookieless page-visit analytics.</td></tr>
       <tr><td>Google Fonts</td><td>Serves the page's typefaces.</td></tr>
     </tbody>

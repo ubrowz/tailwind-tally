@@ -16,11 +16,15 @@ targets:
       path: Resources/Info.plist
       properties:
         CFBundleDisplayName: Tailwind Tally
-        CFBundleShortVersionString: "1.0.2"
-        CFBundleVersion: "3"
+        CFBundleShortVersionString: "1.0.3"
+        CFBundleVersion: "4"
         # Only the https that iOS itself provides (WKWebView), which is exempt,
         # so App Store Connect doesn't ask the export-compliance question.
         ITSAppUsesNonExemptEncryption: false
+        # Live tab: the page asks for the location (low accuracy) when the rider taps "Show the wind here";
+        # it is rounded to about 11 km before it is sent to the weather service. Without this text iOS
+        # refuses the web page's location request.
+        NSLocationWhenInUseUsageDescription: "Tailwind Tally uses your approximate location, only when you tap \"Show the wind here\" on the Live tab, to show the wind where you are. It is rounded to about 11 km before it is sent to the weather service."
         LSRequiresIPhoneOS: true
         UIRequiresFullScreen: false
         UISupportedInterfaceOrientations:
@@ -61,8 +65,8 @@ targets:
         PRODUCT_NAME: Tailwind Tally
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
-        MARKETING_VERSION: "1.0.2"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "1.0.3"
+        CURRENT_PROJECT_VERSION: "4"
         DEVELOPMENT_TEAM: DU36G32ZCV
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor

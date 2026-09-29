@@ -532,6 +532,22 @@
      rule is needed because display:flex would otherwise beat the attribute. */
   /* The tabs are the main controls of the app: one raised strip, equal-width segments, the
      selected one filled in the accent colour. */
+  /* Live tab: the wind here and now, an arrow that turns with the phone */
+  #liveView { text-align: center; }
+  #liveSvg { width: min(78vw, 320px); height: auto; display: block; margin: 6px auto 2px; touch-action: pan-y; }
+  #liveSvg .live-ring { fill: none; stroke: var(--grid); stroke-width: 2; }
+  #liveSvg .live-tick { stroke: var(--grid); stroke-width: 2; }
+  #liveSvg .live-mark { font-family: var(--font-display); font-size: 17px; font-weight: 600; fill: var(--ink-muted); text-anchor: middle; dominant-baseline: central; }
+  #liveSvg .live-mark.n { fill: var(--status-critical); }
+  .live-c0 { stroke: var(--status-neutral); fill: var(--status-neutral); }
+  .live-c1 { stroke: var(--status-good); fill: var(--status-good); }
+  .live-c2 { stroke: var(--status-warning-soft); fill: var(--status-warning-soft); }
+  .live-c3 { stroke: var(--status-warning); fill: var(--status-warning); }
+  .live-c4 { stroke: var(--status-critical); fill: var(--status-critical); }
+  .live-c5 { stroke: var(--status-critical-strong); fill: var(--status-critical-strong); }
+  .live-dir { font-family: var(--font-display); font-size: 22px; color: var(--ink); margin: 2px 0 4px; }
+  .live-speed { font-size: 15px; color: var(--ink-secondary); margin: 0 0 10px; }
+  .live-meta { font-size: 12.5px; color: var(--ink-muted); margin: 0 0 4px; }
   .tabbar { display: flex; gap: 6px; padding: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
   .tabbar button {
     flex: 1 1 0;
@@ -1651,6 +1667,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button type="button" role="tab" id="tabWind" aria-selected="true" aria-controls="panelWind">Wind</button>
     <button type="button" role="tab" id="tabTemp" aria-selected="false" aria-controls="panelTemp" tabindex="-1" data-nl="Temperatuur">Temperature</button>
     <button type="button" role="tab" id="tabRain" aria-selected="false" aria-controls="panelRain" tabindex="-1" data-nl="Regen">Rain</button>
+    <button type="button" role="tab" id="tabLive" aria-selected="false" aria-controls="panelLive" tabindex="-1" data-nl="Live">Live</button>
     <button type="button" role="tab" id="tabHow" aria-selected="false" aria-controls="panelHow" tabindex="-1" data-nl="Uitleg (Engels)">How it works</button>
   </div>
 
@@ -1814,6 +1831,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <h2><span data-nl="Waar het regent, in de volgorde waarin je rijdt">Where it rains, in the order you ride</span> <span class="info-pop" data-about="the rain table" data-nl="Elke rij is een stuk van de route waar minstens 0,1 mm per uur wordt verwacht als je daar bent. Regenklassen: zeer licht 0,1 tot 0,5 mm/u, licht 0,5 tot 2,5, matig 2,5 tot 7,6, zwaar boven 7,6.">Each row is a stretch of the route where at least 0.1 mm per hour is expected when you get there. Rain classes: very light 0.1 to 0.5 mm/h, light 0.5 to 2.5, moderate 2.5 to 7.6, heavy above 7.6.</span></h2>
         <div class="climb-table-wrap"><table class="climb-table" id="rainTable"></table></div>
       </div>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="panelLive" role="tabpanel" aria-labelledby="tabLive" hidden>
+    <div class="card">
+      <h2><span data-nl="Wind hier en nu">Wind here and now</span> <span class="info-pop" data-about="the live wind" data-nl="De voorspelde wind op jouw plek voor het huidige kwartier (Open-Meteo). Je locatie wordt afgerond op ongeveer 11 km voordat die wordt verstuurd, en er wordt niets bewaard. De pijl wijst waar de wind naartoe waait en draait mee met je telefoon: houd hem plat voor je, de N wijst naar het noorden. Een dikkere pijl en een warmere kleur betekenen meer wind.">The forecast wind at your location for the current quarter of an hour (Open-Meteo). Your location is rounded to about 11 km before it is sent, and nothing is stored. The arrow points where the wind blows to and turns with your phone: hold it flat in front of you, the N points north. A thicker arrow and a warmer colour mean more wind.</span></h2>
+      <p class="field-hint" id="liveIntro" data-nl="Toont de wind waar je nu bent, met een pijl die meedraait met je telefoon. Je locatie wordt pas gevraagd als je op de knop tikt.">Shows the wind where you are now, with an arrow that turns with your phone. Your location is only asked for when you tap the button.</p>
+      <div class="forecast-actions" id="liveStart">
+        <button type="button" class="action-btn" id="liveStartBtn" data-nl="Toon de wind hier">Show the wind here</button>
+      </div>
+      <div id="liveView" hidden>
+        <svg id="liveSvg" viewBox="-150 -150 300 300" role="img" aria-label="Wind direction arrow" data-nl-aria-label="Pijl met de windrichting"></svg>
+        <p class="live-dir" id="liveDir"></p>
+        <p class="live-speed" id="liveSpeed"></p>
+        <p class="live-meta" id="liveCompassNote"></p>
+        <p class="live-meta" id="liveMeta"></p>
+        <button type="button" class="copy-btn" id="liveRefreshBtn" data-nl="Vernieuwen">Refresh</button>
+      </div>
+      <p class="error-text" id="liveError"></p>
     </div>
   </div>
 
@@ -2907,6 +2943,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // END mirror-pure
 
   // ---- Units: metric or US, from the route's own location -------------------------------
+  // ---- Live: the wind here and now --------------------------------------------------
+  // BEGIN live-pure
+  // The position sent for the live wind: rounded to 0.1 deg (about 11 km), like the
+  // forecast's sample places, so the request never carries where exactly you are.
+  function coarseCoord(v) { var r = Math.round(v * 10) / 10; return r === 0 ? 0 : r; }
+  // How the arrow looks at a wind speed (km/h): thicker with every Beaufort force, and a
+  // colour class 0-5 (grey calm/light air, green breeze, amber Bft 4, orange Bft 5,
+  // red Bft 6-7, dark red Bft 8 and up).
+  function liveArrowStyle(kmh) {
+    var b = kmhToBeaufort(kmh);
+    return { beaufort: b, width: 6 + 2 * Math.min(b, 10), cls: b <= 1 ? 0 : b <= 3 ? 1 : b === 4 ? 2 : b === 5 ? 3 : b <= 7 ? 4 : 5 };
+  }
+  // Where the arrow points on the screen, in degrees clockwise from the top of the screen:
+  // the wind blows TOWARD windFromDeg + 180, and the top of the screen faces headingDeg.
+  function liveArrowRotation(windFromDeg, headingDeg) {
+    return (((windFromDeg + 180 - (headingDeg || 0)) % 360) + 360) % 360;
+  }
+  // The compass heading (where the top of the screen points, degrees clockwise from north)
+  // from a device-orientation event, or null if it carries none. iOS Safari/WebKit gives
+  // webkitCompassHeading (clockwise); Chrome's deviceorientationabsolute gives alpha
+  // (counter-clockwise from north). screenAngle: the page's rotation (landscape).
+  function headingFromOrientation(ev, screenAngle) {
+    var h;
+    if (typeof ev.webkitCompassHeading === "number" && isFinite(ev.webkitCompassHeading)) h = ev.webkitCompassHeading;
+    else if (ev.absolute === true && typeof ev.alpha === "number" && isFinite(ev.alpha)) h = 360 - ev.alpha;
+    else return null;
+    return (((h + (screenAngle || 0)) % 360) + 360) % 360;
+  }
+  // Smoothed heading: moves a share k of the way to the new reading along the shorter arc,
+  // so the arrow does not jitter and never spins the long way round past north.
+  function smoothHeading(prev, next, k) {
+    if (prev === null || prev === undefined) return next;
+    var d = ((next - prev + 540) % 360) - 180;
+    return (((prev + k * d) % 360) + 360) % 360;
+  }
+  // END live-pure
+
   // BEGIN units-pure
   // No geocoding service is asked (nothing new would leave the device just to pick a unit):
   // a simple bounding box around the United States (mainland, Alaska, Hawaii) decides.
@@ -4915,6 +4988,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // The 360-row sweep table is another wall of numbers for a phone.
   document.getElementById("sweepTableToggle").hidden = isPhone;
   var tabHow = document.getElementById("tabHow"), panelHow = document.getElementById("panelHow");
+  var tabLive = document.getElementById("tabLive"), panelLive = document.getElementById("panelLive");
   var howDirect = window.location.hash === "#how-it-works";
   tabHow.hidden = embeddedIos || (phoneBrowser && !howDirect);
   var howFooterLink = document.getElementById("howFooterLink");
@@ -4933,28 +5007,33 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // is a page alongside them. Showing it leaves the last data view untouched
   // underneath, so coming back to Wind or Temperature is exactly as it was.
   function setView(view, focusTab) {
-    var how = view === "how" && !tabHow.hidden;
-    if (!how) state.view = view === "temp" ? "temp" : view === "rain" ? "rain" : "wind";
+    var how = view === "how" && !tabHow.hidden, isLive = view === "live";
+    if (!how && !isLive) state.view = view === "temp" ? "temp" : view === "rain" ? "rain" : "wind";
     state.showHow = how;
-    var v = state.view;
-    panelWind.hidden = how || v !== "wind";
-    panelTemp.hidden = how || v !== "temp";
-    panelRain.hidden = how || v !== "rain";
+    state.showLive = isLive;
+    var v = state.view, page = how || isLive;       // Live and How it works are pages beside the data views
+    panelWind.hidden = page || v !== "wind";
+    panelTemp.hidden = page || v !== "temp";
+    panelRain.hidden = page || v !== "rain";
+    panelLive.hidden = !isLive;
     panelHow.hidden = !how;
-    [[tabWind, !how && v === "wind"], [tabTemp, !how && v === "temp"], [tabRain, !how && v === "rain"], [tabHow, how]].forEach(function (pair) {
+    [[tabWind, !page && v === "wind"], [tabTemp, !page && v === "temp"], [tabRain, !page && v === "rain"], [tabLive, isLive], [tabHow, how]].forEach(function (pair) {
       pair[0].setAttribute("aria-selected", String(pair[1]));
       pair[0].tabIndex = pair[1] ? 0 : -1;
     });
-    if (!how) {
+    liveVisibilityChanged(isLive);
+    if (isLive) {
+      // nothing to move: the Live panel has no route card
+    } else if (!how) {
       (v === "temp" ? routeSlotTemp : v === "rain" ? routeSlotRain : routeSlotWind).appendChild(routeCard);
     } else {
       paintHowSwatches();
     }
     try { history.replaceState(null, "", how ? "#how-it-works" : window.location.pathname + window.location.search); } catch (e) { /* e.g. some file:// contexts */ }
-    if (focusTab) (how ? tabHow : (v === "temp" ? tabTemp : v === "rain" ? tabRain : tabWind)).focus();
+    if (focusTab) (how ? tabHow : isLive ? tabLive : (v === "temp" ? tabTemp : v === "rain" ? tabRain : tabWind)).focus();
     scheduleRender();
   }
-  var TAB_VIEWS = [[tabWind, "wind"], [tabTemp, "temp"], [tabRain, "rain"], [tabHow, "how"]];
+  var TAB_VIEWS = [[tabWind, "wind"], [tabTemp, "temp"], [tabRain, "rain"], [tabLive, "live"], [tabHow, "how"]];
   TAB_VIEWS.forEach(function (pair) {
     pair[0].addEventListener("click", function () { setView(pair[1]); });
     pair[0].addEventListener("keydown", function (e) {
@@ -4966,6 +5045,147 @@ svg.leaflet-image-layer.leaflet-interactive path {
       setView(visible[next][1], true);
     });
   });
+
+  // ---------------------------------------------------------------------
+  // Live: the wind here and now. The location is asked for only when the rider taps the
+  // button, at low accuracy (network position is enough), and rounded (coarseCoord)
+  // before Open-Meteo is asked for the current quarter hour's wind. The arrow turns with
+  // the phone's compass where there is one; without, north is at the top.
+  // ---------------------------------------------------------------------
+  var live = { data: null, heading: null, compass: "off", listening: false, busy: false, drawPending: false, ring: null, arrow: null };
+  var liveStartBtn = document.getElementById("liveStartBtn"), liveRefreshBtn = document.getElementById("liveRefreshBtn");
+  var liveErrorEl = document.getElementById("liveError"), liveSvg = document.getElementById("liveSvg");
+  var LIVE_MAX_AGE_MIN = 15;
+  function liveShowError(msg) { liveErrorEl.textContent = msg; liveErrorEl.classList.add("show"); }
+  function liveScreenAngle() {
+    if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === "number") return window.screen.orientation.angle;
+    return typeof window.orientation === "number" ? window.orientation : 0;
+  }
+  function liveOnOrientation(e) {
+    var h = headingFromOrientation(e, liveScreenAngle());
+    if (h === null) return;
+    live.compass = "on";
+    live.heading = smoothHeading(live.heading, h, 0.25);
+    if (!live.drawPending) {
+      live.drawPending = true;
+      requestAnimationFrame(function () { live.drawPending = false; liveTurn(); });
+    }
+  }
+  function liveListen(on) {
+    if (on === live.listening) return;
+    live.listening = on;
+    ["deviceorientationabsolute", "deviceorientation"].forEach(function (type) {
+      if (on) window.addEventListener(type, liveOnOrientation); else window.removeEventListener(type, liveOnOrientation);
+    });
+    if (on) setTimeout(function () { if (live.listening && live.compass !== "on") { live.compass = "none"; liveText(); } }, 3000);
+  }
+  // iOS asks for "motion and orientation" separately; the request must come from the tap.
+  function liveStartCompass() {
+    var DOE = window.DeviceOrientationEvent;
+    if (!DOE) { live.compass = "none"; return; }
+    if (typeof DOE.requestPermission === "function") {
+      DOE.requestPermission().then(function (answer) {
+        if (answer === "granted") liveListen(true); else { live.compass = "denied"; liveText(); }
+      }).catch(function () { live.compass = "denied"; liveText(); });
+    } else {
+      liveListen(true);
+    }
+  }
+  function liveFetch() {
+    if (live.busy) return;
+    liveErrorEl.classList.remove("show");
+    if (!navigator.geolocation) { liveShowError(tx("This device cannot share its location.", "Dit apparaat kan zijn locatie niet delen.")); return; }
+    live.busy = true;
+    liveStartBtn.disabled = liveRefreshBtn.disabled = true;
+    liveStartBtn.textContent = tx("Getting the wind\u2026", "Wind ophalen\u2026");
+    function done() {
+      live.busy = false;
+      liveStartBtn.disabled = liveRefreshBtn.disabled = false;
+      liveStartBtn.textContent = tx("Show the wind here", "Toon de wind hier");
+    }
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var lat = coarseCoord(pos.coords.latitude), lon = coarseCoord(pos.coords.longitude);
+      fetch(FORECAST_API + "?latitude=" + lat.toFixed(1) + "&longitude=" + lon.toFixed(1) +
+            "&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=auto").then(function (res) {
+        return res.json().then(function (d) { return { ok: res.ok, d: d }; }, function () { return { ok: false, d: {} }; });
+      }, function () {
+        throw new Error(tx("Couldn't reach the forecast service. Check your connection and try again.", "De weerdienst is niet bereikbaar. Controleer je verbinding en probeer het opnieuw."));
+      }).then(function (r) {
+        var c = r.d && r.d.current;
+        if (!r.ok || !c || typeof c.wind_speed_10m !== "number" || typeof c.wind_direction_10m !== "number") {
+          throw new Error(tx("The forecast service couldn't answer. Try again in a moment.", "De weerdienst kon geen antwoord geven. Probeer het zo opnieuw."));
+        }
+        live.data = { lat: lat, lon: lon, time: String(c.time || ""), kmh: c.wind_speed_10m, dir: c.wind_direction_10m,
+                      gust: typeof c.wind_gusts_10m === "number" ? c.wind_gusts_10m : null, fetched: Date.now() };
+        renderLive();
+      }).catch(function (err) { liveShowError(err.message || String(err)); }).then(done);
+    }, function (err) {
+      liveShowError(err && err.code === 1
+        ? tx("No access to your location. Allow it in your settings to see the wind where you are.", "Geen toegang tot je locatie. Sta die toe in je instellingen om de wind op jouw plek te zien.")
+        : tx("Your location could not be found. Try again.", "Je locatie kon niet worden bepaald. Probeer het opnieuw."));
+      done();
+    }, { enableHighAccuracy: false, maximumAge: 10 * 60000, timeout: 20000 });
+  }
+  // Leaving the tab stops the compass (battery); coming back restarts it and refreshes a stale value.
+  function liveVisibilityChanged(shown) {
+    if (!shown) { liveListen(false); return; }
+    if (live.data) {
+      if (live.compass === "on" || live.compass === "none") liveListen(true);
+      if (Date.now() - live.data.fetched > LIVE_MAX_AGE_MIN * 60000) liveFetch();
+    }
+  }
+  function liveTurn() {
+    if (!live.data || !live.ring) return;
+    var hd = live.compass === "on" && live.heading !== null ? live.heading : 0;
+    live.ring.setAttribute("transform", "rotate(" + (-hd).toFixed(1) + ")");
+    live.arrow.setAttribute("transform", "rotate(" + liveArrowRotation(live.data.dir, hd).toFixed(1) + ")");
+    live.labels.forEach(function (t) { t.el.setAttribute("transform", "rotate(" + hd.toFixed(1) + " " + t.x + " " + t.y + ")"); });  // letters stay upright
+  }
+  function liveText() {
+    var d = live.data;
+    if (!d) return;
+    document.getElementById("liveCompassNote").textContent = live.compass === "on"
+      ? tx("The arrow turns with your phone. Hold it flat; N points north.", "De pijl draait mee met je telefoon. Houd hem plat; de N wijst naar het noorden.")
+      : live.compass === "denied"
+      ? tx("No access to the compass, so north is at the top. Allow motion and orientation access to let the arrow turn with your phone.", "Geen toegang tot het kompas, dus het noorden is boven. Sta toegang tot beweging en richting toe om de pijl mee te laten draaien.")
+      : live.compass === "none"
+      ? tx("No compass on this device: north is at the top.", "Geen kompas op dit apparaat: het noorden is boven.")
+      : "";
+  }
+  function renderLive() {
+    var d = live.data;
+    document.getElementById("liveView").hidden = !d;
+    document.getElementById("liveStart").hidden = !!d;
+    document.getElementById("liveIntro").hidden = !!d;
+    if (!d) return;
+    var st = liveArrowStyle(d.kmh), NS = "http://www.w3.org/2000/svg";
+    function mk(tag, attrs, parent, text) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; parent.appendChild(e); return e; }
+    while (liveSvg.firstChild) liveSvg.removeChild(liveSvg.firstChild);
+    var ring = mk("g", {}, liveSvg);
+    mk("circle", { "class": "live-ring", r: 120 }, ring);
+    live.labels = [];
+    [[0, "N"], [90, "E"], [180, "S"], [270, "W"]].forEach(function (m) {
+      var a = m[0] * Math.PI / 180, x = +(Math.sin(a) * 138).toFixed(1), y = +(-Math.cos(a) * 138).toFixed(1);
+      mk("line", { "class": "live-tick", x1: (Math.sin(a) * 112).toFixed(1), y1: (-Math.cos(a) * 112).toFixed(1), x2: (Math.sin(a) * 124).toFixed(1), y2: (-Math.cos(a) * 124).toFixed(1) }, ring);
+      live.labels.push({ el: mk("text", { "class": "live-mark" + (m[0] === 0 ? " n" : ""), x: x, y: y }, ring, compassLocal(m[1])), x: x, y: y });
+    });
+    // The arrow, drawn pointing up (where the wind blows to) and turned by liveTurn.
+    var arrow = mk("g", { "class": "live-c" + st.cls }, liveSvg), head = 26 + st.width * 1.3;
+    mk("line", { x1: 0, y1: 92, x2: 0, y2: (-100 + head * 0.6).toFixed(1), "stroke-width": st.width, "stroke-linecap": "round", fill: "none" }, arrow);
+    mk("path", { d: "M0,-104 L" + (head * 0.62).toFixed(1) + "," + (-104 + head).toFixed(1) + " L" + (-head * 0.62).toFixed(1) + "," + (-104 + head).toFixed(1) + " Z", "stroke-width": 2, "stroke-linejoin": "round" }, arrow);
+    live.ring = ring; live.arrow = arrow;
+    liveSvg.setAttribute("aria-label", tx("Wind from ", "Wind uit ") + degreesToCompass16(d.dir) + ", " + Math.round(d.dir) + " \u00b0");
+    document.getElementById("liveDir").innerHTML = tx("Wind from ", "Wind uit ") + "<b>" + degreesToCompass16(d.dir) + "</b> &middot; " + Math.round(d.dir) + "&deg;";
+    document.getElementById("liveSpeed").textContent = fmtSpeed(d.kmh, 0) + " \u00b7 Beaufort " + st.beaufort + " (" + beaufortName(st.beaufort) + ")" +
+      (d.gust !== null ? tx(" \u00b7 gusts ", " \u00b7 windstoten ") + fmtSpeed(d.gust, 0) : "");
+    var hhmm = /T(\d\d:\d\d)/.exec(d.time);
+    document.getElementById("liveMeta").textContent = tx("Around ", "Rond ") + numStr(Math.abs(d.lat)) + "\u00b0" + (d.lat >= 0 ? "N" : tx("S", "Z")) + " " +
+      numStr(Math.abs(d.lon)) + "\u00b0" + (d.lon >= 0 ? tx("E", "O") : "W") + (hhmm ? tx(" \u00b7 forecast for ", " \u00b7 verwachting voor ") + hhmm[1] : "") + " \u00b7 Open-Meteo";
+    liveText();
+    liveTurn();
+  }
+  liveStartBtn.addEventListener("click", function () { liveStartCompass(); liveFetch(); });
+  liveRefreshBtn.addEventListener("click", function () { liveFetch(); });
 
   // ---------------------------------------------------------------------
   // Wind from a forecast. Open-Meteo is called straight from the page (no
@@ -5559,7 +5779,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           : tx("Coloured by tailwind/headwind for the forecast wind, which changes during the ride: each stretch is judged against the wind expected when you would be there, from the start time.",
                "Gekleurd naar rugwind/tegenwind bij de voorspelde wind, die tijdens de rit verandert: elk stuk wordt beoordeeld tegen de wind die verwacht wordt als je daar bent, gerekend vanaf de starttijd."));
     renderPolarSweep(result);
-    if (!state.showHow) renderMap(result);     // the map sits in a hidden panel while "How it works" is open
+    if (!state.showHow && !state.showLive) renderMap(result);     // the map sits in a hidden panel while "How it works" or Live is open
     if (state.view === "temp") renderTempLegend(result); else if (state.view === "rain") renderRainLegend(result); else renderRouteStats(result);
     renderRain(result);
     if (!isPhone) buildSweepTable(result);
@@ -5590,6 +5810,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         tx(" on a calm, flat day (", " vast op een windstille, vlakke dag (") + numStr(result.ride.rider.massKg) + " kg, CdA " + numStr(result.ride.rider.cda) + ", Crr " + numStr(result.ride.rider.crr) + ")."
       : "";
 
+    if (live.data) renderLive();
     if (!isPhone) {
       var pageLang = LANG;
       LANG = "en";                               // the Full report is always English

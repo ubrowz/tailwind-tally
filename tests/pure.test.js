@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
-  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, coarseCoord, liveArrowStyle, liveArrowRotation, headingFromOrientation, smoothHeading, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+  new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("mirror-pure") + grab("live-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") +
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, mirrorLocations, mirrorTimeline, coarseCoord, liveArrowStyle, liveArrowRotation, headingFromOrientation, smoothHeading, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -524,6 +524,38 @@ t("hourMeanSeries: an average of the preceding hour is read at the middle of its
   assert.strictEqual(interpSeries(mid, 630), 400);                   // 10:30 gets the 10:00-11:00 mean
   assert.strictEqual(interpSeries(raw, 630), 200);                   // unshifted it would be half of that
   assert.deepStrictEqual(raw, { t: [600, 660, 720], v: [0, 400, 600] }, "the original series is not changed");
+});
+// ---- Live
+t("coarseCoord: rounded to 0.1 deg (about 11 km), never -0", () => {
+  assert.strictEqual(coarseCoord(51.2649), 51.3); assert.strictEqual(coarseCoord(5.6149), 5.6);
+  assert.strictEqual(coarseCoord(-80.284), -80.3); assert.ok(Object.is(coarseCoord(-0.04), 0));
+});
+t("liveArrowStyle: thicker with every Beaufort force (capped), colour classes by force", () => {
+  const w = [0, 3, 8, 15, 24, 33, 44, 55, 68, 81, 95, 110, 130].map((k) => liveArrowStyle(k));
+  for (let i = 1; i < w.length; i++) assert.ok(w[i].width >= w[i - 1].width, "never thinner at more wind");
+  assert.strictEqual(liveArrowStyle(0).width, 6); assert.strictEqual(liveArrowStyle(200).width, 26);
+  assert.deepStrictEqual([0, 3, 8, 15, 24, 33, 44, 55, 68].map((k) => liveArrowStyle(k).cls), [0, 0, 1, 1, 2, 3, 4, 4, 5]);
+  assert.strictEqual(liveArrowStyle(24).beaufort, 4);
+});
+t("liveArrowRotation: points where the wind blows TO, relative to where the phone faces", () => {
+  assert.strictEqual(liveArrowRotation(0, 0), 180);      // north wind, phone to the north: arrow points down (south)
+  assert.strictEqual(liveArrowRotation(225, 0), 45);     // from SW: blows to NE
+  assert.strictEqual(liveArrowRotation(225, 45), 0);     // ... and facing NE it points straight ahead
+  assert.strictEqual(liveArrowRotation(270, 180), 270);  // from W, facing S: blows to E, which is on your left
+  assert.strictEqual(liveArrowRotation(90, undefined), 270);
+});
+t("headingFromOrientation: iOS compass heading, Chrome absolute alpha, nothing else; landscape correction", () => {
+  assert.strictEqual(headingFromOrientation({ webkitCompassHeading: 30 }, 0), 30);
+  assert.strictEqual(headingFromOrientation({ absolute: true, alpha: 90 }, 0), 270);    // alpha counter-clockwise
+  assert.strictEqual(headingFromOrientation({ absolute: false, alpha: 90 }, 0), null);  // relative orientation: no north
+  assert.strictEqual(headingFromOrientation({}, 0), null);
+  assert.strictEqual(headingFromOrientation({ webkitCompassHeading: 350 }, 90), 80);
+});
+t("smoothHeading: moves part of the way along the shorter arc, across north too", () => {
+  assert.strictEqual(smoothHeading(null, 120, 0.25), 120);
+  assert.strictEqual(smoothHeading(100, 140, 0.25), 110);
+  assert.strictEqual(smoothHeading(350, 10, 0.5), 0);                                   // through north, not the long way
+  assert.ok(Math.abs(smoothHeading(10, 350, 0.5) - 0) < 1e-9);
 });
 t("valueAtPlace: piecewise linear along the route, held beyond the end places", () => {
   const locs = [{ frac: 0, temp: { t: [0], v: [10] } }, { frac: 0.5, temp: { t: [0], v: [20] } }, { frac: 1, temp: { t: [0], v: [10] } }];
