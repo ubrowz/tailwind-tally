@@ -47,3 +47,13 @@ must list `com.ubrowz.tailwindtally` with the SHA-256 of the **Play app signing 
 Setup -> App signing). Also add the upload key's SHA-256 so locally installed test builds verify:
 `46:23:CA:BF:59:4B:E9:4B:AC:91:A2:2C:4F:75:9D:25:48:13:4B:BB:10:32:BC:6C:F0:19:67:CE:43:4A:C1:A4`.
 Without the file the app works but shows a URL bar.
+
+## Location (Live tab)
+
+`twa-manifest.json` has `features.locationDelegation` enabled, so the page's location request inside the
+app is answered by the app (library `com.google.androidbrowserhelper:locationdelegation`). It declares
+both ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION. FINE is kept on purpose: the library checks for it
+in its own code, so removing it would likely break Live. Android 12+ always lets the user pick
+"Approximate" in the prompt, and the page rounds the position to about 11 km before sending it
+(Data safety: approximate location only).
+

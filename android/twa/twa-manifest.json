@@ -26,8 +26,14 @@
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://ubrowz.github.io/tailwind-tally-beta/manifest.webmanifest",
   "fallbackType": "customtabs",
-  "features": {},
-  "alphaDependencies": { "enabled": false },
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": false,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
