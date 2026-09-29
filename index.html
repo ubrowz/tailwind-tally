@@ -5068,6 +5068,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var ua = navigator.userAgent || "";
   var embeddedIos = /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari\//.test(ua);
   var isPhone = /iPhone|iPod|Android.*Mobile/.test(ua);           // the app on an iPhone included
+  // Android (Chrome, and the Play Store app, which runs in Chrome): pulling down at the top of the page
+  // would reload it (pull-to-refresh) and lose the loaded route, which lives only in memory. Only on
+  // Android, so the iPhone app and Safari keep their usual scrolling feel.
+  if (/Android/.test(ua)) document.documentElement.style.overscrollBehaviorY = "contain";
   var phoneBrowser = !embeddedIos && isPhone;
   // The full text report is for larger screens too: a wall of monospaced text on a phone.
   document.getElementById("reportCard").hidden = isPhone;
