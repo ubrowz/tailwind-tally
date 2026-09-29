@@ -4989,6 +4989,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   document.getElementById("sweepTableToggle").hidden = isPhone;
   var tabHow = document.getElementById("tabHow"), panelHow = document.getElementById("panelHow");
   var tabLive = document.getElementById("tabLive"), panelLive = document.getElementById("panelLive");
+  // Inside the iOS app, Live needs app version 1.0.3 or newer: older apps cannot give the page a location
+  // or the compass. 1.0.3 installs its location bridge (LocationBridge.swift) before the page runs, which
+  // defines window.__ttLocationReply - so in an older app the tab is simply not shown. Safari, Android and
+  // computers always show it.
+  tabLive.hidden = embeddedIos && typeof window.__ttLocationReply !== "function";
   var howDirect = window.location.hash === "#how-it-works";
   tabHow.hidden = embeddedIos || (phoneBrowser && !howDirect);
   var howFooterLink = document.getElementById("howFooterLink");

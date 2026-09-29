@@ -32,6 +32,8 @@ final class LocationBridge: NSObject, WKScriptMessageHandler, CLLocationManagerD
     }
 
     /// Installed at document start: replaces getCurrentPosition on the app's own site only.
+    /// The page also uses `window.__ttLocationReply` to tell that the app supports Live
+    /// (1.0.3 and newer) - keep that name, or older-app detection in index.html breaks.
     var userScript: WKUserScript {
         let js = """
         (function () {
