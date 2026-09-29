@@ -25,6 +25,8 @@ targets:
         # it is rounded to about 11 km before it is sent to the weather service. Without this text iOS
         # refuses the web page's location request.
         NSLocationWhenInUseUsageDescription: "Tailwind Tally uses your approximate location, only when you tap \"Show the wind here\" on the Live tab, to show the wind where you are. It is rounded to about 11 km before it is sent to the weather service."
+        # Ask for the approximate location by default: the Live tab only needs the area.
+        NSLocationDefaultAccuracyReduced: true
         LSRequiresIPhoneOS: true
         UIRequiresFullScreen: false
         UISupportedInterfaceOrientations:

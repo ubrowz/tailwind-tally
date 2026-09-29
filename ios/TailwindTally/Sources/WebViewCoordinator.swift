@@ -28,7 +28,7 @@ import WebKit
 /// an accepted, deliberate tradeoff (no in-app address bar during
 /// Strava login specifically), not an oversight - while keeping the
 /// general navigation allowlist for everything else.
-final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate {
+final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
     @Published var isLoading = true
     @Published var loadError: String?
 
@@ -52,8 +52,21 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
     // fully into memory before it's even been looked at.
     private let maxIncomingFileBytes = 20 * 1024 * 1024
 
+    // The Live tab's location, answered natively (see LocationBridge).
+    lazy var locationBridge = LocationBridge(allowedHost: allowedHost)
+
     func attach(_ webView: WKWebView) {
         self.webView = webView
+        locationBridge.attach(webView)
+    }
+
+    // The Live tab's arrow turns with the phone's compass. In an app, WebKit only passes
+    // device orientation to a page if the app grants it here; without this the page gets
+    // nothing. Granted for the app's own site only (apps need no permission for the
+    // compass either), so there is no extra prompt.
+    func webView(_ webView: WKWebView, requestDeviceOrientationAndMotionPermissionFor origin: WKSecurityOrigin,
+                 initiatedByFrame frame: WKFrameInfo, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+        decisionHandler(origin.host == allowedHost ? .grant : .deny)
     }
 
     func reload(url: URL) {
