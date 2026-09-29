@@ -1,12 +1,46 @@
 # Tailwind Tally on Google Play - plan
 
-Status: plan only, nothing built yet (written 2026-09-28).
+Plan written 2026-09-28; work started 2026-09-29 on the git branch **`android`**
+(kept separate from `next` and the iOS app, so an iOS or website bug fix can
+always be released without the unfinished Android work).
 Goal: the same app Android users get from Google Play, with as little extra
 maintenance as possible - like the iOS app, it shows the live site, so every
 website release reaches Android too without a new store version.
 
 > Requirements marked **(check)** change over time. Confirm them in the Play
 > Console / Google's documentation at the moment you do that step.
+
+---
+
+## Status (2026-09-29)
+
+**Done** (branch `android`, on the beta site, not live):
+- Web app manifest (`manifest.webmanifest`) and Android icons (192, 512, maskable 512).
+- Android only: no pull-to-refresh and no stretch effect at the top/bottom of the page
+  (`overscroll-behavior-y: none` when the user agent is Android; iOS unchanged).
+- Upload key: `~/.android-keys/tailwind-tally-upload.jks` (alias `upload`), password in the macOS
+  Keychain as "Tailwind Tally Android upload key". **Keep a backup of this file.**
+- Android project `android/twa` (Bubblewrap TWA, `com.ubrowz.tailwindtally`, target Android 16 / API 36).
+  Build and signing steps: `android/twa/BUILD.md`.
+- Build 1.0.0 (1) signed: `android/twa/out/tailwind-tally-1.0.0.aab` (for Play) and `.apk` (for testing).
+  Tested on the emulator: works; shows an address bar until step 3 below is done.
+
+**Next steps:**
+0. **Play Console account** (you): personal account, 25 USD, identity verification, non-trader.
+   Verification can take a few days.
+1. **Create the app** in the Play Console: name "Tailwind Tally", package `com.ubrowz.tailwindtally`,
+   free, app (not game); enable Play App Signing.
+2. **Upload the `.aab` to a closed test** (Testing -> Closed testing), with a testers email list.
+3. **Add the verification file**: create repository `ubrowz/ubrowz.github.io` with `.nojekyll` and
+   `.well-known/assetlinks.json` holding the Play app signing key's SHA-256 (Play Console -> Setup ->
+   App signing) plus the upload key's SHA-256 (see `android/twa/BUILD.md`). The address bar then disappears.
+4. **Store listing and privacy forms**: descriptions, icon, feature graphic, Android screenshots, privacy
+   policy URL, Data safety, ads, app access, content rating, target audience (sections 5 and 6).
+5. **Invite the testers**: 12 or more (aim for 15-20), opted in for 14 days in a row, real use and a
+   feedback log (section 7). Then apply for production access.
+
+Before release: the Android website changes on `android` go live via `main` - check them first on the
+beta site, also in the iPhone app (Xcode Run), so iOS is known to be unaffected.
 
 ---
 
@@ -191,9 +225,9 @@ Start with the share target; test with Strava's app, Files and Gmail attachments
 ## 10. Order of work (checklist)
 
 1. [ ] Create the Play Console account (personal), verify identity, declare non-trader.
-2. [ ] Website (via `next` -> beta -> live): manifest, Android icons (incl. maskable).
-3. [ ] Create repo `ubrowz/ubrowz.github.io` with `.nojekyll` (assetlinks.json follows in step 6).
-4. [ ] Bubblewrap: init + build, keystore stored safely; Android project in `android/`.
+2. [x] Website (branch `android` -> beta; live later): manifest, Android icons (incl. maskable), no pull-to-refresh on Android.
+3. [ ] Create repo `ubrowz/ubrowz.github.io` with `.nojekyll` (assetlinks.json follows in step 6) - when the Play Console is ready.
+4. [x] Bubblewrap project in `android/twa`, keystore in `~/.android-keys/`, build 1.0.0 (1) signed and tested on the emulator.
 5. [ ] Create the app in Play Console (`com.ubrowz.tailwindtally`), enable Play App Signing, upload the first `.aab` to closed testing.
 6. [ ] Put the Play signing key's SHA-256 in `assetlinks.json`; confirm the URL bar disappears.
 7. [ ] Store listing: descriptions, icon, feature graphic, Android screenshots, privacy URL.
