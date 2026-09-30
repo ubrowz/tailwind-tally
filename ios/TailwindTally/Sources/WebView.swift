@@ -11,10 +11,14 @@ struct WebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         // The page runs entirely client-side except for its own backend
-        // calls (tile proxy, Strava import) - nothing here needs extra
-        // WKWebView configuration beyond the defaults.
+        // calls (tile proxy, Strava import). One addition: the Live tab's
+        // location comes from the app (LocationBridge), not from WebKit.
+        let bridge = coordinator.locationBridge
+        configuration.userContentController.addUserScript(bridge.userScript)
+        configuration.userContentController.add(WeakScriptMessageHandler(bridge), name: LocationBridge.handlerName)
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = coordinator
+        webView.uiDelegate = coordinator
         webView.allowsBackForwardNavigationGestures = true
         coordinator.attach(webView)
         webView.load(URLRequest(url: url))
