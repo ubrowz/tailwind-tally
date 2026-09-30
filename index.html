@@ -2942,6 +2942,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     return out;
   }
+  // The clock periods of the thunderstorm runs at minLevel or higher, with runs that touch (or are
+  // within a minute of each other) merged into one period: 10:30-12:00 "possible" and 12:00-13:00
+  // "likely" are one period 10:30-13:00 at level 1, and 12:00-13:00 at level 2. -> [{ fromT, toT }]
+  function stormPeriods(runs, minLevel) {
+    var out = [];
+    runs.forEach(function (w) {
+      if (w.level < minLevel) return;
+      var last = out[out.length - 1];
+      if (last && w.fromT - last.toT <= 1) last.toT = Math.max(last.toT, w.toT);
+      else out.push({ fromT: w.fromT, toT: w.toT });
+    });
+    return out;
+  }
   // What the ride meets. mm, prob (or null) and dtMin (minutes spent on the segment) are indexed by
   // segment. Wet = at least 0.1 mm/h. runs: stretches of one class, in ride order.
   function rainDirectionStats(lengths, mm, prob, dtMin) {
@@ -4019,9 +4032,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         tx(" Peak ", " Piek ") + fmtRainRate(a.peakMm, 1) + (probText ? ", " + probText : "") +
         tx(". About ", ". Ongeveer ") + fmtRainMm(a.accumMm, 1) + tx(" falls on you during the ride.", " valt er tijdens de rit op je.");
     if (rn.fwd.stormRuns.length) {
-      var worstLvl = Math.max.apply(null, rn.fwd.stormRuns.map(function (w) { return w.level; }));
-      summary.innerHTML += " <b>" + (worstLvl === 2 ? tx("Thunderstorm likely", "Onweer waarschijnlijk") : tx("Thunderstorms possible", "Onweer mogelijk")) + "</b>" + tx(" around ", " rond ") +
-        rn.fwd.stormRuns.map(function (w) { return fmtHM(w.fromT) + "\u2013" + fmtHM(w.toT); }).join(", ") + tx(" (see the chart below).", " (zie de grafiek hieronder).");
+      // One sentence: the whole period in which a thunderstorm is at least possible, and within it
+      // the part where it is likely - or just "likely" when that covers all of it.
+      var anyStorm = stormPeriods(rn.fwd.stormRuns, 1), likelyStorm = stormPeriods(rn.fwd.stormRuns, 2);
+      var spans = function (ps) { return ps.map(function (w) { return fmtHM(w.fromT) + "\u2013" + fmtHM(w.toT); }).join(", "); };
+      var allLikely = likelyStorm.length > 0 && spans(likelyStorm) === spans(anyStorm);
+      summary.innerHTML += " <b>" + (allLikely ? tx("Thunderstorm likely", "Onweer waarschijnlijk") : tx("Thunderstorms possible", "Onweer mogelijk")) + "</b>" +
+        tx(" around ", " rond ") + spans(anyStorm) +
+        (likelyStorm.length && !allLikely ? tx(", <b>likely</b> around ", ", <b>waarschijnlijk</b> rond ") + spans(likelyStorm) : "") +
+        tx(" (see the chart below).", " (zie de grafiek hieronder).");
     }
 
     var colors = rainClassColors();
