@@ -317,7 +317,7 @@
   /* ---------- Wind control ---------- */
   .wind-control { display: flex; gap: 18px; align-items: center; }
   .compass-col { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
-  .compass-legend { display: grid; grid-template-columns: auto auto; gap: 3px 14px; font-size: 11.5px; color: var(--ink-secondary); max-width: 250px; }
+  .compass-legend { display: grid; grid-template-columns: auto auto; gap: 3px 14px; font-size: 11.5px; color: var(--ink-secondary); max-width: 230px; }
   .compass-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .compass-legend-title { grid-column: 1 / -1; margin: 0 0 2px; font-size: 11.5px; color: var(--ink-muted); text-align: center; }
   .compass-legend .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; opacity: 0.85; }
@@ -327,6 +327,8 @@
   .compass-legend .sw.hard { background: var(--status-critical); }
   .compass-legend .sw.veryhard { background: var(--status-critical-strong); }
   .compass-legend .sw.arrow { opacity: 1; height: 3px; border-radius: 2px; background: var(--accent); }
+  /* the arrow's line is the longest: its own row across both columns, and it may wrap */
+  .compass-legend > span.legend-arrow { grid-column: 1 / -1; white-space: normal; justify-content: center; }
   .compass-dial {
     margin: 26px;
     position: relative;
@@ -1710,7 +1712,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <span><i class="sw neutral"></i><span data-nl="Zijwind">Crosswind</span></span>
         <span><i class="sw hard"></i><span data-nl="Tegenwind">Headwind</span></span>
         <span><i class="sw veryhard"></i><span data-nl="Volle tegenwind">Full headwind</span></span>
-        <span><i class="sw arrow"></i><span data-nl="Pijl: waar de wind heen waait">Arrow: where the wind blows to</span></span>
+        <span class="legend-arrow"><i class="sw arrow"></i><span data-nl="Pijl: waar de wind heen waait">Arrow: where the wind blows to</span></span>
       </div>
       </div>
       <div class="wind-fields">
