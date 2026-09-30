@@ -569,6 +569,11 @@
   .live-extra li:last-child { border-bottom: 1px solid var(--border); }
   .live-extra b { color: var(--ink); }
   .live-extra .live-warn { color: var(--status-warning); font-weight: 600; }
+  /* The short message after Save image: the file name and where to find it. */
+  .save-toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1000;
+    width: max-content; max-width: min(92vw, 520px); background: var(--ink); color: var(--paper); padding: 10px 14px; border-radius: 10px;
+    font-size: 13.5px; line-height: 1.45; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25); }
+  .save-toast[hidden] { display: none; }
   .tabbar { display: flex; gap: 6px; padding: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-card); }
   .tabbar button {
     flex: 1 1 0;
@@ -2171,6 +2176,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <pre class="report" id="reportText"></pre>
   </div>
 
+  <div class="save-toast" id="saveToast" role="status" aria-live="polite" hidden></div>
   <footer>
     <span data-nl="Geometrie: equirectangulaire projectie rond het middelpunt van de route, op vaste afstanden langs de route herbemonsterd voordat de richting wordt gemeten.">Geometry: equirectangular projection about the route centroid, resampled to fixed arc-length spacing before heading is measured.</span>
     <div style="margin-top: 8px;"><a href="privacy.html" id="privacyLink" style="color: inherit;" data-nl="Privacybeleid">Privacy Policy</a></div>
@@ -2236,7 +2242,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
                       "'" + text + "' is geen windrichting (N, NO, NNO, ...) of aantal graden."));
   }
 
-  // The English code (file names use it); degreesToCompass16 gives the one for the page's language.
+  // The English code; degreesToCompass16 gives the one for the page's language.
   function compassCodeEn(deg) {
     var idx = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16;
     return COMPASS_16[idx][0];
@@ -5982,6 +5988,54 @@ svg.leaflet-image-layer.leaflet-interactive path {
     window.claude.use("downloads").then(function (ns) { downloadsCapability = ns; }).catch(function () {});
   }
 
+  // Where a saved image goes. On an iPhone (Safari and the app) the iOS share sheet, through the
+  // Web Share API: the app's web view cannot download at all, and the share sheet offers Files,
+  // AirDrop, Messages, WhatsApp... Elsewhere a normal download (the Downloads folder).
+  // -> Promise of "shared", "saved" or "cancelled".
+  var isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent || "");
+  function deliverImage(blob, filename) {
+    if (isIOSDevice && typeof navigator.share === "function" && typeof File === "function") {
+      var file = new File([blob], filename, { type: "image/png" });
+      if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file] }).then(function () { return "shared"; }, function (err) {
+          if (err && err.name === "AbortError") return "cancelled";
+          throw err;
+        });
+      }
+    }
+    if (downloadsCapability) {
+      return downloadsCapability.save({ filename: filename, data: blob }).then(function () { return "saved"; }).catch(function (err) {
+        if (err && err.code === "declined") return "cancelled";
+        triggerBrowserDownload(blob, filename);
+        return "saved";
+      });
+    }
+    triggerBrowserDownload(blob, filename);
+    return Promise.resolve("saved");
+  }
+  // "Tailwind Tally - Route (wind) - Miami - 2026-09-30.png": what it is, which route, which day
+  // (the ride date with a forecast, otherwise today).
+  function imageName(what) {
+    var route = state.isExample ? tx("Sample loop", "Voorbeeldronde") : String(state.fileLabel || "").replace(/\.gpx$/i, "");
+    var day = new Date(), today = day.getFullYear() + "-" + pad2(day.getMonth() + 1) + "-" + pad2(day.getDate());
+    var date = (state.windTimeline || state.timeline || state.rainTimeline) && /^\d{4}-\d\d-\d\d$/.test(fcDate.value) ? fcDate.value : today;
+    var name = ["Tailwind Tally", what, route, date].filter(function (x) { return x; }).join(" - ");
+    return name.replace(/[\\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim().slice(0, 120) + ".png";
+  }
+  // A short message after saving: the name, and where to find it.
+  var toastTimer = null;
+  function imageDelivered(outcome, filename) {
+    var el = document.getElementById("saveToast");
+    if (outcome !== "saved" && outcome !== "shared") return;
+    el.textContent = outcome === "shared"
+      ? tx("Shared as \u201c" + filename + "\u201d. With \u201cSave to Files\u201d you will find it in the Files app, in the folder you chose.",
+           "Gedeeld als \u201c" + filename + "\u201d. Met \u201cBewaar in Bestanden\u201d vind je het in de app Bestanden, in de map die je koos.")
+      : tx("Saved as \u201c" + filename + "\u201d in your Downloads folder.", "Opgeslagen als \u201c" + filename + "\u201d in je map Downloads.");
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.hidden = true; }, 7000);
+  }
+
   function triggerBrowserDownload(blob, filename) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
@@ -6054,18 +6108,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       btn.disabled = true;
       btn.textContent = tx("Preparing\u2026", "Voorbereiden\u2026");
       svgStringToPngBlob(svgString, vb[2], vb[3], 2).then(function (blob) {
-        if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
-        return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
-          return "saved";
-        }).catch(function (err) {
-          if (err && err.code === "declined") return "cancelled";
-          triggerBrowserDownload(blob, filename);
-          return "saved";
-        });
+        return deliverImage(blob, filename);
       }).catch(function () {
         return "error";
       }).then(function (outcome) {
-        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
+        imageDelivered(outcome, filename);
+        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "shared" ? tx("Shared", "Gedeeld")
+          : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
         setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
       });
     });
@@ -6235,23 +6284,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
         return;
       }
       var prevText = btn.textContent;
-      var filename = state.view === "temp" ? "tailwind-tally-route-temperature.png" : state.view === "rain" ? "tailwind-tally-route-rain.png"
-        : "tailwind-tally-route-" + compassCodeEn(state.windFromDeg) + ".png";
+      var filename = imageName(state.view === "temp" ? tx("Route (temperature)", "Route (temperatuur)") : state.view === "rain" ? tx("Route (rain)", "Route (regen)")
+        : tx("Route (wind)", "Route (wind)"));
       btn.disabled = true;
       btn.textContent = tx("Preparing\u2026", "Voorbereiden\u2026");
       exportMapToPngBlob(lastResult).then(function (blob) {
-        if (!downloadsCapability) { triggerBrowserDownload(blob, filename); return "saved"; }
-        return downloadsCapability.save({ filename: filename, data: blob }).then(function () {
-          return "saved";
-        }).catch(function (err) {
-          if (err && err.code === "declined") return "cancelled";
-          triggerBrowserDownload(blob, filename);
-          return "saved";
-        });
+        return deliverImage(blob, filename);
       }).catch(function () {
         return "error";
       }).then(function (outcome) {
-        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
+        imageDelivered(outcome, filename);
+        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "shared" ? tx("Shared", "Gedeeld")
+          : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
         setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
       });
     });
@@ -6259,18 +6303,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   bindSaveMapButton("saveRouteBtn");
 
-  bindSaveImageButton("saveSweepBtn", "polarSvg", function () {
-    return "tailwind-tally-sweep-" + compassCodeEn(state.windFromDeg) + ".png";
-  });
-  bindSaveImageButton("saveWindRideBtn", "windRideSvg", function () {
-    return "tailwind-tally-wind-during-ride.png";
-  });
-  bindSaveImageButton("saveTempRideBtn", "tempRideSvg", function () {
-    return "tailwind-tally-temperature-during-ride.png";
-  });
-  bindSaveImageButton("saveRainRideBtn", "rainRideSvg", function () {
-    return "tailwind-tally-rain-during-ride.png";
-  });
+  bindSaveImageButton("saveSweepBtn", "polarSvg", function () { return imageName(tx("Wind directions", "Windrichtingen")); });
+  bindSaveImageButton("saveWindRideBtn", "windRideSvg", function () { return imageName(tx("Wind during the ride", "Wind tijdens de rit")); });
+  bindSaveImageButton("saveTempRideBtn", "tempRideSvg", function () { return imageName(tx("Temperature during the ride", "Temperatuur tijdens de rit")); });
+  bindSaveImageButton("saveRainRideBtn", "rainRideSvg", function () { return imageName(tx("Rain during the ride", "Regen tijdens de rit")); });
 
   // Info popovers: the "?" buttons next to labels and titles that hold the explanations, and
   // the one in the Wind sensitivity callout. Elements marked .info-pop in the markup (with a
