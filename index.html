@@ -328,16 +328,30 @@
   .compass-dial::before {
     content: "";
     position: absolute;
-    inset: 22px;
+    inset: 34px;
     border-radius: 50%;
     border: 1px dashed var(--grid);
+    background: var(--panel-raised);
+    z-index: 1;
   }
+  /* The riding directions coloured like the route map (full tailwind ... full headwind) for
+     the current wind; the centre is covered by ::before so the readout stays plain. */
+  .compass-bands {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .compass-tick, .compass-point, .compass-arrow, .compass-readout { z-index: 2; }
   .compass-tick {
     position: absolute;
     top: 50%; left: 50%;
     font-family: var(--font-display);
     font-size: 9.5px;
-    color: var(--ink-muted);
+    font-weight: 600;
+    color: var(--ink);
     transform: rotate(var(--ang)) translate(0, -74px) rotate(calc(-1 * var(--ang)));
     pointer-events: none;
   }
@@ -1681,6 +1695,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <h2>Wind</h2>
     <div class="wind-control">
       <div class="compass-dial" id="compassDial">
+        <div class="compass-bands" id="compassBands" aria-hidden="true"></div>
         <div class="compass-arrow" id="compassArrow"></div>
         <div class="compass-readout">
           <span class="deg mono" id="readoutDeg">225&deg;</span>
@@ -1689,7 +1704,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div class="wind-fields">
         <div class="field">
-          <label for="windInput"><span data-nl="Wind uit">Wind from</span> <span class="info-pop" data-about="the wind direction" data-nl="Een windrichting met 16 streken (N, NNO, NO &hellip; NNW) of een koers in graden.">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees.</span></label>
+          <label for="windInput"><span data-nl="Wind uit">Wind from</span> <span class="info-pop" data-about="the wind direction" data-nl="Een windrichting met 16 streken (N, NNO, NO &hellip; NNW) of een koers in graden. De gekleurde ring rond het kompas toont voor elke richting waarin je zou kunnen fietsen wat de wind dan is, in dezelfde kleuren als de routekaart: groen rugwind, rood tegenwind, grijs zijwind; donkerder is vol mee of vol tegen.">A 16-point compass code (N, NNE, NE &hellip; NNW) or a bearing in degrees. The coloured ring around the compass shows, for every direction you could ride, what that wind is, in the same colours as the route map: green tailwind, red headwind, grey crosswind; darker means dead-on.</span></label>
           <input type="text" id="windInput" value="SW" autocomplete="off" spellcheck="false">
           <p class="field-hint" id="windTimelineHint" hidden></p>
         </div>
@@ -2931,6 +2946,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // END rain-pure
 
   // ---- Reversing the route ------------------------------------------------------
+  // ---- Compass ring: what the wind is for every riding direction ------------------------
+  // BEGIN bands-pure
+  // Runs of riding directions (degrees clockwise from north) with the same five-way class as the
+  // route map (classifyFiveWay: neutral checked first, then the "full" bands), for a wind FROM
+  // windFromDeg. -> [{ from, to, cat }] covering 0..360, sampled every step degrees (default 0.25).
+  function compassBands(windFromDeg, neutralDeg, veryDeg, step) {
+    step = step || 0.25;
+    var toward = windFromDeg + 180, runs = [];
+    function cat(h) {
+      var angle = Math.abs(((h - toward) % 360 + 540) % 360 - 180);     // 0 = straight downwind
+      if (angle === 90 || Math.abs(angle - 90) < neutralDeg / 2) return "neutral";
+      if (angle < veryDeg / 2) return "veryeasy";
+      if (angle > 180 - veryDeg / 2) return "veryhard";
+      return angle < 90 ? "easy" : "hard";
+    }
+    for (var h = 0; h < 360; h += step) {
+      var c = cat(h + step / 2), last = runs[runs.length - 1];
+      if (last && last.cat === c) last.to = h + step; else runs.push({ from: h, to: h + step, cat: c });
+    }
+    return runs;
+  }
+  // END bands-pure
+
   // BEGIN mirror-pure
   // When the route is reversed, what was fetched for it stays valid: the same places are
   // met from the other end. Positions along the route (fractions 0..1, distances) turn
@@ -5831,6 +5869,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     readoutDeg.textContent = Math.round(state.windFromDeg) + "\u00b0";
     readoutCode.textContent = degreesToCompass16(state.windFromDeg);
     compassArrow.style.transform = "rotate(" + ((state.windFromDeg + 180) % 360) + "deg)";
+    var bandColor = { veryeasy: "var(--status-good-strong)", easy: "var(--status-good)", neutral: "var(--status-neutral)",
+                      hard: "var(--status-critical)", veryhard: "var(--status-critical-strong)" };
+    document.getElementById("compassBands").style.background = result.fiveWay.isCalm ? "var(--accent)"
+      : "conic-gradient(" + compassBands(state.windFromDeg, state.neutralDeg, state.veryDeg).map(function (r) {
+          return bandColor[r.cat] + " " + r.from.toFixed(2) + "deg " + r.to.toFixed(2) + "deg";
+        }).join(", ") + ")";
     document.querySelectorAll(".compass-point").forEach(function (btn) {
       btn.classList.toggle("active", Math.abs(parseFloat(btn.dataset.deg) - state.windFromDeg) < 0.01);
     });
