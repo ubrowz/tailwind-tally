@@ -325,36 +325,17 @@
     background: var(--panel-raised);
     flex: none;
   }
-  .compass-dial::before {
-    content: "";
-    position: absolute;
-    inset: 34px;
-    border-radius: 50%;
-    border: 1px dashed var(--grid);
-    background: var(--panel-raised);
-    z-index: 1;
-  }
-  /* The riding directions coloured like the route map (full tailwind ... full headwind) for
-     the current wind; the centre is covered by ::before so the readout stays plain. */
+  /* A pie of the riding directions, coloured like the route map (full tailwind ... full headwind)
+     for the current wind. */
   .compass-bands {
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    opacity: 0.55;
+    opacity: 0.85;
     pointer-events: none;
     z-index: 0;
   }
-  .compass-tick, .compass-point, .compass-arrow, .compass-readout { z-index: 2; }
-  .compass-tick {
-    position: absolute;
-    top: 50%; left: 50%;
-    font-family: var(--font-display);
-    font-size: 9.5px;
-    font-weight: 600;
-    color: var(--ink);
-    transform: rotate(var(--ang)) translate(0, -74px) rotate(calc(-1 * var(--ang)));
-    pointer-events: none;
-  }
+  .compass-point, .compass-arrow, .compass-readout { z-index: 2; }
   .compass-point {
     position: absolute;
     top: 50%; left: 50%;
@@ -412,6 +393,8 @@
     pointer-events: none;
   }
   .compass-readout .deg { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+  /* a small label behind the readout, so it stays readable on the pie's colours */
+  .compass-readout .deg, .compass-readout .code { background: var(--panel); border-radius: 6px; padding: 0 6px; line-height: 1.35; }
   .compass-readout .code { font-size: 11px; color: var(--ink-muted); letter-spacing: 0.04em; }
 
   .wind-fields { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; }
@@ -4868,7 +4851,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var compassArrow = document.getElementById("compassArrow");
   var compassDial = document.getElementById("compassDial");
 
-  COMPASS_16.forEach(function (pair, idx) {
+  COMPASS_16.forEach(function (pair) {
     var btn = document.createElement("div");
     btn.className = "compass-point";
     btn.dataset.code = pair[0];
@@ -4879,12 +4862,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     btn.addEventListener("click", function () { setWind(pair[1]); });
     btn.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setWind(pair[1]); } });
     compassDial.appendChild(btn);
-
-    var tick = document.createElement("div");
-    tick.className = "compass-tick";
-    tick.style.setProperty("--ang", pair[1] + "deg");
-    if (idx % 4 === 0) tick.dataset.code = pair[0];
-    compassDial.appendChild(tick);
   });
   // The dial's letters follow the language (Dutch: O and Z for E and S).
   function syncCompassLabels() {
@@ -4892,7 +4869,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       b.textContent = compassLocal(b.dataset.code);
       b.setAttribute("aria-label", tx("Wind from ", "Wind uit ") + compassLocal(b.dataset.code));
     });
-    compassDial.querySelectorAll(".compass-tick[data-code]").forEach(function (t) { t.textContent = compassLocal(t.dataset.code); });
   }
 
   function setWind(deg) {
