@@ -6279,8 +6279,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   function placeInfo(pop) {                    // keep the popover inside the window
     pop.style.left = "0px";
+    // The page's real width, not window.innerWidth: Chrome on Android widens innerWidth to fit a
+    // popover that sticks out on the right, so measured against it the popover never moved back.
+    var vw = document.documentElement.clientWidth || window.innerWidth;
     var r = pop.getBoundingClientRect(), left = 0;
-    if (r.right > window.innerWidth - 12) left -= r.right - (window.innerWidth - 12);
+    if (r.right > vw - 12) left -= r.right - (vw - 12);
     if (r.left + left < 12) left += 12 - (r.left + left);
     pop.style.left = left + "px";
   }
