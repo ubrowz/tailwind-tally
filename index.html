@@ -6012,7 +6012,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // AirDrop, Messages, WhatsApp... Elsewhere a normal download (the Downloads folder).
   // -> Promise of "shared", "saved" or "cancelled".
   var isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent || "");
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(String(fr.result).split(",")[1] || ""); };
+      fr.onerror = reject;
+      fr.readAsDataURL(blob);
+    });
+  }
+  // The iOS app from 1.0.4 on saves straight into Photos (PhotoSaver.swift defines
+  // window.__ttSaveImage); without Photos access it falls back to the share sheet below.
   function deliverImage(blob, filename) {
+    if (typeof window.__ttSaveImage === "function") {
+      return blobToBase64(blob).then(function (b64) { return window.__ttSaveImage(filename, b64); }).then(function (result) {
+        if (result === "saved") return "photos";
+        if (result === "denied") { photosDenied = true; return shareOrDownload(blob, filename); }
+        throw new Error("could not save to Photos");
+      });
+    }
+    return shareOrDownload(blob, filename);
+  }
+  var photosDenied = false;
+  function shareOrDownload(blob, filename) {
     if (isIOSDevice && typeof navigator.share === "function" && typeof File === "function") {
       var file = new File([blob], filename, { type: "image/png" });
       if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
@@ -6045,8 +6066,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
   var toastTimer = null;
   function imageDelivered(outcome, filename) {
     var el = document.getElementById("saveToast");
-    if (outcome !== "saved" && outcome !== "shared") return;
-    el.textContent = outcome === "shared"
+    if (outcome !== "saved" && outcome !== "shared" && outcome !== "photos") return;
+    el.textContent = outcome === "photos"
+      ? tx("Saved in Photos as \u201c" + filename + "\u201d.", "Bewaard in Foto\u2019s als \u201c" + filename + "\u201d.")
+      : photosDenied && outcome === "shared"
+      ? tx("No access to Photos, so it went to the share sheet. To save straight to Photos, allow it in Settings \u203a Tailwind Tally \u203a Photos.",
+           "Geen toegang tot Foto\u2019s, dus het ging via het deelvenster. Om direct in Foto\u2019s te bewaren: sta het toe in Instellingen \u203a Tailwind Tally \u203a Foto\u2019s.")
+      : outcome === "shared"
       ? tx("Shared as \u201c" + filename + "\u201d. With \u201cSave to Files\u201d you will find it in the Files app, in the folder you chose.",
            "Gedeeld als \u201c" + filename + "\u201d. Met \u201cBewaar in Bestanden\u201d vind je het in de app Bestanden, in de map die je koos.")
       : tx("Saved as \u201c" + filename + "\u201d in your Downloads folder.", "Opgeslagen als \u201c" + filename + "\u201d in je map Downloads.");
@@ -6132,7 +6158,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         return "error";
       }).then(function (outcome) {
         imageDelivered(outcome, filename);
-        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "shared" ? tx("Shared", "Gedeeld")
+        btn.textContent = outcome === "saved" || outcome === "photos" ? tx("Saved", "Opgeslagen") : outcome === "shared" ? tx("Shared", "Gedeeld")
           : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
         setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
       });
@@ -6313,7 +6339,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         return "error";
       }).then(function (outcome) {
         imageDelivered(outcome, filename);
-        btn.textContent = outcome === "saved" ? tx("Saved", "Opgeslagen") : outcome === "shared" ? tx("Shared", "Gedeeld")
+        btn.textContent = outcome === "saved" || outcome === "photos" ? tx("Saved", "Opgeslagen") : outcome === "shared" ? tx("Shared", "Gedeeld")
           : outcome === "error" ? tx("Couldn't render", "Mislukt") : prevText;
         setTimeout(function () { btn.textContent = prevText; btn.disabled = false; }, 1500);
       });

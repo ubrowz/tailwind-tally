@@ -54,10 +54,13 @@ final class WebViewCoordinator: NSObject, ObservableObject, WKNavigationDelegate
 
     // The Live tab's location, answered natively (see LocationBridge).
     lazy var locationBridge = LocationBridge(allowedHost: allowedHost)
+    // "Save image" straight into Photos (see PhotoSaver).
+    lazy var photoSaver = PhotoSaver(allowedHost: allowedHost)
 
     func attach(_ webView: WKWebView) {
         self.webView = webView
         locationBridge.attach(webView)
+        photoSaver.attach(webView)
     }
 
     // The Live tab's arrow turns with the phone's compass. In an app, WebKit only passes
