@@ -16,6 +16,10 @@ struct WebView: UIViewRepresentable {
         let bridge = coordinator.locationBridge
         configuration.userContentController.addUserScript(bridge.userScript)
         configuration.userContentController.add(WeakScriptMessageHandler(bridge), name: LocationBridge.handlerName)
+        // ... and "Save image" puts the image in Photos through the app (PhotoSaver).
+        let saver = coordinator.photoSaver
+        configuration.userContentController.addUserScript(saver.userScript)
+        configuration.userContentController.add(WeakScriptMessageHandler(saver), name: PhotoSaver.handlerName)
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = coordinator
         webView.uiDelegate = coordinator

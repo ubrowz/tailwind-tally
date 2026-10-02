@@ -30,9 +30,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.3</string>
+	<string>1.0.4</string>
 	<key>CFBundleVersion</key>
-	<string>4</string>
+	<string>5</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
@@ -48,6 +48,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Tailwind Tally uses your approximate location, only when you tap "Show the wind here" on the Live tab, to show the wind where you are. It is rounded to about 11 km before it is sent to the weather service.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Tailwind Tally saves the images you make with "Save image" (route maps and charts) to your photo library.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		08FEBEF65F8FBE6E553B8AD7 /* PhotoSaver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A181BA6E9477FC9004A829 /* PhotoSaver.swift */; };
 		17CC197054494947B0F94DB0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 91FB631CB42A6C6691DFBE6D /* Assets.xcassets */; };
 		429D2F2C8E63D7D0FDE7B392 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD7DFAF787DB9F1A4388AF3F /* WebView.swift */; };
 		8D1C3FD55D0130E09CDA482B /* TailwindTallyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C959175A31390C7A938C7B02 /* TailwindTallyApp.swift */; };
@@ -16,6 +17,7 @@
 
 /* Begin PBXFileReference section */
 		6FAD3123A3C2207101A58D5D /* LocationBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationBridge.swift; sourceTree = "<group>"; };
+		71A181BA6E9477FC9004A829 /* PhotoSaver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSaver.swift; sourceTree = "<group>"; };
 		829DEA7DB578AA8CE9AB07A2 /* TailwindTally.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TailwindTally.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		91FB631CB42A6C6691DFBE6D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BFFB9939C1A7C2F8A141C685 /* WebViewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewCoordinator.swift; sourceTree = "<group>"; };
@@ -45,6 +47,7 @@
 			isa = PBXGroup;
 			children = (
 				6FAD3123A3C2207101A58D5D /* LocationBridge.swift */,
+				71A181BA6E9477FC9004A829 /* PhotoSaver.swift */,
 				C959175A31390C7A938C7B02 /* TailwindTallyApp.swift */,
 				FD7DFAF787DB9F1A4388AF3F /* WebView.swift */,
 				BFFB9939C1A7C2F8A141C685 /* WebViewCoordinator.swift */,
@@ -132,6 +135,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB868946663A232DA1E9E490 /* LocationBridge.swift in Sources */,
+				08FEBEF65F8FBE6E553B8AD7 /* PhotoSaver.swift in Sources */,
 				8D1C3FD55D0130E09CDA482B /* TailwindTallyApp.swift in Sources */,
 				429D2F2C8E63D7D0FDE7B392 /* WebView.swift in Sources */,
 				B0E96728FC05E18953F63C75 /* WebViewCoordinator.swift in Sources */,
@@ -211,7 +215,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = DU36G32ZCV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/Info.plist;
@@ -220,7 +224,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ubrowz.tailwindtally;
 				PRODUCT_NAME = "Tailwind Tally";
 				SDKROOT = iphoneos;
@@ -236,7 +240,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = DU36G32ZCV;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Resources/Info.plist;
@@ -245,7 +249,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ubrowz.tailwindtally;
 				PRODUCT_NAME = "Tailwind Tally";
 				SDKROOT = iphoneos;
