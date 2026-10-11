@@ -1785,6 +1785,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <h2><span id="effortTitle">Effort by part of the route</span> <span class="info-pop" id="halfCaption" data-about="this card"></span></h2>
       <div class="half-grid" id="halfGrid"></div>
       <p class="half-verdict" id="halfVerdict"></p>
+      <p class="half-verdict" id="calorieLine"><span id="calorieText"></span> <span class="info-pop" data-about="the calories" data-nl="Een ruwe schatting: het extra (of bespaarde) werk tegen de wind, omgerekend naar voedingsenergie met de vuistregel dat 1 kJ werk op de pedalen ongeveer 1 kcal kost (het lichaam zet zo&rsquo;n kwart van wat het verbrandt om in trapwerk). Alleen het verschil met een windstille dag op dezelfde route wordt getoond, bij dezelfde snelheid (bij Constant vermogen: hetzelfde vermogen). Heuvels en je basaal metabolisme zijn op beide dagen gelijk en vallen weg. Het model rekent met een vlakke weg; wind op klimmetjes en afdalingen, uit de wind rijden, je echte CdA en je eigen rendement (18&ndash;25%) veranderen het getal, daarom is het afgerond.">A rough figure: the extra (or saved) work against the wind, turned into food energy with the rule of thumb that 1 kJ of work at the pedals costs about 1 kcal (the body turns about a quarter of what it burns into pedalling). Only the difference with a calm day on the same route is shown, at the same speed (with Steady power: the same power). Hills and your basal metabolism are the same on both days and drop out. The model assumes a flat road; wind on climbs and descents, drafting, your real CdA and your own efficiency (18&ndash;25%) change the number, so it is rounded.</span></p>
     </div>
   </div>
 
@@ -3494,6 +3495,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
     out.minutes = t - o.startMin;
     return out;
   }
+  // The extra work (kJ) the wind asks of a rider who holds speed vMs over the
+  // route, compared with a calm day at the same speed: per segment the power
+  // difference times the time spent there (length / vMs). wMs is one wind
+  // speed or one per segment; cosphi as in windEffortStats (1 = pure tailwind).
+  // A rider cannot put in negative power: where a strong tailwind would push
+  // them faster than vMs they freewheel, so that segment costs 0, not less.
+  // Negative total = the wind saves work. Flat road; hills and basal
+  // metabolism are the same on both days and drop out of the difference.
+  function windEnergyDeltaKj(lengths, cosphi, vMs, wMs, rho, rider) {
+    if (!(vMs > 0)) return 0;
+    var kj = 0, wArr = Array.isArray(wMs), calmW = powerForSpeed(vMs, rho, rider);
+    for (var i = 0; i < lengths.length; i++) {
+      var w = wArr ? wMs[i] : wMs, c = cosphi[i];
+      var p = Math.max(0, powerAtSpeed(vMs, w * c, w * Math.sqrt(Math.max(0, 1 - c * c)), rho, rider));
+      kj += (p - calmW) * (lengths[i] / vMs) / 1000;
+    }
+    return kj;
+  }
+  // Food energy for mechanical work: the body turns roughly a quarter of what it
+  // burns into work at the pedals (gross efficiency ~24%), and 1 kcal = 4.184 kJ,
+  // so 1 kJ of work costs about 1 kcal. Real efficiency is 18-25%, so the result
+  // is a rough figure.
+  var KCAL_PER_KJ_WORK = 1;
   // END power-pure
 
 
@@ -3624,6 +3648,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       };
       rideInfo = { mode: "power", powerW: powerW, rider: rider, calmMinutes: calmMin, forward: summarise(profF, fwd) };
     }
+    // Calories the wind costs (or saves) compared with a calm day on the same route.
+    // Steady power: same power, the time difference is the energy difference.
+    // Steady speed: the extra power at the same speed, segment by segment.
+    effort.windKcal = KCAL_PER_KJ_WORK * (powerMode
+      ? powerW * (rideInfo.forward.minutes - rideInfo.calmMinutes) * 60 / 1000
+      : windEnergyDeltaKj(lengths, cosphiFwd, vMs, wFwd, airDensity(tempC), (ride && ride.rider) || RIDER_DEFAULTS));
 
     // How it feels while riding: per segment, from the relative airspeed on
     // that segment (wind chill when cold, apparent temperature when mild or
@@ -4483,7 +4513,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
     document.getElementById("halfVerdict").innerHTML = "";
   }
 
+  // One line under the effort / ride time card: the calories the wind costs or
+  // saves compared with a calm day. Only a difference, never an absolute number.
+  function renderCalories(result) {
+    var kcal = Math.round(result.effort.windKcal / 10) * 10, a = Math.abs(kcal);
+    document.getElementById("calorieText").innerHTML = !isFinite(kcal) || a < 10
+      ? tx("The wind makes hardly any difference to the calories you burn on this route, compared with a calm day.",
+           "De wind maakt op deze route nauwelijks verschil in de calorie&euml;n die je verbrandt, vergeleken met een windstille dag.")
+      : kcal > 0
+        ? tx("The wind costs you about <b>" + a + " kcal</b> extra on this route, compared with a calm day.",
+             "De wind kost je op deze route ongeveer <b>" + a + " kcal</b> extra, vergeleken met een windstille dag.")
+        : tx("The wind saves you about <b>" + a + " kcal</b> on this route, compared with a calm day.",
+             "De wind bespaart je op deze route ongeveer <b>" + a + " kcal</b>, vergeleken met een windstille dag.");
+  }
+
   function renderLastHalf(result) {
+    renderCalories(result);
     if (result.ride.mode === "power") { renderRideTime(result); return; }
     document.getElementById("effortTitle").textContent = tx("Effort by part of the route", "Inspanning per deel van de route");
     var lh = result.lastHalf, ef = result.effort;
