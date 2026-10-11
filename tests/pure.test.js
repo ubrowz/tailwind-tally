@@ -7,9 +7,9 @@ const fs = require("fs"), assert = require("assert");
 const path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const grab = (name) => { const r = new RegExp("// BEGIN " + name + "([\\s\\S]*?)// END " + name).exec(src); assert(r, name + " markers not found"); return r[1]; };
-const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, stormPeriods, compassBands, mirrorLocations, mirrorTimeline, coarseCoord, liveArrowStyle, liveArrowRotation, headingFromOrientation, smoothHeading, liveSunClass, liveNextHour, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
+const { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, stormPeriods, compassBands, mirrorLocations, mirrorTimeline, coarseCoord, liveArrowStyle, liveArrowRotation, headingFromOrientation, smoothHeading, liveSunClass, liveNextHour, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, windEnergyDeltaKj, KCAL_PER_KJ_WORK, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH } =
   new Function(grab("forecast-pure") + grab("series-pure") + grab("rain-pure") + grab("bands-pure") + grab("mirror-pure") + grab("live-pure") + grab("units-pure") + grab("chill-pure") + grab("power-pure") +
-    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, stormPeriods, compassBands, mirrorLocations, mirrorTimeline, coarseCoord, liveArrowStyle, liveArrowRotation, headingFromOrientation, smoothHeading, liveSunClass, liveNextHour, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
+    "; return { kmhToBeaufort, forecastSamplePoints, summarizeForecast, buildRideSeries, seriesIndexAtTime, RAIN_EDGES, RAIN_CLASS_LABELS, rainClass, forecastRainSeries, rainStepAt, rainAtPlace, rainDirectionStats, isThunderstormCode, CAPE_POSSIBLE, CAPE_LIKELY, stormLevel, forecastStormSeries, stormStepAt, stormLevelAt, stormRuns, stormPeriods, compassBands, mirrorLocations, mirrorTimeline, coarseCoord, liveArrowStyle, liveArrowRotation, headingFromOrientation, smoothHeading, liveSunClass, liveNextHour, isUSLocation, KM_TO_MI, M_TO_FT, MM_TO_IN, RIDER_DEFAULTS, airDensity, powerAtSpeed, powerForSpeed, solveSpeedMs, ridePowerProfile, windEnergyDeltaKj, KCAL_PER_KJ_WORK, segmentClock, forecastWindSeries, lerpAngleDeg, interpWindSeries, windAtPlace, segmentWind, rideWindSummary, forecastSamplePlan, forecastMinutes, addDaysToDateStr, rideMinutes, cumulativeMeters, forecastSeries, hourMeanSeries, interpSeries, valueAtPlace, segmentEnvironment, rideEnvSummary, windChillC, apparentTempC, feelsLikeC, SUN_ABSORPTION, apparentTempSunC, feelsLikeSunC, smoothByDistance, FEELS_SMOOTH_WINDOW_M, feelsStats, feelsClasses, FEELS_CLASS_EDGES, heatDeltaC, heatIndexRothfuszF, WIND_CHILL_OFFICIAL_MAX_C, WIND_CHILL_MIN_KMH };")();
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log("ok  " + name); };
 const day = "2026-09-20";
@@ -996,6 +996,26 @@ t("stormRuns: contiguous same-level stretches in ride order, split where the lev
   assert(near(runs[0].fromT, t[2] - dt[2] / 2, 1e-9) && near(runs[0].toT, t[3] + dt[3] / 2, 1e-9));
   assert.strictEqual(stormRuns(lengths, t, dt, Array(10).fill(0)).length, 0);
   assert.strictEqual(stormRuns(lengths, t, dt, Array(10).fill(1)).length, 1);
+});
+
+t("wind energy difference: zero on a calm day, the power gap times the time on a steady headwind", () => {
+  const R = RIDER_DEFAULTS, rho = airDensity(15), v = 30 / 3.6, w = 20 / 3.6;
+  assert.strictEqual(windEnergyDeltaKj([1000, 2000], [1, -1], v, 0, rho, R), 0);
+  const dt = 3000 / v, gap = powerAtSpeed(v, -w, 0, rho, R) - powerForSpeed(v, rho, R);
+  assert(Math.abs(windEnergyDeltaKj([1000, 2000], [-1, -1], v, w, rho, R) - gap * dt / 1000) < 1e-9);
+  assert.strictEqual(KCAL_PER_KJ_WORK, 1);
+});
+t("wind energy difference: out and back costs more than it saves, a gale behind you saves at most the calm-day work", () => {
+  const R = RIDER_DEFAULTS, rho = airDensity(15), v = 30 / 3.6;
+  const ob = windEnergyDeltaKj([10000, 10000], [1, -1], v, 20 / 3.6, rho, R);
+  assert(ob > 50 && ob < 400, "out and back " + ob);
+  const calmKj = powerForSpeed(v, rho, R) * (10000 / v) / 1000;
+  assert(Math.abs(windEnergyDeltaKj([10000], [1], v, 50 / 3.6, rho, R) + calmKj) < 1e-9);  // freewheeling: no negative power
+  // one wind per segment: calm on the first, headwind on the second = the headwind segment alone
+  const a = windEnergyDeltaKj([5000, 5000], [-1, -1], v, [0, 20 / 3.6], rho, R);
+  const b = windEnergyDeltaKj([5000], [-1], v, 20 / 3.6, rho, R);
+  assert(Math.abs(a - b) < 1e-9);
+  assert.strictEqual(windEnergyDeltaKj([5000], [-1], 0, 5, rho, R), 0);
 });
 
 console.log(`\n${n} tests passed`);
